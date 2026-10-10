@@ -1,0 +1,65 @@
+{
+  "exception": {
+    "values": [
+      {
+        "type": "Error",
+        "value": "Falha ao enviar link para [email]",
+        "mechanism": {
+          "type": "auto.http.hono.context_error",
+          "handled": false
+        }
+      }
+    ]
+  },
+  "event_id": "6d83f0dcd138410798550841d7de10f1",
+  "level": "error",
+  "platform": "javascript",
+  "contexts": {
+    "trace": {
+      "span_id": "8163c0171e2286a0",
+      "trace_id": "0967979866eb424d9b84fd963a95eab9"
+    },
+    "cloud_resource": {
+      "cloud.provider": "cloudflare"
+    },
+    "culture": {
+      "timezone": "America/Santarem"
+    },
+    "runtime": {
+      "name": "cloudflare"
+    }
+  },
+  "timestamp": 1791624989.167,
+  "environment": "production",
+  "sdk": {
+    "integrations": [
+      "Dedupe",
+      "EventFilters",
+      "FunctionToString",
+      "ConversationId",
+      "LinkedErrors",
+      "Fetch",
+      "HttpServer",
+      "RequestData",
+      "Console",
+      "SpanStreaming"
+    ],
+    "name": "sentry.javascript.hono",
+    "version": "11.6.0",
+    "packages": [
+      {
+        "name": "npm:@sentry/hono",
+        "version": "11.6.0"
+      },
+      {
+        "name": "npm:@sentry/cloudflare",
+        "version": "11.6.0"
+      }
+    ]
+  },
+  "transaction": "GET /api/boom",
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:8799/api/boom"
+  }
+}

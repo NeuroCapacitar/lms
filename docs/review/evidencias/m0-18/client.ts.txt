@@ -1,0 +1,33 @@
+import * as Sentry from '@sentry/react';
+
+const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const scrub = (value: string) => value.replace(EMAIL, '[email]');
+
+Sentry.init({
+  dsn: 'http://publickey@127.0.0.1:9999/1',
+  sendDefaultPii: false,
+  tracesSampleRate: 0,
+  // Sem Replay, sem breadcrumbs de console/DOM: só o erro e a pilha.
+  beforeBreadcrumb: () => null,
+  beforeSend(event) {
+    delete event.user;
+    if (event.request) {
+      delete event.request.cookies;
+      delete event.request.headers;
+      delete event.request.data;
+      delete event.request.query_string;
+      if (event.request.url) event.request.url = scrub(event.request.url.split(/[?#]/)[0] ?? '');
+    }
+    for (const exception of event.exception?.values ?? []) {
+      if (exception.value) exception.value = scrub(exception.value);
+    }
+    return event;
+  },
+});
+
+document.getElementById('boom')?.addEventListener('click', () => {
+  throw new Error('Falha no SPA para pessoa@example.com');
+});
+document.getElementById('flush')?.addEventListener('click', () => {
+  void Sentry.flush(2000).then(() => (document.title = 'flushed'));
+});

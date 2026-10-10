@@ -1,0 +1,77 @@
+import { sentry } from '@sentry/hono/cloudflare';
+import { evlog, type EvlogVariables } from 'evlog/hono';
+import { initWorkersLogger } from 'evlog/workers';
+import { Hono } from 'hono';
+
+interface Bindings {
+  SENTRY_DSN: string;
+}
+
+initWorkersLogger({
+  env: { service: 'hub-spike', environment: 'spike' },
+  redact: {
+    paths: ['**.cookie', '**.authorization', '**.token', '**.password'],
+    builtins: ['creditCard', 'ipv4', 'phone', 'jwt', 'bearer', 'iban'],
+    patterns: [/\/magic\/([A-Za-z0-9_-]{12,})/g, /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g],
+    replacement: '[REDACTED]',
+  },
+});
+
+const captured: unknown[] = [];
+const app = new Hono<{ Bindings: Bindings } & EvlogVariables>();
+
+const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const scrub = (value: string) => value.replace(EMAIL, '[email]');
+
+app.use(
+  sentry(app, (env) => ({
+    dsn: env.SENTRY_DSN,
+    sendDefaultPii: false,
+    beforeBreadcrumb: () => null,
+    tracesSampleRate: 0,
+    beforeSend(event) {
+      // Remove tudo que identifica a pessoa; deixa só o necessário para triagem.
+      delete event.user;
+      if (event.request) {
+        delete event.request.cookies;
+        delete event.request.headers;
+        delete event.request.data;
+        delete event.request.query_string;
+        if (event.request.url) event.request.url = scrub(event.request.url.split('?')[0] ?? '');
+      }
+      for (const exception of event.exception?.values ?? []) {
+        if (exception.value) exception.value = scrub(exception.value);
+      }
+      if (event.message) event.message = scrub(event.message);
+      return event;
+    },
+  })),
+);
+app.use(evlog({ drain: (ctx) => { captured.push(ctx.event); } }));
+app.get('/api/_events', (c) => c.json(captured));
+
+app.get('/api/health/live', (c) => c.json({ status: 'ok' }));
+
+app.get('/api/log', (c) => {
+  const log = c.get('log');
+  // Dados que NÃO devem sair em claro nos logs.
+  log.set({
+    user: { email: 'pessoa@example.com', id: 'u_123' },
+    session: { token: 'TOKEN_FICTICIO' },
+    note: 'contato pessoa@example.com pediu acesso',
+    link: '/magic/AbCdEf0123456789XyZ',
+  });
+  return c.json({ ok: true });
+});
+
+app.get('/api/boom', (c) => {
+  c.get('log').set({ step: 'antes-do-erro', user: { email: 'pessoa@example.com' }, cookie: 'session=COOKIE_SECRETO' });
+  throw new Error(`Falha ao enviar link para ${c.req.query('email') ?? 'ninguem'}`);
+});
+
+app.onError((error, c) => {
+  c.get('log')?.error(error);
+  return c.json({ error: 'internal' }, 500);
+});
+
+export default app;

@@ -226,7 +226,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Fora do escopo / cuidados:** sem SSR; só cursos e validação de certificado terão meta tags dinâmicas.
 
 ### M0-18 — Spike 9: evlog e Sentry 11 no Worker
-**Dependências:** M0-02, M0-03 · **Estado:** `not_started` · **Timebox:** 1 dia · **Deve vir antes de:** M0-08
+**Dependências:** M0-02, M0-03 · **Estado:** `passou` ([ADR 0028](../adr/0028-spike-m0-18-evlog-e-sentry.md)) · **Timebox:** 1 dia · **Deve vir antes de:** M0-08
 **Objetivo:** decidir o logging estruturado e o rastreio de erros do Worker, validando a maturidade do `evlog`.
 **Passos:**
 1. Integrar `evlog` num Worker descartável: evento amplo por requisição, correlation id, redaction de e-mail/token/cookie; checar manutenção, licença e tamanho.

@@ -1,0 +1,8 @@
+{
+  "name": "m0-18-spike",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  "vars": { "SENTRY_DSN": "http://publickey@127.0.0.1:9999/1" }
+}

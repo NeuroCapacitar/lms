@@ -1,9 +1,9 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; spikes M0-11 e M0-12 passaram)  
+**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; spikes M0-11, M0-12 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-18 (spike evlog + Sentry) e, depois, M0-08 (primeiro deploy em Staging) (não autorizadas)  
+**Próxima tarefa recomendada:** M0-08 (primeiro deploy em Staging; precisa da conta Sentry criada pelo responsável e do seu OK explícito) (não autorizada)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-07 (2026-10-10, no CI)
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; spikes M0-11 e M0-12 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; spikes M0-11, M0-12 e M0-18 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,14 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-18 — spike passou (2026-10-10)
+
+- **Entrega:** [ADR 0028](../adr/0028-spike-m0-18-evlog-e-sentry.md) e [evidências](../review/evidencias/m0-18/README.md). Spike em diretório descartável **fora do repositório**; nenhum código de produção mudou. Sem deploy, sem conta Cloudflare (workerd local) e **sem conta Sentry** (DSN apontando para um servidor local que gravou os envelopes). Nenhum recurso externo foi criado.
+- **Executado:** `wrangler dev --local` (4.149.0) com Hono 4.13.13 + evlog 2.30.1 + `@sentry/hono` 11.6.0; SPA com `@sentry/react` 11.6.0 em Chromium (Playwright 1.64.0).
+- **Resultados:** evento de erro chega sem e-mail, cookie nem token; log com e-mail, cookie, token e link mágico sai `[REDACTED]`; **controle negativo:** o SPA com a configuração padrão do Sentry envia URL com `?email=…&token=…#fragmento`, por isso o `beforeSend` é obrigatório. Também: o `x-request-id` do cliente vira `requestId` do evlog; o SDK copia o console para breadcrumbs (desligados). Bundle gzip: Hono 14,57 KiB, +evlog 37,14 KiB, +Sentry 128,31 KiB, ambos 151,60 KiB; SPA +39,65 KiB.
+- **Não verificado:** envio a um Sentry real e source maps; logs de Queue e Cron; Workers Logs e Web Analytics em Staging (a documentação foi lida, não testada); `vite preview`/plugin Cloudflare Vite com o evlog. A leitura da documentação (limites do Workers Logs, preços do Sentry) foi feita por busca de páginas e resumida automaticamente: reconferir os números no painel antes de depender deles.
+- **Pendência do responsável:** criar a conta e o projeto Sentry (plano Developer, sem cartão) e informar os DSNs do Worker e do SPA antes do M0-08; sem isso o Staging publica só com Workers Logs.
 
 ### M0-07 — verified no CI (2026-10-10)
 
