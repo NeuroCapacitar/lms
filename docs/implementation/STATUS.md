@@ -1,9 +1,9 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12 e M0-18 passaram)  
+**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** spikes M0-15 (PDF no Browser Run) e M0-17 (HTMLRewriter), M0-16 (imagens, parte que não exige zona) e M1-01; o M0-09 (DNS) está **adiado para antes do M10** (não autorizadas)  
+**Próxima tarefa recomendada:** M0-17 (HTMLRewriter), M0-16 (imagens, parte que não exige zona) e o M1-01 (identidade); M0-13 (player JMVStream) e M0-14 (webhook Asaas) dependem de contas do cliente; o M0-09 (DNS) está adiado para antes do M10 (não autorizadas)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-08 (2026-10-10, no CI e em Staging)
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; M0-08 `homologated` em Staging; spikes M0-10, M0-11, M0-12 e M0-18 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; M0-08 `homologated` em Staging; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,13 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-15 — spike passou (2026-10-10)
+
+- **Entrega:** [ADR 0030](../adr/0030-spike-m0-15-browser-run-pdf.md) e [evidências](../review/evidencias/m0-15/README.md). Spike **fora do repositório**; nenhum código de produção mudou. Recurso criado e apagado (perfil `neurocapacitar`): Worker `m0-15-spike` (workers.dev, plano Free, binding `BROWSER`); conferido que o endereço voltou a responder 404. Nenhum R2 foi criado.
+- **Executado e passou:** PDF A4 paisagem (297,0 × 209,9 mm) com posição de campos a 0,1 mm do HTML; Lexend Deca embutida a partir de `data:` (sem recurso externo), acentos corretos, texto extraível; ~1,1 s por PDF; escape, CSP no HTML e bloqueio de rede comprovados (o log do Worker mostrou que a imagem externa bloqueada não foi buscada e a do controle foi).
+- **Achados:** o JavaScript da página **executa** e `setJavaScriptEnabled: false` é ignorado (só a CSP no HTML o impede); o PDF **não é determinístico** (6 hashes para o mesmo HTML), então o hash é do arquivo guardado e reemitir cria novo arquivo; fontes saem em Type 3; ligaduras quebram a extração de "fi" (desligadas); nome longo encolhe a página inteira sem `overflow: hidden`; no Free, 1 requisição por 10 s (HTTP 429 sob concorrência); entrada de 8 MB leva 10 s sem falhar.
+- **Não verificado:** gravação no R2 (fica para o M7); Acrobat e leitor do Edge/Preview (só pdf.js); impressão física; logotipos em `data:`; preço do Browser Run no Paid; caracteres fora do subconjunto latino.
 
 ### M0-09 — adiado para antes do M10 (decisão do responsável, 2026-10-10); inventário público e ferramenta de paridade prontos
 

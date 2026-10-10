@@ -35,5 +35,6 @@ Crie uma ADR **somente** para decisão arquitetural relevante e cara de reverter
 | 0027 | Spike M0-12: região do Neon (São Paulo) e orçamento de compute |
 | 0028 | Spike M0-18: evlog e Sentry 11, com redaction obrigatória |
 | 0029 | Spike M0-10: Better Auth 1.7.7, magic link com confirmação por POST |
+| 0030 | Spike M0-15: Browser Run gera o PDF do certificado (A4, Lexend Deca, CSP obrigatória) |
 
-Cada spike do M0 que concluir terá sua ADR (numeração seguinte, 0030 em diante) com o resultado "passou" ou "reabrir decisão".
+Cada spike do M0 que concluir terá sua ADR (numeração seguinte, 0031 em diante) com o resultado "passou" ou "reabrir decisão".

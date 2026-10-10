@@ -1,0 +1,30 @@
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+const file = process.argv[2] ?? 'cert.pdf';
+const data = new Uint8Array(readFileSync(file));
+console.log('sha256:', createHash('sha256').update(data).digest('hex'), 'bytes:', data.length);
+const doc = await pdfjs.getDocument({ data, useSystemFonts: false, verbosity: 0 }).promise;
+console.log('páginas:', doc.numPages);
+const page = await doc.getPage(1);
+const [x0, y0, x1, y1] = page.view;
+const wPt = x1 - x0, hPt = y1 - y0;
+console.log(`tamanho: ${wPt.toFixed(1)} x ${hPt.toFixed(1)} pt = ${(wPt / 72 * 25.4).toFixed(1)} x ${(hPt / 72 * 25.4).toFixed(1)} mm (A4 paisagem = 297 x 210 mm)`);
+const tc = await page.getTextContent();
+const fonts = new Set();
+for (const item of tc.items) {
+  const mmX = (item.transform[4] / 72) * 25.4;
+  const mmFromTop = ((hPt - item.transform[5]) / 72) * 25.4;
+  console.log(`  texto @ x=${mmX.toFixed(1)}mm baseline-topo=${mmFromTop.toFixed(1)}mm fonte=${item.fontName} : ${JSON.stringify(item.str)}`);
+  fonts.add(item.fontName);
+}
+// nomes reais das fontes embutidas
+await page.getOperatorList();
+for (const f of fonts) {
+  const font = page.commonObjs.has(f) ? page.commonObjs.get(f) : null;
+  console.log('fonte', f, '->', font?.name, 'embutida:', font?.data ? true : (font?.systemFontInfo ? 'NÃO (fonte de sistema)' : 'n/d'), 'tipo:', font?.type);
+}
+const raw = Buffer.from(data).toString('latin1');
+console.log('FontName no PDF:', [...new Set([...raw.matchAll(/\/FontName\s*\/([A-Za-z0-9+\-_]+)/g)].map((m) => m[1]))].join(', '));
+console.log('/FontFile*:', (raw.match(/\/FontFile\d?/g) ?? []).length, '| URIs externos:', (raw.match(/\/URI/g) ?? []).length, '| JavaScript:', (raw.match(/\/JS\b|\/JavaScript/g) ?? []).length);
