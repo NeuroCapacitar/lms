@@ -1,7 +1,7 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `homologated` em Staging com e-mail real; M1-02 `implemented` localmente, CI em verificação. M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
+**Estado:** M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `homologated` em Staging com e-mail real; M1-02 `verified` no CI. M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
 **Próxima tarefa recomendada:** M1-03 (papéis, grants e auditoria mínima), que também fornece a consulta de Staff que a M1-06 aguarda; depois M1-04 (convite de Staff) e M1-05 (CSRF, CSP e reautenticação); aplicar a migration 0003 no Staging junto do próximo deploy (precisa de autorização); LinkedIn do M0-17 pendente; M0-09 adiado (não autorizadas)  
 **Task em execução:** nenhuma  
@@ -29,9 +29,9 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
-### M1-02 — implemented localmente; CI em verificação (2026-10-10)
+### M1-02 — verified no CI (2026-10-10)
 
-- **Entrega:** PR de `feat/m1-02-perfil`. Perfil 1:1 com o usuário e preferências; sem avatar (M5), sem `PATCH` genérico de usuário e sem troca de e-mail pela interface.
+- **Entrega:** PR #39 (`feat/m1-02-perfil`), CI verde (`bloqueante` 2m26s, com Postgres 18 e Playwright no Linux). Perfil 1:1 com o usuário e preferências; sem avatar (M5), sem `PATCH` genérico de usuário e sem troca de e-mail pela interface.
 - **Banco:** tabela `profile` (`user_id` chave e FK com cascade, `display_name`, `certificate_name` nulo, `certificate_name_confirmed_at`, `theme` com CHECK em `system|light|dark` e padrão `system`, `auto_advance` padrão `false`). Migration `0003_profile`, gerada e **revisada à mão**: FK sem prefixo `public`, mais um **gatilho** `AFTER INSERT ON "user"` que cria o perfil na **mesma transação** do usuário (nenhum usuário nasce sem perfil, qualquer que seja o caminho de criação) e o preenchimento dos usuários já existentes.
 - **API:** `GET /api/me/profile` e `PATCH /api/me/profile` (Zod `strictObject`: campo fora da lista, como `email`, `role` ou `userId`, **falha com 400**; corpo vazio falha; `displayName` 1 a 80 e sem caracteres de controle; `certificateName` 3 a 120, `null` ou texto vazio limpa; `theme` e `autoAdvance` tipados). O usuário vem **só da sessão**, nunca do corpo nem do caminho. PATCH exige `Origin` igual a `APP_BASE_URL`. Respostas `no-store` e sem e-mail, ID nem dado de autenticação. Trocar o nome do certificado **zera a confirmação**.
 - **Tela `/conta`** (React Hook Form 7.89 + Zod, `@hookform/resolvers` 5.9): estados de carregando, sem sessão, erro, formulário, salvando, salvo e erro ao salvar; o tema salvo é aplicado na hora. Link "Minha conta" no menu.
