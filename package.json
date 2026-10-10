@@ -5,16 +5,33 @@
   "description": "NeuroCapacitar Hub vNext (LMS). Fundação em construção; ver docs/tasks/M0-fundacao.md.",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json && tsc -p tsconfig.worker.json",
     "lint": "oxlint --deny-warnings",
     "format:check": "oxfmt --check",
     "verify:quick": "bun run typecheck && bun run lint && bun run format:check"
   },
+  "dependencies": {
+    "@tanstack/react-query": "5.104.1",
+    "@tanstack/react-router": "1.170.41",
+    "hono": "4.13.13",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "1.63.1",
+    "@tanstack/router-plugin": "1.168.42",
     "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
     "oxfmt": "0.72.0",
     "oxlint": "1.87.0",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "wrangler": "4.149.0"
   },
   "engines": {
     "node": "24.x"

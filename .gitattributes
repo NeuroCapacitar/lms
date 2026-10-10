@@ -12,3 +12,8 @@
 .node-version text eol=lf
 bun.lock text eol=lf
 LICENSE text eol=lf
+*.mjs text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+worker-configuration.d.ts linguist-generated
+src/web/routeTree.gen.ts linguist-generated

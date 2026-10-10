@@ -2,5 +2,14 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "singleQuote": true,
   "printWidth": 100,
-  "ignorePatterns": ["docs/**", "**/*.md", "bun.lock", "MANIFEST.json", ".github/**"]
+  "ignorePatterns": [
+    "docs/**",
+    "**/*.md",
+    "bun.lock",
+    "MANIFEST.json",
+    ".github/**",
+    "src/web/routeTree.gen.ts",
+    "worker-configuration.d.ts",
+    "dist/**"
+  ]
 }
