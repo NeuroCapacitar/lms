@@ -4,6 +4,12 @@
   "note": "docs/review/evidencias and docs/_historico excluded",
   "files": [
     {
+      "path": ".dependency-cruiser.cjs",
+      "kind": "file",
+      "sha256": "d6bdcf9315b6623f1572d001f3a53541bdc009b3d51a6128c88bafc8f408f209",
+      "bytes": 1984
+    },
+    {
       "path": ".editorconfig",
       "kind": "file",
       "sha256": "5985ff23de53d12f7d404cd1350a296e4ab03a5d91a1fa15dbe2ee8244d7f6da",
@@ -24,8 +30,8 @@
     {
       "path": ".gitattributes",
       "kind": "file",
-      "sha256": "1cbd8a5efcc4f65ab949e52b44fef73ad2ec69f24ddcebe1a7a90573baa49aca",
-      "bytes": 426
+      "sha256": "fa88a34248c1e6dd017b932fa618956166f6d099e66ff33dd1c734340427fd2c",
+      "bytes": 495
     },
     {
       "path": ".github/PULL_REQUEST_TEMPLATE.md",
@@ -38,6 +44,18 @@
       "kind": "file",
       "sha256": "7bd473721c821d4a46a658640165ff2d2f50ec6526c7a6b4dc6e9e0243f50a94",
       "bytes": 452
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "kind": "file",
+      "sha256": "6bf3bd415bc398ef8df25a5150667ee3234c15b8256468a9cd317dbdd4464d57",
+      "bytes": 3568
+    },
+    {
+      "path": ".github/workflows/workflows-advisory.yml",
+      "kind": "file",
+      "sha256": "d4fa3314713f4b2d1febf7af4eb306d244d1e24b48d8b41d7a3de170f6b88b5a",
+      "bytes": 1218
     },
     {
       "path": ".gitignore",
@@ -66,8 +84,8 @@
     {
       "path": "AGENTS.md",
       "kind": "file",
-      "sha256": "0c560b42727cce7f058aa75d7295b084f3995dd369ae037a6a9b41e820f3888f",
-      "bytes": 10867
+      "sha256": "8d24a9f8e1f286050f8e5f4126632573cf471d7de37679a802431a2d9c796c5c",
+      "bytes": 10946
     },
     {
       "path": "CLAUDE.md",
@@ -108,14 +126,14 @@
     {
       "path": "README.md",
       "kind": "file",
-      "sha256": "0d6ece785e6b0f1b7cb9b1a1e6f22c8cff13fc1e2e256472a950fb877696c5a2",
-      "bytes": 3406
+      "sha256": "365a209f5352385fe60c75aeeb3bc58d7e1fff7b79ea2fd2f6e9c5fe089571ed",
+      "bytes": 5098
     },
     {
       "path": "bun.lock",
       "kind": "file",
-      "sha256": "e7b3f63b08b02406f51464e93c93318517f93c2b48c4ca6f8e56e79d451e5afb",
-      "bytes": 100566
+      "sha256": "d3664cefc19a7d644a755e6f76560545be3880128f2c2d75b01cdb794fb59593",
+      "bytes": 127023
     },
     {
       "path": "bunfig.toml",
@@ -520,10 +538,22 @@
       "bytes": 312
     },
     {
+      "path": "knip.json",
+      "kind": "file",
+      "sha256": "a9b33eed91d3ab607399f215d9aad77b44df04520a95867627cafd309cad6b8e",
+      "bytes": 384
+    },
+    {
       "path": "package.json",
       "kind": "file",
-      "sha256": "4576d30f54b5e5aff709f89d21707f139e586e39f2a3a4ac60f69e911c6efb42",
-      "bytes": 1905
+      "sha256": "85676da5821469a50b87fb0d194fd97a3f1a687351f21b905571b58817e14a2c",
+      "bytes": 2409
+    },
+    {
+      "path": "renovate.json",
+      "kind": "file",
+      "sha256": "fe51f7f6545e70e97e724e0a8263c08469b7d5034fe7d3ddedaaca7116782a1b",
+      "bytes": 1018
     },
     {
       "path": "scripts/build-env.ts",
@@ -546,8 +576,8 @@
     {
       "path": "scripts/db/db.integration.ts",
       "kind": "file",
-      "sha256": "75a45c71766e70a52bc70658a737d2e53be12a531e952dca48e2ad04e62b5a9a",
-      "bytes": 3176
+      "sha256": "bb1fd757b112a9d73a0e7109d0d25a72d99207cb298920c96b6cb54d98ace1c7",
+      "bytes": 3250
     },
     {
       "path": "scripts/db/guards.ts",
@@ -590,6 +620,12 @@
       "kind": "file",
       "sha256": "848fc8123484cb43aa957698eb49edc03070384c964591d059353d282aaa9757",
       "bytes": 1800
+    },
+    {
+      "path": "scripts/secrets-scan.ts",
+      "kind": "file",
+      "sha256": "6d6a7d669575d6b8bf40dce542aa9d9492fecb00574e99193a9387a86061bb8f",
+      "bytes": 927
     },
     {
       "path": "src/db/client.ts",

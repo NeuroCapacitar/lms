@@ -1,0 +1,100 @@
+name: CI
+
+# Camada BLOQUEANTE (job `bloqueante`) e CONSULTIVA (job `consultivo`). Ver README (matriz de gates).
+# GitHub Free privado não impõe required checks: o merge só com tudo verde é disciplina do responsável.
+# Sem segredos: este workflow não usa nenhum secret e roda em PRs com permissão somente leitura.
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: 1.4.2
+  NODE_VERSION: 24.21.0
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
+jobs:
+  bloqueante:
+    name: bloqueante
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Instalar Bun ${{ env.BUN_VERSION }}
+        run: npm install -g "bun@${BUN_VERSION}"
+      - name: Instalar dependências (lockfile congelado)
+        run: bun install --frozen-lockfile
+
+      # Cada passo abaixo roda mesmo que um anterior falhe, para o PR mostrar TODOS os resultados.
+      - name: TypeScript
+        if: ${{ !cancelled() }}
+        run: bun run typecheck
+      - name: Oxlint
+        if: ${{ !cancelled() }}
+        run: bun run lint
+      - name: Oxfmt
+        if: ${{ !cancelled() }}
+        run: bun run format:check
+      - name: Tipos do Worker em dia (wrangler types --check)
+        if: ${{ !cancelled() }}
+        run: bun run types:check
+      - name: Drift do schema (drizzle)
+        if: ${{ !cancelled() }}
+        run: bun run db:drift
+      - name: Testes dos scripts (node --test)
+        if: ${{ !cancelled() }}
+        run: bun run test
+      - name: Build do Worker por ambiente + preflight
+        if: ${{ !cancelled() }}
+        run: |
+          bun run build:staging
+          bun run build:production
+      - name: Knip (código e dependências não usados)
+        if: ${{ !cancelled() }}
+        run: bun run knip
+      - name: dependency-cruiser (limites de arquitetura)
+        if: ${{ !cancelled() }}
+        run: bun run arch
+      - name: Instruções de agentes
+        if: ${{ !cancelled() }}
+        run: bun run agents:check
+      - name: Gitleaks (histórico completo)
+        if: ${{ !cancelled() }}
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check -
+          mkdir "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          "$RUNNER_TEMP/gitleaks/gitleaks" git --no-banner --redact --verbose .
+
+  consultivo:
+    name: consultivo
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Alerta sem bloquear: falha aqui não derruba o PR.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Semgrep CE (regras do registro; métricas desligadas)
+        run: |
+          pipx run semgrep==1.178.0 scan --metrics=off --error \
+            --config p/typescript --config p/security-audit \
+            src scripts

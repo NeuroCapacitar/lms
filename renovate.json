@@ -1,0 +1,34 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "rangeStrategy": "pin",
+  "minimumReleaseAge": "7 days",
+  "internalChecksFilter": "strict",
+  "prConcurrentLimit": 3,
+  "labels": ["dependencies"],
+  "schedule": ["before 6am on monday"],
+  "packageRules": [
+    {
+      "description": "Minor e patch agrupados",
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "minor e patch"
+    },
+    {
+      "description": "Major: espera maior e aprovação no painel do Renovate",
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "14 days",
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Versões fixadas por decisão (ADR 0022): só atualizar com tarefa própria",
+      "matchPackageNames": [
+        "typescript",
+        "drizzle-orm",
+        "drizzle-kit",
+        "hono",
+        "@cloudflare/vite-plugin"
+      ],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}
