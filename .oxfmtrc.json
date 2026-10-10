@@ -4,6 +4,8 @@
   "printWidth": 100,
   "ignorePatterns": [
     "docs/**",
+    ".agents/**",
+    ".claude/**",
     "**/*.md",
     "bun.lock",
     "MANIFEST.json",
