@@ -18,7 +18,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 ---
 
 ### M1-01 — Integrar Better Auth, schema e sessão
-**Dependências:** M0-04, M0-08, M0-10 · **Estado:** `implemented` (CI em verificação; ver STATUS)
+**Dependências:** M0-04, M0-08, M0-10 · **Estado:** `verified` (CI; ver STATUS)
 **Objetivo:** a aplicação tem usuários e sessões em Postgres, com cookie `HttpOnly` e sessão rolling de 7 dias, sem sessão acessível ao JavaScript.
 **Passos:**
 1. Better Auth na versão exata do ADR M0-10, montado em `/api/auth/*`; instância, `pg` e Drizzle por requisição; `validateSchema: false` com checagem de schema no CI.
