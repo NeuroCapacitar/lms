@@ -119,7 +119,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Fora do escopo / cuidados:** não declarar "pronto para produção". Sem Operations Center e alertas P0–P3 (M4). Bot Fight Mode desligado.
 
 ### M0-09 — Zona DNS na Cloudflare (só planejar e copiar; sem cutover)
-**Dependências:** nenhuma (ação do responsável; começar cedo) · **Estado:** `not_started`
+**Dependências:** nenhuma (ação do responsável; começar cedo) · **Estado:** `in_progress` (inventário público e ferramenta de paridade prontos; falta a exportação da zona e a criação da zona na Cloudflare; ver [dns-inventory-and-cutover](../operations/dns-inventory-and-cutover.md))
 **Objetivo:** a zona de `neurocapacitar.com.br` está inventariada e replicada na Cloudflare com paridade comprovada, e `app.neurocapacitar.com.br` **continua apontando para o legado**.
 **Passos:**
 1. Com o responsável, identificar registrador, provedor de DNS atual e qual é a zona (provavelmente o domínio raiz; confirmar se o plano Free aceita delegar só o subdomínio — **PENDENTE (verificar)**).
