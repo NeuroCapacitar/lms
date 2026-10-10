@@ -86,7 +86,7 @@ jobs:
           echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check -
           mkdir "$RUNNER_TEMP/gitleaks"
           tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP/gitleaks" gitleaks
-          "$RUNNER_TEMP/gitleaks/gitleaks" git --no-banner --redact --verbose .
+          "$RUNNER_TEMP/gitleaks/gitleaks" git --no-banner --redact --verbose --log-opts="--full-history HEAD" .
 
   consultivo:
     name: consultivo
