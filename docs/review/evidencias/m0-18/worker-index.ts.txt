@@ -57,7 +57,7 @@ app.get('/api/log', (c) => {
   // Dados que NÃO devem sair em claro nos logs.
   log.set({
     user: { email: 'pessoa@example.com', id: 'u_123' },
-    session: { token: 'tok_abcdef0123456789' },
+    session: { token: 'TOKEN_FICTICIO' },
     note: 'contato pessoa@example.com pediu acesso',
     link: '/magic/AbCdEf0123456789XyZ',
   });
