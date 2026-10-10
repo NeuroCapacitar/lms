@@ -6,6 +6,7 @@ name: Deploy Staging
 #   secret   CLOUDFLARE_API_TOKEN   token da conta do projeto, com permissão de editar Workers
 #   secret   CLOUDFLARE_ACCOUNT_ID  ID da conta do projeto
 #   variable VITE_SENTRY_DSN        DSN público do projeto Sentry do SPA (hub-vnext-web)
+#   variable VITE_TURNSTILE_SITE_KEY  chave pública do widget Turnstile do Staging
 #   variable STAGING_URL            URL do Worker de Staging (https://hub-staging.<subdomínio>.workers.dev)
 
 on:
@@ -51,6 +52,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
         run: bun run deploy:staging
       - name: Smoke (o SHA no ar precisa ser o deste commit)
         env:
