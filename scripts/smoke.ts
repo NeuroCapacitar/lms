@@ -32,15 +32,16 @@ async function check(path: string, attempts: number): Promise<string[]> {
       problems.push(`${path}: ${error instanceof Error ? error.message : 'falha'}`);
     }
     if (problems.length === 0) break;
-    // O Neon Free suspende após 5 min ocioso: a primeira consulta pode demorar e falhar uma vez.
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    // Após o deploy, a versão nova leva alguns segundos para chegar a todos os pontos da borda, e o
+    // Neon Free suspende após 5 min ocioso: a primeira consulta pode demorar e falhar uma vez.
+    await new Promise((resolve) => setTimeout(resolve, 5000));
   }
   return problems;
 }
 
 const problems = [
-  ...(await check('/api/health/live', 2)),
-  ...(await check('/api/health/ready', 3)),
+  ...(await check('/api/health/live', 8)),
+  ...(await check('/api/health/ready', 4)),
 ];
 if (problems.length > 0) {
   for (const problem of problems) console.error(`SMOKE FALHOU: ${problem}`);
