@@ -13,12 +13,14 @@ import {
   type EmailSender,
   type LinkLimits,
 } from '../../features/identity/link-policy';
+import { effectiveCapabilities } from '../../features/identity/capabilities';
 import { profilePatchSchema } from '../../features/identity/profile';
 import { sha256Hex } from '../crypto';
 import { createEmailSender } from '../email/factory';
 import { createAuth, type Auth } from './create-auth';
 import { getProfile, updateProfile } from './profile-store';
-import { isStaffEmail as defaultIsStaffEmail } from './staff';
+import { isStaffEmail as lookupStaffEmail, isSuspended, loadAccess } from './access-store';
+import type { AuthVars } from './types';
 import { verifyTurnstile } from './turnstile';
 
 /** DTO mínimo de `GET /api/me`: nada além do necessário para a interface identificar a pessoa. */
@@ -35,16 +37,12 @@ const GENERIC_LINK_RESPONSE = { status: 'ok' } as const;
 export interface AuthRouteOverrides {
   emailSender?: EmailSender;
   isStaffEmail?: (email: string) => Promise<boolean>;
+  isSuspended?: (userId: string) => Promise<boolean>;
   turnstileFetch?: typeof fetch;
   limits?: LinkLimits;
 }
 
-interface Vars {
-  auth: Auth;
-  db: Database;
-  /** Registra trabalho que continua depois da resposta (envio do e-mail), antes de fechar o banco. */
-  defer: (work: Promise<unknown>) => void;
-}
+type Vars = AuthVars;
 
 type AuthContext = Context<{ Bindings: Env; Variables: Vars }>;
 
@@ -84,7 +82,8 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       { baseUrl: c.env.APP_BASE_URL, secret: c.env.BETTER_AUTH_SECRET },
       {
         emailSender: overrides.emailSender ?? createEmailSender(c.env),
-        isStaffEmail: overrides.isStaffEmail ?? defaultIsStaffEmail,
+        isStaffEmail: overrides.isStaffEmail ?? ((email) => lookupStaffEmail(opened.db, email)),
+        isSuspended: overrides.isSuspended ?? ((userId) => isSuspended(opened.db, userId)),
       },
     );
     let result: T;
@@ -160,7 +159,9 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       if (global > limits.globalPerDay) return c.json(GENERIC_LINK_RESPONSE);
 
       const [existing] = await db.select({ id: user.id }).from(user).where(eq(user.email, email));
-      const staff = await (overrides.isStaffEmail ?? defaultIsStaffEmail)(email);
+      const staff = await (
+        overrides.isStaffEmail ?? ((value: string) => lookupStaffEmail(db, value))
+      )(email);
       if (decideDelivery({ userExists: existing !== undefined, isStaffEmail: staff }) === 'send') {
         defer(
           auth.api
@@ -209,6 +210,19 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     }
     const me: MeDto = { id: session.user.id, email: session.user.email, name: session.user.name };
     return c.json(me);
+  });
+
+  // O que a pessoa pode fazer, para a interface decidir o que mostrar. NÃO autoriza nada: cada rota
+  // protegida confere a capability no servidor (requireCapability).
+  routes.get('/me/access', withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const access = await loadAccess(c.var.db, session.user.id);
+    if (access.suspended) return c.json({ error: { code: 'account_suspended' } }, 403);
+    return c.json({
+      roles: ['student', ...access.roles],
+      capabilities: effectiveCapabilities(access),
+    });
   });
 
   // Perfil e preferências da PRÓPRIA pessoa: o usuário vem sempre da sessão, nunca do corpo nem do

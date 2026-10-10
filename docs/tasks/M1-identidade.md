@@ -41,7 +41,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** sem `PATCH` genérico de User; sem avatar (M5); sem troca de e-mail pela interface (pedido por e-mail ao suporte, procedimento manual a documentar — **PENDENTE (advogado/cliente)**).
 
 ### M1-03 — Papéis, grants e auditoria mínima
-**Dependências:** M1-01 · **Estado:** `not_started`
+**Dependências:** M1-01 · **Estado:** `implemented` localmente (CI em verificação; ver STATUS)
 **Objetivo:** o servidor decide acesso por papéis não exclusivos e grants granulares, e garante pelo menos um Admin ativo.
 **Passos:**
 1. Tabelas `user_role` (`support`, `admin`; student é implícito), `staff_grant` (capability, concedido por/quando, revogado em) e `audit_log` append-only (quem, ação, alvo, quando, sem PII desnecessária).

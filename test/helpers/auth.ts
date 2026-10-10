@@ -15,7 +15,11 @@ import { createFakeEmailSender } from '../../src/server/email/fake.ts';
 export async function createTestAuth(
   connectionString: string,
   config: AuthConfig,
-  deps: AuthDeps = { emailSender: createFakeEmailSender(), isStaffEmail: async () => false },
+  deps: AuthDeps = {
+    emailSender: createFakeEmailSender(),
+    isStaffEmail: async () => false,
+    isSuspended: async () => false,
+  },
 ) {
   const opened = await openDatabase(connectionString);
   const auth = betterAuth({
