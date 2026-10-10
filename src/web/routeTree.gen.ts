@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BaseVisualRouteImport } from './routes/base-visual'
+import { Route as ContaRouteImport } from './routes/conta'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
 import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const BaseVisualRoute = BaseVisualRouteImport.update({
   id: '/base-visual',
   path: '/base-visual',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContaRoute = ContaRouteImport.update({
+  id: '/conta',
+  path: '/conta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SobreRoute = SobreRouteImport.update({
@@ -44,6 +50,7 @@ const EntrarConfirmarRoute = EntrarConfirmarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
+  '/conta': typeof ContaRoute
   '/sobre': typeof SobreRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/entrar/': typeof EntrarIndexRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
+  '/conta': typeof ContaRoute
   '/sobre': typeof SobreRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/entrar': typeof EntrarIndexRoute
@@ -59,19 +67,28 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
+  '/conta': typeof ContaRoute
   '/sobre': typeof SobreRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/entrar/': typeof EntrarIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/base-visual' | '/sobre' | '/entrar/confirmar' | '/entrar/'
+  fullPaths:
+    | '/'
+    | '/base-visual'
+    | '/conta'
+    | '/sobre'
+    | '/entrar/confirmar'
+    | '/entrar/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/base-visual' | '/sobre' | '/entrar/confirmar' | '/entrar'
+  to:
+    '/' | '/base-visual' | '/conta' | '/sobre' | '/entrar/confirmar' | '/entrar'
   id:
     | '__root__'
     | '/'
     | '/base-visual'
+    | '/conta'
     | '/sobre'
     | '/entrar/confirmar'
     | '/entrar/'
@@ -80,6 +97,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BaseVisualRoute: typeof BaseVisualRoute
+  ContaRoute: typeof ContaRoute
   SobreRoute: typeof SobreRoute
   EntrarConfirmarRoute: typeof EntrarConfirmarRoute
   EntrarIndexRoute: typeof EntrarIndexRoute
@@ -99,6 +117,13 @@ declare module '@tanstack/react-router' {
       path: '/base-visual'
       fullPath: '/base-visual'
       preLoaderRoute: typeof BaseVisualRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conta': {
+      id: '/conta'
+      path: '/conta'
+      fullPath: '/conta'
+      preLoaderRoute: typeof ContaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sobre': {
@@ -128,6 +153,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BaseVisualRoute: BaseVisualRoute,
+  ContaRoute: ContaRoute,
   SobreRoute: SobreRoute,
   EntrarConfirmarRoute: EntrarConfirmarRoute,
   EntrarIndexRoute: EntrarIndexRoute,
