@@ -1,7 +1,7 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `homologated` em Staging com e-mail real; M1-02 `verified` no CI; M1-03 `implemented` localmente, CI em verificação. M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
+**Estado:** M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `homologated` em Staging com e-mail real; M1-02 `verified` no CI; M1-03 `verified` no CI. M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
 **Próxima tarefa recomendada:** M1-05 (CSRF próprio, headers de segurança e reautenticação recente), depois M1-04 (bootstrap do Admin e convite de Staff; depende de M1-03, M1-05 e M1-06) e M1-08 (gestão de Staff pela interface); aplicar as migrations 0003 e 0004 no Staging junto do próximo deploy (precisa de autorização); LinkedIn do M0-17 pendente; M0-09 adiado (não autorizadas)  
 **Task em execução:** nenhuma  
@@ -29,9 +29,9 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
-### M1-03 — implemented localmente; CI em verificação (2026-10-10)
+### M1-03 — verified no CI (2026-10-10)
 
-- **Entrega:** PR de `feat/m1-03-papeis-grants`. Papéis não exclusivos, grants granulares, suspensão e auditoria; **sem endpoints de gestão** (convite, papéis e grants pela interface são M1-04 e M1-08) e sem endpoint genérico de update de usuário.
+- **Entrega:** PR #41 (`feat/m1-03-papeis-grants`), CI verde (`bloqueante` 2m22s, com Postgres 18 e Playwright no Linux). Papéis não exclusivos, grants granulares, suspensão e auditoria; **sem endpoints de gestão** (convite, papéis e grants pela interface são M1-04 e M1-08) e sem endpoint genérico de update de usuário.
 - **Catálogo** (`src/features/identity/capabilities.ts`, puro): 7 capabilities só-Admin, 11 delegáveis ao Suporte e `staff.read` (leitura básica, todo Suporte e Admin ativo sem grant). Deny-by-default; Admin tem tudo; Suporte tem `staff.read` mais os grants; Student nenhuma; conta suspensa nenhuma. Nome `access.grant` (spec de domínio) no lugar de `enrollment.manage` (nome sugerido na tarefa).
 - **Banco** (migration `0004_roles_grants_audit`, revisada à mão): `user_role` (`support|admin`, ativo = `revoked_at` nulo, índice único parcial), `staff_grant` (CHECK **só com as 11 delegáveis**: o banco recusa grant de capability exclusiva do Admin), `user_suspension` (uma ativa por pessoa) e `audit_log` **append-only** (gatilhos recusam UPDATE, DELETE e TRUNCATE; sem chave estrangeira, então sobrevive à remoção da pessoa; só IDs, capability, papel e motivo curto).
 - **Servidor:** `requireCapability(cap)` (Hono; lê papéis, grants e suspensão do banco **a cada requisição**, sem cache; 401 sem sessão, 403 `account_suspended` ou `forbidden`), `GET /api/me/access` (papéis e capabilities efetivas da própria pessoa, só para a interface decidir o que mostrar), repositório `access-store` (`grantRole`, `revokeRole`, `grantCapability`, `revokeCapability`, `suspendUser`, `liftSuspension`, `loadAccess`, `isStaffEmail`) com transação, auditoria na mesma transação e **encerramento das sessões** da pessoa a cada mudança (ADR 0008). `isStaffEmail` agora é real (papel ativo) e alimenta a política do magic link; contas suspensas **não ganham sessão nova** (gancho de criação de sessão).
