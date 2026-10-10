@@ -1,7 +1,7 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M1-08 `implemented` e verificado localmente (CI pendente); M1-04 `verified` no CI; M1-05 `verified` no CI; M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `homologated` em Staging com e-mail real; M1-02 `verified` no CI; M1-03 `verified` no CI. M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
+**Estado:** M1-08 `verified` no CI; M1-04 `verified` no CI; M1-05 `verified` no CI; M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `homologated` em Staging com e-mail real; M1-02 `verified` no CI; M1-03 `verified` no CI. M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
 **Próxima tarefa recomendada:** M1-07 (Google e senha para o aluno), M1-09 (aceite de termos) e M1-10 (shell e tela de equipe, depende de M1-08); aplicar as migrations 0003 a 0007 no Staging (e conferir a CSP com o widget real do Turnstile) junto do próximo deploy (precisa de autorização); LinkedIn do M0-17 pendente; M0-09 adiado (não autorizadas)  
 **Task em execução:** nenhuma  
@@ -29,9 +29,9 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
-### M1-08 — implemented, verificação local (2026-10-10)
+### M1-08 — verified no CI (2026-10-10)
 
-- **Entrega:** branch `feat/m1-08-suspensao-auditada` (CI pendente). Rotas de suspender e reativar contas, recusa de login e de envio de link para conta suspensa e o fechamento da corrida entre login e suspensão. **Sem tela** (a tela de equipe é a M1-10) e sem exclusão ou anonimização de conta.
+- **Entrega:** PR #47 (`feat/m1-08-suspensao-auditada`, merge `f5bf6a6`), CI verde (`bloqueante` 2m50s, com Postgres 18, Playwright e Gitleaks no histórico completo; `consultivo` verde; CodeRabbit sem revisão por limite do plano gratuito, sem comentários). Rotas de suspender e reativar contas, recusa de login e de envio de link para conta suspensa e o fechamento da corrida entre login e suspensão. **Sem tela** (a tela de equipe é a M1-10) e sem exclusão ou anonimização de conta.
 - **Já existia (M1-03), agora exposto:** `suspendUser`/`liftSuspension` (tabela `user_suspension`, não colunas em `user`; desvio já registrado), apagar as sessões e auditar na mesma transação, invariante do último Admin e o gancho do Better Auth que recusa sessão nova de conta suspensa.
 - **Rotas** (`src/server/auth/staff-routes.ts`): `POST /api/staff/users/:id/suspend` (corpo opcional `{ reason }`, 1 a 200 caracteres, sem campo extra) e `POST /api/staff/users/:id/reactivate`. Ambas exigem **`staff.manage` + `requireRecentAuth`** (só Admin, com prova recente). Resposta `{ status: 'ok', changed }` (repetir não muda nada); id malformado ou desconhecido 404; último Admin ativo 409 `last_admin`.
 - **Corrida login x suspensão** (migration `0007_session_suspension_guard`, escrita à mão): sem ela, o login podia checar "não suspensa", a suspensão apagar as sessões (ainda sem a nova) e o login gravar a sessão depois: **uma sessão sobreviveria**. Agora `suspendUser` trava a linha do usuário com `FOR UPDATE` e o gatilho `session_refuse_suspended` (BEFORE INSERT em `session`) pega `FOR KEY SHARE` na mesma linha, os dois se serializam e o gatilho recusa a sessão se houver suspensão ativa (`restrict_violation`, SQLSTATE 23001). Sem advisory lock. A confirmação do link trata esse erro como link inválido (mesma resposta, sem revelar a conta).
