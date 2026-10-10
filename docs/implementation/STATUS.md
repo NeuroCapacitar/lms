@@ -29,6 +29,12 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
+### Staging: migrations 0001 e 0002 e segredo do Better Auth (2026-10-10, autorizado pelo responsável)
+
+- **Feito (perfil `neurocapacitar`, identidade verificada no Neon e na Cloudflare):** migrations `0001_better_auth_identity` e `0002_auth_throttle` aplicadas no banco `hub-staging` (journal com 3 registros); conferido que a role de runtime `hub_runtime` tem SELECT, INSERT, UPDATE e DELETE nas 7 tabelas (os privilégios padrão cobrem tabelas novas); segredo `BETTER_AUTH_SECRET` criado no Worker `hub-staging` (valor aleatório de 32 bytes, nunca impresso).
+- **Achado:** a primeira tentativa falhou porque o journal do Staging guardava o 0000 com `created_at` 1791619928128, e o `_journal.json` atual diz 1791620178127 (o arquivo foi regenerado depois do M0-04). O migrator do Drizzle compara só esse carimbo e tentou rodar o 0000 de novo. O SQL do 0000 é idêntico (mesmo SHA-256 do registro), então corrigi só o carimbo no journal do Staging (uma linha) e rodei de novo. O `neon connection-string` exige `--role-name neondb_owner` (o projeto tem duas roles).
+- **Não feito:** `TURNSTILE_SECRET_KEY` e `RESEND_API_KEY` ainda não existem no Staging (dependem do widget do Turnstile e da chave/modelo do Resend); o código do M1 **não foi implantado** no Staging (o Worker publicado continua o do M0-08), então `/api/auth/*` ainda não existe lá.
+
 ### M1-06 — verified no CI (2026-10-10); falta o Staging com e-mail real
 
 - **Entrega:** PR #33 (`feat/m1-06-magic-link`), CI verde (`bloqueante` 2m7s, com Postgres 18 e Playwright no Linux). Pedido e confirmação do link de acesso sobre o Better Auth 1.7.7 (plugin `magicLink`), com as proteções da tarefa. Sem Google, senha nem passkey (M1-07).
