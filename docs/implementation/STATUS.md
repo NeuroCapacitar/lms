@@ -1,11 +1,11 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 a M0-05 `verified`; M0-06 implementado, CI em verificação; spikes M0-11 e M0-12 passaram)  
+**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; spikes M0-11 e M0-12 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** concluir a verificação do M0-06 no CI; depois M0-07 e M0-08 (não autorizadas)  
-**Task em execução:** M0-06 (branch `feat/m0-06-testes`)  
-**Última tarefa comprovadamente verificada:** M0-05 (2026-10-10, no CI)
+**Próxima tarefa recomendada:** M0-07 (base visual com tokens OKLCH) e M0-08 (primeiro deploy em Staging) (não autorizadas)  
+**Task em execução:** nenhuma  
+**Última tarefa comprovadamente verificada:** M0-06 (2026-10-10, no CI)
 
 > Nunca marcar tarefa ou marco como concluído com base em decisão, texto de plano, instrução para IA ou intenção. Só evidências reais de arquivos, comandos, testes, SHA e homologação justificam o status.
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 a M0-05 `verified`; spikes M0-11 e M0-12 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; spikes M0-11 e M0-12 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
