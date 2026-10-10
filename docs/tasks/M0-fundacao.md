@@ -18,9 +18,9 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 
 ### M0-01 — Repositório privado e governança inicial
 **Dependências:** nenhuma · **Estado:** `not_started`
-**Objetivo:** checkout limpo instala dependências e roda os scripts mínimos sem serviço externo, em repositório privado na conta pessoal do responsável (GitHub Free).
+**Objetivo:** checkout limpo instala dependências e roda os scripts mínimos sem serviço externo, no repositório privado `NeuroCapacitar/lms` (organização, GitHub Free).
 **Passos:**
-1. Confirmar com o responsável nome e dono do repositório (conta pessoal; migrar para organização depois, se possível). Recomendado: esta pasta (com `docs/`) vira o repositório; não copiar histórico do legado.
+1. O repositório já existe (`NeuroCapacitar/lms`, privado, com os documentos); clone-o ou use esta pasta, que já é o checkout. Confirmar com o responsável quem tem escrita. Não copiar histórico do legado.
 2. Fixar versões **exatas**: Bun 1.4.x (`packageManager` no `package.json`, `bunfig.toml` com `exact = true`), Node LTS (`.node-version`, usado pelo Wrangler) e TypeScript estável mais recente (7.0.x). Anotar que são provisórias até o M0-11.
 3. `.gitignore` para `.dev.vars*`, `.env*`, `.wrangler/`, `dist/`, chaves; versionar só `.dev.vars.example` com nomes de variáveis, sem valores.
 4. Scripts mínimos reais: `typecheck`, `lint`, `format:check`, `test`, `verify:quick`. Não criar script que ainda não faz nada útil.
