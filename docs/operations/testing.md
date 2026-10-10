@@ -48,3 +48,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - **Armadilha:** com `NODE_ENV=test` (que o Vitest define) ou a variável `TEST`, o Better Auth **desliga a checagem de origem**; por isso `authOptions` fixa `disableOriginCheck: false`. Nunca defina `TEST` ou `NODE_ENV=test` no Worker.
 - `src/server/auth/schema.test.ts` confere o schema Drizzle contra `getAuthTables()` (com `validateSchema: false` nada o confere em execução). Ao atualizar o Better Auth, rode-o primeiro.
 - `tsconfig.integration.json` tipa os testes que importam `src/` com resolução `bundler` e tipos do Node.
+
+## Pedido e confirmação de link (M1-06)
+
+- `test/pg/link.pg.test.ts` monta `authRoutes({ emailSender, isStaffEmail, turnstileFetch, limits })` com substitutos (e-mail falso, Staff simulada, Turnstile simulado, limites pequenos) sobre Postgres 18 real. Nunca chama a rede nem envia e-mail.
+- `e2e/login.spec.ts` simula o widget do Turnstile (rota do script) e as respostas da API; o build do Playwright usa a chave de **teste** da Cloudflare (`playwright.config.ts`).
+- Para ver o link no desenvolvimento local, rode `bun run dev` sem `RESEND_API_KEY`: o link aparece no terminal (`[dev] e-mail para …`). Em Staging e Production a falta da chave é erro.

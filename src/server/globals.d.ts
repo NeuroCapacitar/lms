@@ -8,4 +8,8 @@ interface Env {
   SENTRY_DSN?: string;
   /** Segredo do Better Auth (ADR 0029). Obrigatório; Worker Secret por ambiente. */
   BETTER_AUTH_SECRET: string;
+  /** Segredo do Turnstile (verificação do captcha no pedido de link). Worker Secret por ambiente. */
+  TURNSTILE_SECRET_KEY: string;
+  /** Chave da API do Resend. Ausente só é aceito em Development (e-mail falso). */
+  RESEND_API_KEY?: string;
 }

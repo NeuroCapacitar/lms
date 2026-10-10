@@ -86,3 +86,13 @@ export const rateLimit = pgTable('rate_limit', {
   count: integer().notNull(),
   lastRequest: bigint({ mode: 'number' }).notNull(),
 });
+
+/**
+ * Contadores de janela fixa para limitar pedidos de link (M1-06). A chave NUNCA contém o e-mail em
+ * claro (só um hash) nem o token. Uma linha por chave; a janela reinicia quando expira.
+ */
+export const authThrottle = pgTable('auth_throttle', {
+  key: text().primaryKey(),
+  windowStart: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  count: integer().notNull().default(0),
+});

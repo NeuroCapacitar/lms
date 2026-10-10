@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BaseVisualRouteImport } from './routes/base-visual'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
+import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +30,59 @@ const SobreRoute = SobreRouteImport.update({
   path: '/sobre',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EntrarIndexRoute = EntrarIndexRouteImport.update({
+  id: '/entrar/',
+  path: '/entrar/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntrarConfirmarRoute = EntrarConfirmarRouteImport.update({
+  id: '/entrar/confirmar',
+  path: '/entrar/confirmar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
   '/sobre': typeof SobreRoute
+  '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/entrar/': typeof EntrarIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
   '/sobre': typeof SobreRoute
+  '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/entrar': typeof EntrarIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
   '/sobre': typeof SobreRoute
+  '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/entrar/': typeof EntrarIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/base-visual' | '/sobre'
+  fullPaths: '/' | '/base-visual' | '/sobre' | '/entrar/confirmar' | '/entrar/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/base-visual' | '/sobre'
-  id: '__root__' | '/' | '/base-visual' | '/sobre'
+  to: '/' | '/base-visual' | '/sobre' | '/entrar/confirmar' | '/entrar'
+  id:
+    | '__root__'
+    | '/'
+    | '/base-visual'
+    | '/sobre'
+    | '/entrar/confirmar'
+    | '/entrar/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BaseVisualRoute: typeof BaseVisualRoute
   SobreRoute: typeof SobreRoute
+  EntrarConfirmarRoute: typeof EntrarConfirmarRoute
+  EntrarIndexRoute: typeof EntrarIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +108,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SobreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/entrar/': {
+      id: '/entrar/'
+      path: '/entrar'
+      fullPath: '/entrar/'
+      preLoaderRoute: typeof EntrarIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrar/confirmar': {
+      id: '/entrar/confirmar'
+      path: '/entrar/confirmar'
+      fullPath: '/entrar/confirmar'
+      preLoaderRoute: typeof EntrarConfirmarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +129,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BaseVisualRoute: BaseVisualRoute,
   SobreRoute: SobreRoute,
+  EntrarConfirmarRoute: EntrarConfirmarRoute,
+  EntrarIndexRoute: EntrarIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
