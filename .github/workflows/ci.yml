@@ -27,7 +27,22 @@ jobs:
   bloqueante:
     name: bloqueante
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      # Postgres 18 efêmero do serviço abaixo; os testes recusam o host de dev, staging e production.
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -61,9 +76,23 @@ jobs:
       - name: Drift do schema (drizzle)
         if: ${{ !cancelled() }}
         run: bun run db:drift
-      - name: Testes dos scripts (node --test)
+      - name: Build do Worker (desenvolvimento) para os testes de workerd
         if: ${{ !cancelled() }}
-        run: bun run test
+        run: bun run build
+      - name: Vitest unit (Node)
+        if: ${{ !cancelled() }}
+        run: bun x vitest run --project unit
+      - name: Vitest workers (workerd + Hyperdrive local)
+        if: ${{ !cancelled() }}
+        run: bun x vitest run --project workers
+      - name: Vitest pg (Postgres 18 real)
+        if: ${{ !cancelled() }}
+        run: bun x vitest run --project pg
+      - name: Playwright (Chromium, smoke)
+        if: ${{ !cancelled() }}
+        run: |
+          bun x playwright install --with-deps chromium
+          bun run test:e2e
       - name: Build do Worker por ambiente + preflight
         if: ${{ !cancelled() }}
         run: |

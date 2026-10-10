@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
+
+import { describe, expect, it } from 'vitest';
 
 import type { ExpectedEnvironment } from './environments.ts';
 import { checkArtifact } from './preflight-core.ts';
@@ -40,7 +40,7 @@ function artifact(overrides: Record<string, unknown> = {}) {
 
 describe('checkArtifact', () => {
   it('aprova o artefato correto de Staging', () => {
-    assert.deepEqual(checkArtifact(artifact(), staging, 'staging'), []);
+    expect(checkArtifact(artifact(), staging, 'staging')).toEqual([]);
   });
 
   it('rejeita Hyperdrive de Production em artefato de Staging', () => {
@@ -49,24 +49,22 @@ describe('checkArtifact', () => {
       staging,
       'staging',
     );
-    assert.equal(problems.length, 1);
-    assert.match(problems[0] ?? '', /recurso não permitido.*hyperdrive/);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/recurso não permitido.*hyperdrive/);
   });
 
   it('rejeita nome de Worker de outro ambiente', () => {
     const problems = checkArtifact(artifact({ name: 'hub-production' }), staging, 'staging');
-    assert.match(problems.join('\n'), /nome do Worker/);
+    expect(problems.join('\n')).toMatch(/nome do Worker/);
   });
 
   it('rejeita artefato construído para outro ambiente ou sem ambiente', () => {
-    assert.match(
+    expect(
       checkArtifact(artifact({ targetEnvironment: 'production' }), staging, 'staging').join('\n'),
-      /ambiente do artefato/,
-    );
-    assert.match(
+    ).toMatch(/ambiente do artefato/);
+    expect(
       checkArtifact(artifact({ targetEnvironment: undefined }), staging, 'staging').join('\n'),
-      /ambiente do artefato/,
-    );
+    ).toMatch(/ambiente do artefato/);
   });
 
   it('rejeita recurso de categoria sem previsão na tabela (R2, filas)', () => {
@@ -75,32 +73,30 @@ describe('checkArtifact', () => {
       staging,
       'staging',
     );
-    assert.match(r2.join('\n'), /r2_buckets/);
+    expect(r2.join('\n')).toMatch(/r2_buckets/);
     const queue = checkArtifact(
       artifact({ queues: { producers: [{ binding: 'Q', queue: 'hub-finance' }], consumers: [] } }),
       staging,
       'staging',
     );
-    assert.match(queue.join('\n'), /queue_producers/);
+    expect(queue.join('\n')).toMatch(/queue_producers/);
   });
 
   it('rejeita binding de categoria desconhecida e variáveis não previstas', () => {
-    assert.match(
+    expect(
       checkArtifact(
         artifact({ ai: { binding: 'AI' }, ai_search: [{ name: 'x' }] }),
         staging,
         'staging',
       ).join('\n'),
-      /binding não previsto/,
-    );
-    assert.match(
+    ).toMatch(/binding não previsto/);
+    expect(
       checkArtifact(artifact({ vars: { API_URL: 'x' } }), staging, 'staging').join('\n'),
-      /variável não permitida/,
-    );
+    ).toMatch(/variável não permitida/);
   });
 
   it('rejeita entrada que não é objeto', () => {
-    assert.deepEqual(checkArtifact(null, staging, 'staging'), [
+    expect(checkArtifact(null, staging, 'staging')).toEqual([
       'artefato inválido: não é um objeto JSON',
     ]);
   });
@@ -116,9 +112,9 @@ describe('runPreflight (artefato em disco)', () => {
         join(dir, 'hub', 'wrangler.json'),
         JSON.stringify({ targetEnvironment: 'staging', name: 'hub-staging' }),
       );
-      assert.deepEqual(runPreflight('staging', dir), []);
-      assert.match(runPreflight('producao', dir).join('\n'), /ambiente desconhecido/);
-      assert.match(runPreflight('production', dir).join('\n'), /ambiente do artefato/);
+      expect(runPreflight('staging', dir)).toEqual([]);
+      expect(runPreflight('producao', dir).join('\n')).toMatch(/ambiente desconhecido/);
+      expect(runPreflight('production', dir).join('\n')).toMatch(/ambiente do artefato/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -131,8 +127,8 @@ describe('build por ambiente', () => {
       const result = spawnSync(process.execPath, ['scripts/build-env.ts', bad], {
         encoding: 'utf8',
       });
-      assert.equal(result.status, 1, `ambiente "${bad}" deveria falhar`);
-      assert.match(result.stderr, /ambiente inválido/);
+      expect(result.status, `ambiente "${bad}" deveria falhar`).toBe(1);
+      expect(result.stderr).toMatch(/ambiente inválido/);
     }
   });
 });

@@ -11,6 +11,8 @@
     "src/web/routeTree.gen.ts",
     "worker-configuration.d.ts",
     "dist/**",
-    "drizzle/**"
+    "drizzle/**",
+    "playwright-report/**",
+    "test-results/**"
   ]
 }
