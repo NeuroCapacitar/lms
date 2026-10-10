@@ -5,6 +5,8 @@ export const Route = createFileRoute('/')({ component: Home });
 
 async function fetchHealth(): Promise<boolean> {
   const response = await fetch('/api/health/live');
+  // Consome o corpo: com Cache-Control: no-store o navegador mantém a requisição aberta até lê-lo.
+  await response.text();
   return response.ok;
 }
 

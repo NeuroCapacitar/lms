@@ -56,9 +56,18 @@ describe('Worker no workerd', () => {
     );
     expect(get.status).toBe(404);
     const native = await exports.default.fetch(
-      new Request('http://example.com/api/auth/sign-in/magic-link', { method: 'POST' }),
+      new Request('http://example.com/api/auth/sign-in/magic-link', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: 'http://localhost:5173' },
+        body: '{}',
+      }),
     );
     expect(native.status).toBe(404);
+    // Sem Origin o CSRF recusa antes mesmo de chegar à rota.
+    const noOrigin = await exports.default.fetch(
+      new Request('http://example.com/api/auth/sign-in/magic-link', { method: 'POST' }),
+    );
+    expect(noOrigin.status).toBe(403);
   });
 
   it('GET /api/me/profile sem sessão responde 401; PATCH de origem errada responde 403 sem consultar o banco', async () => {

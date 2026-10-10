@@ -1,9 +1,8 @@
 import { eq } from 'drizzle-orm';
-import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import * as schema from '../../src/db/schema.ts';
-import { authRoutes } from '../../src/server/auth/routes.ts';
+import { apiApp } from '../helpers/api-app.ts';
 import { createTestAuth } from '../helpers/auth.ts';
 import { createTestSchema, type TestSchema } from '../helpers/pg-schema.ts';
 
@@ -31,7 +30,7 @@ const env = () =>
     BETTER_AUTH_SECRET: SECRET,
     TURNSTILE_SECRET_KEY: 'x',
   }) as unknown as Env;
-const app = new Hono<{ Bindings: Env }>().route('/api', authRoutes());
+const app = apiApp();
 
 async function newUser(name?: string) {
   seq += 1;

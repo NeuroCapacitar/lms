@@ -226,3 +226,33 @@ export const auditLog = pgTable(
     index('audit_log_target_idx').on(table.targetType, table.targetId),
   ],
 );
+
+/**
+ * Reautenticação recente (M1-05): prova de posse do e-mail numa AÇÃO SENSÍVEL. O desafio nasce
+ * ligado a UMA sessão, é de uso único e guarda só o hash do token. Não confundir com sessão
+ * recente: entrar há pouco não vale como prova.
+ */
+export const reauthChallenge = pgTable(
+  'reauth_challenge',
+  {
+    tokenHash: text().primaryKey(),
+    sessionId: text()
+      .notNull()
+      .references(() => session.id, { onDelete: 'cascade' }),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    usedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('reauth_challenge_session_idx').on(table.sessionId)],
+);
+
+/** A prova vale só para a sessão que a obteve e some junto dela (cascade). */
+export const reauthProof = pgTable('reauth_proof', {
+  sessionId: text()
+    .primaryKey()
+    .references(() => session.id, { onDelete: 'cascade' }),
+  verifiedAt: timestamp({ withTimezone: true }).notNull(),
+});

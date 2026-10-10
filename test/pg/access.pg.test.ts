@@ -26,7 +26,7 @@ import {
 } from '../../src/server/auth/access-store.ts';
 import { createAuth } from '../../src/server/auth/create-auth.ts';
 import { requireCapability } from '../../src/server/auth/authorization.ts';
-import { authRoutes } from '../../src/server/auth/routes.ts';
+import { apiApp } from '../helpers/api-app.ts';
 import type { AuthVars } from '../../src/server/auth/types.ts';
 import { createFakeEmailSender } from '../../src/server/email/fake.ts';
 import { createTestAuth } from '../helpers/auth.ts';
@@ -174,13 +174,14 @@ describe('matriz de acesso por requisição direta (nunca pela interface)', () =
   });
 
   it('GET /api/me/access devolve os papéis e as capabilities efetivas da própria pessoa', async () => {
-    const app = new Hono<{ Bindings: Env }>().route('/api', authRoutes());
+    const app = apiApp();
     const support = await makeSupport(['course.edit']);
     const response = await app.request('/api/me/access', { headers: support.headers }, env());
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       roles: ['student', 'support'],
       capabilities: ['course.edit', 'staff.read'],
+      recentAuth: false,
     });
     expect((await app.request('/api/me/access', {}, env())).status).toBe(401);
   });

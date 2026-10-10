@@ -36,6 +36,13 @@
       "when": 1791661060649,
       "tag": "0004_roles_grants_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791663807446,
+      "tag": "0005_reauth",
+      "breakpoints": true
     }
   ]
 }

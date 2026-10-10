@@ -6,7 +6,11 @@ import { createMiddleware } from 'hono/factory';
 import { openDatabase, type Database } from '../../db/client';
 import { hitThrottle } from '../../db/throttle';
 import { user } from '../../db/schema';
-import { linkConfirmSchema, linkRequestSchema } from '../../features/identity/email';
+import {
+  linkConfirmSchema,
+  linkRequestSchema,
+  reauthRequestSchema,
+} from '../../features/identity/email';
 import {
   decideDelivery,
   LINK_LIMITS,
@@ -20,6 +24,7 @@ import { createEmailSender } from '../email/factory';
 import { createAuth, type Auth } from './create-auth';
 import { getProfile, updateProfile } from './profile-store';
 import { isStaffEmail as lookupStaffEmail, isSuspended, loadAccess } from './access-store';
+import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
 import type { AuthVars } from './types';
 import { verifyTurnstile } from './turnstile';
 
@@ -109,20 +114,13 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     });
   });
 
-  const sameOrigin = createMiddleware<{ Bindings: Env; Variables: Vars }>(async (c, next) => {
-    if (c.req.header('origin') !== c.env.APP_BASE_URL) {
-      return c.json({ error: { code: 'bad_origin' } }, 403);
-    }
-    await next();
-  });
-
   // Os endpoints nativos do plugin NÃO são expostos: o de pedido pularia o Turnstile e os limites,
   // e o de verificação cria sessão em GET (scanners de e-mail o consumiriam).
   const notFound = (c: Context) => c.json({ error: { code: 'not_found' } }, 404);
   routes.on(['GET', 'HEAD', 'POST'], '/auth/sign-in/magic-link', notFound);
   routes.on(['GET', 'HEAD', 'POST'], '/auth/magic-link/verify', notFound);
 
-  routes.post('/auth/link/request', sameOrigin, async (c) => {
+  routes.post('/auth/link/request', async (c) => {
     c.header('Cache-Control', 'no-store');
     const parsed = linkRequestSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
@@ -181,7 +179,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     });
   });
 
-  routes.post('/auth/link/confirm', sameOrigin, withDatabase, async (c) => {
+  routes.post('/auth/link/confirm', withDatabase, async (c) => {
     const parsed = linkConfirmSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
     const verified = await c.var.auth.api.magicLinkVerify({
@@ -200,6 +198,65 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   });
 
   routes.use('/auth/*', withDatabase);
+  // Reautenticação recente: pedir o link (sempre para o e-mail da PRÓPRIA sessão) e confirmar nesta
+  // mesma sessão. O desafio é de uso único e ligado à sessão que o pediu.
+  routes.post('/auth/reauth/request', withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    if (!reauthRequestSchema.safeParse(await c.req.json().catch(() => null)).success) {
+      return c.json({ error: { code: 'invalid_request' } }, 400);
+    }
+    const byUser = await hitThrottle(
+      c.var.db,
+      `reauth:user:${await sha256Hex(session.user.id)}`,
+      limits.perEmail.windowSeconds,
+    );
+    const today = new Date().toISOString().slice(0, 10);
+    const global = await hitThrottle(c.var.db, `link:global:${today}`, 24 * 60 * 60);
+    if (byUser > limits.perEmail.max || global > limits.globalPerDay) {
+      return c.json({ error: { code: 'rate_limited' } }, 429);
+    }
+    const token = await createReauthChallenge(c.var.db, {
+      sessionId: session.session.id,
+      userId: session.user.id,
+    });
+    const sender = overrides.emailSender ?? createEmailSender(c.env);
+    c.var.defer(
+      sender
+        .send({
+          to: session.user.email,
+          template: 'reauth-link',
+          variables: {
+            LINK_URL: `${c.env.APP_BASE_URL}/entrar/confirmar#token=${encodeURIComponent(token)}&purpose=reauth`,
+          },
+          idempotencyKey: `reauth-link:${await sha256Hex(token)}`,
+        })
+        .catch((error: unknown) => {
+          console.error(
+            JSON.stringify({
+              event: 'reauth_delivery_failed',
+              error: error instanceof Error ? error.name : 'unknown',
+            }),
+          );
+        }),
+    );
+    return c.json(GENERIC_LINK_RESPONSE);
+  });
+
+  routes.post('/auth/reauth/confirm', withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const parsed = linkConfirmSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    const confirmed = await confirmReauth(c.var.db, {
+      sessionId: session.session.id,
+      token: parsed.data.token,
+    });
+    return confirmed
+      ? c.json({ status: 'ok' })
+      : c.json({ error: { code: 'invalid_or_expired_link' } }, 400);
+  });
+
   routes.on(['GET', 'POST'], '/auth/*', (c) => c.var.auth.handler(c.req.raw));
 
   routes.use('/me', withDatabase);
@@ -222,6 +279,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     return c.json({
       roles: ['student', ...access.roles],
       capabilities: effectiveCapabilities(access),
+      recentAuth: await hasRecentReauth(c.var.db, session.session.id),
     });
   });
 
@@ -234,7 +292,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     return found ? c.json(found) : c.json({ error: { code: 'profile_not_found' } }, 404);
   });
 
-  routes.patch('/me/profile', sameOrigin, withDatabase, async (c) => {
+  routes.patch('/me/profile', withDatabase, async (c) => {
     const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
     const parsed = profilePatchSchema.safeParse(await c.req.json().catch(() => null));

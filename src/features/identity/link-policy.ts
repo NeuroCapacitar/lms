@@ -43,7 +43,7 @@ export function decideDelivery(facts: DeliveryFacts): 'send' | 'skip' {
 export interface EmailMessage {
   to: string;
   /** Identificador do modelo hospedado (Resend Hosted Templates). */
-  template: 'magic-link';
+  template: 'magic-link' | 'reauth-link';
   variables: Record<string, string>;
   /** Evita envio duplicado em reenvio de rede (o mesmo valor devolve o mesmo resultado). */
   idempotencyKey: string;
