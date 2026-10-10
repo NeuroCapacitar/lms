@@ -54,8 +54,8 @@
     {
       "path": "AGENTS.md",
       "kind": "file",
-      "sha256": "f55d2c2a5641344e69fc788ad0c7f4eb56c7ae90a374af694861702a8ea98004",
-      "bytes": 10217
+      "sha256": "4e0329f206ce5874af97ecd319d01dd427cd2f6cee7c36f6a038e0b560208619",
+      "bytes": 10697
     },
     {
       "path": "CLAUDE.md",
@@ -72,8 +72,8 @@
     {
       "path": "CONTRIBUTING.md",
       "kind": "file",
-      "sha256": "8e08a124578e2892dff2b97818a825338c9b011d3be554b65a8e587ffcd71580",
-      "bytes": 1144
+      "sha256": "b15cad2bdc6a4ee8924c4389fed7e8b643ca9fc3059ac71f80753f009c4a6909",
+      "bytes": 1307
     },
     {
       "path": "DESIGN.md",
@@ -114,8 +114,8 @@
     {
       "path": "docs/README.md",
       "kind": "file",
-      "sha256": "8b7666ed32e5791cd4ae3c28146bc6239cbf3459aae76c80b60baacb20f62e80",
-      "bytes": 2024
+      "sha256": "6f552dfaf2d214053f147631bf8167be41c8066e25395205ddeae65d8a48ea68",
+      "bytes": 2111
     },
     {
       "path": "docs/adr/0001-reescrita-sem-ponte-opennext.md",
@@ -262,10 +262,16 @@
       "bytes": 2433
     },
     {
+      "path": "docs/adr/0025-clis-cloudflare-neon-so-perfil-neurocapacitar.md",
+      "kind": "file",
+      "sha256": "fb199a3e687948c90be59f2b5d75e4b835860c305b3ba4d16a804f867c49cc35",
+      "bytes": 1839
+    },
+    {
       "path": "docs/adr/README.md",
       "kind": "file",
-      "sha256": "a3aaf173196d18e6a82a7d2f1a0e6b332b601b92e5e43d51055c06f1dcb46bda",
-      "bytes": 1775
+      "sha256": "0da6ef8904bf439b11112bd2363c60d9cf381ccbb4dc08591de92d60a71fdbab",
+      "bytes": 1843
     },
     {
       "path": "docs/adr/TEMPLATE.md",
@@ -282,8 +288,8 @@
     {
       "path": "docs/decisions.md",
       "kind": "file",
-      "sha256": "87b7aa332d9f577a62f94e2c7be0116e8ac925256a5394ffbdf85eb7175904a8",
-      "bytes": 3558
+      "sha256": "5f8a2015e1aaf6c46bf13d37f10f80d9f7dac19faad1310504427ea930cdf53f",
+      "bytes": 3693
     },
     {
       "path": "docs/implementation/M0-01.md",
@@ -300,8 +306,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "9874ce418cbf0dfa6f164eb89c3af31a0190cde24e948cd7b94a431f530729a7",
-      "bytes": 7696
+      "sha256": "bdb8aecb79f3176c53e2744c57623c72afc5390f3e1c12ad4a1d9f4ce1f2ece4",
+      "bytes": 8025
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",
@@ -322,16 +328,22 @@
       "bytes": 3148
     },
     {
+      "path": "docs/operations/cli-profiles.md",
+      "kind": "file",
+      "sha256": "7eed134cbf0183ce02006a6ba8d73491ed6be0f80e4e1616f586d50a3cc6a990",
+      "bytes": 3894
+    },
+    {
       "path": "docs/operations/environment-and-release-safety.md",
       "kind": "file",
-      "sha256": "06cea779ab2f1a5b06ede8e4d48ded607d6c26be423745711accee3213686baa",
-      "bytes": 2585
+      "sha256": "d235bfc6a84be0173e1412be9bdcaa756d72b9f42ebedc26663a6cce3c5f6024",
+      "bytes": 3137
     },
     {
       "path": "docs/operations/onboarding.md",
       "kind": "file",
-      "sha256": "771c3ea70053f1243f7ca534ba8d359f4245500d1b67fe683a549aa15c0298e7",
-      "bytes": 2014
+      "sha256": "d0bd0d013b50dc3ef9fdf9ad855e61858b97be42a38d3edc74d4a67abbde2a01",
+      "bytes": 2308
     },
     {
       "path": "docs/review/brief-reescrita.md",
@@ -342,8 +354,8 @@
     {
       "path": "docs/review/registro-do-debate.md",
       "kind": "file",
-      "sha256": "827fe513c18c6e2292be3d2a8f8df59f5aa49ab5d476cffd2e65c862cea2351f",
-      "bytes": 22394
+      "sha256": "0137768a6f11de1354e5fcc0aa3b8ae927e2e99f41339c731504ed84d9a15eac",
+      "bytes": 22700
     },
     {
       "path": "docs/review/relatorio-final.md",
@@ -378,8 +390,8 @@
     {
       "path": "docs/tasks/M0-fundacao.md",
       "kind": "file",
-      "sha256": "15f07da8942320bb0c5a7fbac65821c0578bb6d5f8966ba1f6a2ee3a38f99f6d",
-      "bytes": 27352
+      "sha256": "6d849148c9058cd58cf9a2b53d2ebaf06b6e28b72400651169d619d03f34c59f",
+      "bytes": 27718
     },
     {
       "path": "docs/tasks/M1-identidade.md",
@@ -444,8 +456,8 @@
     {
       "path": "docs/tasks/README.md",
       "kind": "file",
-      "sha256": "c5c2c76d2eb411fb68da1b3d19c48180b56265b9c0550cfae3dec94b26195acf",
-      "bytes": 3243
+      "sha256": "03fc0d79bfc660c7b2725355486752b1b2671753861dded689822c043001440a",
+      "bytes": 3489
     },
     {
       "path": "index.html",

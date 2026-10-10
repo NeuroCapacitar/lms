@@ -28,6 +28,7 @@
 | [0022](adr/0022-toolchain-bun-ts-estavel.md) | Bun, TypeScript estável, libs delegadas | — |
 | [0023](adr/0023-observabilidade-backup-operacao.md) | Observabilidade, backup, operação | B15C (6 h/trimestral) |
 | [0024](adr/0024-processo-enxuto-um-dev-mais-ia.md) | Processo enxuto, regra de corte, spikes | B16 (pacote extenso) |
+| [0025](adr/0025-clis-cloudflare-neon-so-perfil-neurocapacitar.md) | CLIs Cloudflare e Neon só com o perfil `neurocapacitar` | — |
 
 ## Convenção
 

@@ -13,4 +13,5 @@ Repositório privado. Só colaboradores autorizados pelo responsável do produto
 
 - Segredos só em `.dev.vars` (ignorado pelo Git) ou nos segredos do ambiente. Nunca em código, testes, logs ou prompts.
 - Production nunca é publicada por commit ou CI; é manual, com preflight e autorização explícita.
+- CLIs da Cloudflare e da Neon: **só o perfil `neurocapacitar`**, sempre com `--profile neurocapacitar` (ver [cli-profiles.md](docs/operations/cli-profiles.md)).
 - Pré-requisitos: Bun 1.4.2 e Node 24.21.0 (ver `.node-version`).

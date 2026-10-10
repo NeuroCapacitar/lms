@@ -32,6 +32,7 @@
 - Banco: migrations SQL forward-only e revisadas à mão; role de migration separada; nada destrutivo em Staging ou Production.
 - Nunca registre credenciais, dados reais de alunos ou dumps de Production em código, testes, logs, prompts ou artifacts.
 - Production é sempre manual, com preflight e autorização explícita.
+- **CLIs Cloudflare e Neon: só o perfil `neurocapacitar`** (`neurocapacitar.projetos@gmail.com`), com `--profile neurocapacitar` em todo comando remoto e identidade verificada antes (ver [cli-profiles](../operations/cli-profiles.md), ADR 0025).
 
 ## Formato de cada tarefa
 

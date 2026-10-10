@@ -25,6 +25,7 @@
 - **Commit, push, merge, release, DNS, recursos pagos, segredos, migrations remotas e comandos financeiros exigem autorização explícita e contextual.** Código local não autoriza Production.
 - Preserve mudanças de terceiros. Antes de limpar, confira worktrees, stashes e untracked; nada de `git reset --hard`, `git clean`, force push ou apagar recursos como rotina.
 - Production é publicada **manualmente**. `main` e `staging` são persistentes; trabalho em branches de feature. O GitHub Free privado **não garante** branch protection nem environments: não confie neles como barreira.
+- **CLIs Cloudflare (`cf`, `wrangler`) e Neon (`neon`): só o perfil `neurocapacitar`** (`neurocapacitar.projetos@gmail.com`), com `--profile neurocapacitar` explícito em todo comando remoto e verificação de identidade antes do primeiro comando da sessão (`neon me`, `cf auth whoami`; nunca `wrangler whoami`). Outros perfis da máquina (`DEFAULT`, `default`, `junior-pessoal`) não pertencem ao projeto. Detalhes e proibições: `docs/operations/cli-profiles.md` (ADR 0025).
 - Nunca coloque PII real, dumps, tokens, chaves ou URLs secretas em código, testes, prompts, comentários, logs, screenshots ou CI.
 - Português do Brasil para produto e documentação; identificadores técnicos em inglês.
 

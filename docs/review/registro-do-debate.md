@@ -130,3 +130,4 @@ Riscos a levar ao relatório final: Resend Free (100/dia) compartilhado por link
 ## Pós-rodadas (2026-10-10)
 
 - Q49: repositório vNext criado na organização, `NeuroCapacitar/lms` (privado, GitHub Free) — opção B realizada. Código ainda não existe; só documentação foi sincronizada.
+- Regra de contas (2026-10-10, instrução do responsável): CLIs da Cloudflare (`cf`, `wrangler`) e da Neon (`neon`) só com o perfil `neurocapacitar` (`neurocapacitar.projetos@gmail.com`), sempre com `--profile neurocapacitar` e identidade verificada antes. ADR 0025 e `docs/operations/cli-profiles.md`.
