@@ -193,7 +193,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Fora do escopo / cuidados:** sandbox apenas; nenhum dado real; token do webhook só em secret; não conceder acesso a partir de `CHECKOUT_PAID`.
 
 ### M0-15 — Spike 6: Browser Run gerando PDF com Lexend Deca
-**Dependências:** M0-03 · **Estado:** `not_started` · **Timebox:** 1–2 dias · **Deve vir antes de:** M7
+**Dependências:** M0-03 · **Estado:** `passou` ([ADR 0030](../adr/0030-spike-m0-15-browser-run-pdf.md)) · **Timebox:** 1–2 dias · **Deve vir antes de:** M7
 **Objetivo:** provar que um HTML/CSS A4 controlado vira PDF fiel, com a fonte da marca, via binding do Browser Run.
 **Passos:**
 1. Binding `BROWSER` e `quickAction("pdf", …)` num Worker descartável, com HTML próprio (sem links externos) e Lexend Deca embutida.

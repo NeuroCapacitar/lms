@@ -1,0 +1,35 @@
+import { createServer } from 'node:http';
+import { readFileSync, existsSync } from 'node:fs';
+import { chromium } from 'file:///D:/2%20-%20Dev/0%20-%20Projects/lms/node_modules/playwright-core/index.mjs';
+
+const pdfFile = process.argv[2] ?? 'cert.pdf';
+const out = process.argv[3] ?? 'cert.png';
+const types = { '.mjs': 'text/javascript', '.js': 'text/javascript', '.html': 'text/html', '.pdf': 'application/pdf' };
+const server = createServer((req, res) => {
+  const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+  if (path === '/') { res.writeHead(200, { 'content-type': 'text/html' }); res.end('<!doctype html><body style="margin:0"><canvas id=c></canvas>'); return; }
+  const file = path.startsWith('/pdf/') ? pdfFile : '.' + path;
+  if (!existsSync(file)) { res.writeHead(404); res.end(); return; }
+  const ext = file.slice(file.lastIndexOf('.'));
+  res.writeHead(200, { 'content-type': types[ext] ?? 'application/octet-stream' });
+  res.end(readFileSync(file));
+});
+await new Promise((r) => server.listen(9911, '127.0.0.1', r));
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+await page.goto('http://127.0.0.1:9911/');
+await page.evaluate(async () => {
+  const pdfjs = await import('/node_modules/pdfjs-dist/build/pdf.min.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.min.mjs';
+  const doc = await pdfjs.getDocument('/pdf/x.pdf').promise;
+  const p = await doc.getPage(1);
+  const vp = p.getViewport({ scale: 1.4 });
+  const c = document.getElementById('c');
+  c.width = vp.width; c.height = vp.height;
+  await p.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+});
+await page.locator('#c').screenshot({ path: out });
+await browser.close();
+server.close();
+console.log('ok', out);
+process.exit(0);

@@ -1,0 +1,135 @@
+import { Hono } from 'hono';
+
+import { LEXEND_DECA_WOFF2_BASE64 } from './font';
+
+interface Bindings {
+  BROWSER: { quickAction(action: string, options: Record<string, unknown>): Promise<Response> };
+  SPIKE_KEY: string;
+}
+
+/** Escapa texto de usuário antes de entrar no HTML do certificado. */
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+/** HTML/CSS A4 paisagem, autocontido: sem links externos, fonte embutida (data URI). */
+function certificateHtml(fields: { name: string; course: string; date: string; code: string }, raw = false): string {
+  const e = raw ? (v: string) => v : escapeHtml;
+  return `<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Certificado</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:">
+<style>
+@font-face { font-family: 'Lexend Deca'; font-weight: 100 900; font-style: normal;
+  src: url(data:font/woff2;base64,${LEXEND_DECA_WOFF2_BASE64}) format('woff2'); }
+@page { size: A4 landscape; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-variant-ligatures: none; font-feature-settings: 'liga' 0, 'clig' 0; width: 297mm; height: 210mm; position: relative; font-family: 'Lexend Deca', sans-serif; color: #1f3d40; background: #f1e8da; }
+.frame { position: absolute; inset: 10mm; border: 1.2mm solid #326c71; }
+.f { position: absolute; margin: 0; white-space: nowrap; max-width: 257mm; overflow: hidden; text-overflow: ellipsis; }
+body { overflow: hidden; }
+#titulo { left: 20mm; top: 30mm; font-size: 30pt; font-weight: 700; }
+#nome { left: 20mm; top: 80mm; font-size: 26pt; font-weight: 500; }
+#curso { left: 20mm; top: 105mm; font-size: 16pt; font-weight: 300; }
+#data { left: 20mm; top: 175mm; font-size: 11pt; }
+#codigo { left: 150mm; top: 175mm; font-size: 11pt; font-weight: 600; }
+</style></head><body>
+<div class="frame"></div>
+<p class="f" id="titulo">Certificado de Conclusão</p>
+<p class="f" id="nome">${e(fields.name)}</p>
+<p class="f" id="curso">concluiu o curso ${e(fields.course)}</p>
+<p class="f" id="data">${e(fields.date)}</p>
+<p class="f" id="codigo">Código ${e(fields.code)}</p>
+</body></html>`;
+}
+
+async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+const app = new Hono<{ Bindings: Bindings }>();
+
+app.get('/ping', (c) => c.text('pong'));
+
+// Contador de acessos de rede feitos pela página do PDF: o log (Workers Logs) prova se houve busca externa.
+const PX = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='), (ch) => ch.charCodeAt(0));
+app.get('/px', (c) => {
+  console.log('PIXEL_HIT', c.req.query('v'));
+  return new Response(PX, { headers: { 'content-type': 'image/png' } });
+});
+
+app.use('/pdf/*', async (c, next) => {
+  if (c.req.header('x-spike-key') !== c.env.SPIKE_KEY) return c.json({ error: 'forbidden' }, 403);
+  await next();
+});
+
+const BLOCK_EXTERNAL = { rejectRequestPattern: ['^https?://.*'] };
+
+/** Variantes do teste. Devolve o PDF e, em cabeçalhos, tamanho, SHA-256 e tempos. */
+app.post('/pdf/:variant', async (c) => {
+  const variant = c.req.param('variant');
+  const body = (await c.req.json().catch(() => ({}))) as { name?: string; course?: string };
+  const fields = {
+    name: body.name ?? 'João da Conceição Ávila Ñandú',
+    course: body.course ?? 'Neurociência & Reabilitação "Avançada" <módulo 1>',
+    date: '10 de outubro de 2026',
+    code: 'NC-7F3K-92QX',
+  };
+
+  let html = certificateHtml(fields);
+  let extra: Record<string, unknown> = { ...BLOCK_EXTERNAL };
+  let pdfOptions: Record<string, unknown> = { preferCSSPageSize: true, printBackground: true };
+
+  if (variant === 'unescaped') {
+    // Prova de defesa em profundidade: mesmo SEM escapar, a página não pode buscar nada externo.
+    html = certificateHtml(
+      { ...fields, name: `<img id="x" src="${new URL(c.req.url).origin}/px?v=bloqueado"><script>document.title="EXECUTOU"</script>MALICIOSO` },
+      true,
+    );
+  } else if (variant === 'external-allowed') {
+    // Controle negativo: sem o bloqueio, uma imagem externa seria buscada.
+    html = certificateHtml({ ...fields, name: `<img src="${new URL(c.req.url).origin}/px?v=permitido">CONTROLE` }, true);
+    extra = {};
+  } else if (variant === 'timeout') {
+    extra = { ...extra, gotoOptions: { timeout: 1 } };
+  } else if (variant === 'huge') {
+    html = certificateHtml({ ...fields, name: 'X'.repeat(8_000_000) });
+  } else if (variant === 'nojs') {
+    html = certificateHtml({ ...fields, name: '<script>document.title="EXECUTOU"</script>SEM-JS' }, true);
+    extra = { ...extra, setJavaScriptEnabled: false };
+  } else if (variant === 'badformat') {
+    pdfOptions = { format: 'a99' };
+  } else if (variant === 'a4-portrait') {
+    pdfOptions = { format: 'a4', landscape: false, printBackground: true };
+  }
+
+  const started = Date.now();
+  let response: Response;
+  try {
+    response = await c.env.BROWSER.quickAction('pdf', { html, pdfOptions, ...extra });
+  } catch (error) {
+    return c.json({ stage: 'quickAction', error: error instanceof Error ? `${error.name}: ${error.message}` : String(error), ms: Date.now() - started }, 502);
+  }
+  const bytes = await response.arrayBuffer();
+  const ms = Date.now() - started;
+  if (!response.ok) {
+    return c.json({ stage: 'response', status: response.status, body: new TextDecoder().decode(bytes).slice(0, 400), ms }, 502);
+  }
+  const sha = await sha256Hex(bytes);
+  return new Response(bytes, {
+    headers: {
+      'content-type': response.headers.get('content-type') ?? 'application/pdf',
+      'x-sha256': sha,
+      'x-bytes': String(bytes.byteLength),
+      'x-ms': String(ms),
+    },
+  });
+});
+
+export default app;

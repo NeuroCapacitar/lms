@@ -33,6 +33,7 @@
 | [0027](adr/0027-spike-m0-12-regiao-neon-e-orcamento-de-compute.md) | Spike M0-12 passou: Neon em São Paulo, cron de 30 min, orçamento de CU-h | confirma Q43 |
 | [0028](adr/0028-spike-m0-18-evlog-e-sentry.md) | Spike M0-18 passou: evlog e Sentry 11 com redaction e scrubbing obrigatórios; Web Analytics condicional | refina 0023 |
 | [0029](adr/0029-spike-m0-10-better-auth-magic-link.md) | Spike M0-10 passou: Better Auth 1.7.7, link com token no fragmento e confirmação por POST, Workers Paid indispensável | valida 0007 |
+| [0030](adr/0030-spike-m0-15-browser-run-pdf.md) | Spike M0-15 passou: PDF A4 fiel pelo Browser Run; JavaScript da página executa, então escape + CSP + bloqueio de rede são obrigatórios; hash é do arquivo guardado | valida 0017 |
 
 ## Convenção
 
