@@ -1,0 +1,23 @@
+{
+  "name": "hub",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NeuroCapacitar Hub vNext (LMS). Fundação em construção; ver docs/tasks/M0-fundacao.md.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --deny-warnings",
+    "format:check": "oxfmt --check",
+    "verify:quick": "bun run typecheck && bun run lint && bun run format:check"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "packageManager": "bun@1.4.2"
+}

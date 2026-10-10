@@ -29,3 +29,14 @@ React 19 SPA + Vite/Cloudflare Vite Plugin e Hono no mesmo Worker; PostgreSQL 18
 ## Instruções para agentes
 
 `AGENTS.md` é a fonte única; `CLAUDE.md` importa `AGENTS.md`; o Copilot usa uma ponte. Ver [topologia](docs/operations/agent-instructions.md). Validar com `node scripts/check-agent-instructions.mjs`.
+
+## Comandos verificados (M0-01)
+
+Pré-requisitos: Bun 1.4.2 e Node 24.21.0 (`.node-version`).
+
+```bash
+bun install --frozen-lockfile
+bun run verify:quick   # typecheck (TypeScript 7.0.2) + oxlint --deny-warnings + oxfmt --check
+```
+
+Verificados num checkout limpo em 2026-10-10 (ver [STATUS](docs/implementation/STATUS.md)). `dev`, `test` e `verify` ainda não existem.
