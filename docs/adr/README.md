@@ -1,6 +1,6 @@
 # Architectural Decision Records (ADRs)
 
-**Estado:** 25 ADRs vigentes em 2026-10-10, uma por decisão difícil de reverter. O índice com o que cada uma substitui está em [../decisions.md](../decisions.md); o histórico do debate, em [../review/registro-do-debate.md](../review/registro-do-debate.md).
+**Estado:** 26 ADRs vigentes em 2026-10-10, uma por decisão difícil de reverter. O índice com o que cada uma substitui está em [../decisions.md](../decisions.md); o histórico do debate, em [../review/registro-do-debate.md](../review/registro-do-debate.md).
 
 Crie uma ADR **somente** para decisão arquitetural relevante e cara de reverter; não uma por campo, componente ou script. Formato em [TEMPLATE.md](TEMPLATE.md). Uma mudança aprovada marca a anterior como `superseded` e aponta para a nova: nunca duas escolhas opostas `accepted`.
 
@@ -31,5 +31,6 @@ Crie uma ADR **somente** para decisão arquitetural relevante e cara de reverter
 | 0023 | Observabilidade, backup e operação |
 | 0024 | Processo enxuto e regra de corte |
 | 0025 | CLIs Cloudflare e Neon só com o perfil `neurocapacitar` |
+| 0026 | Spike M0-11: Bun, plugin de testes e dependency-cruiser |
 
-Cada spike do M0 que concluir terá sua ADR (numeração seguinte, 0026 em diante) com o resultado "passou" ou "reabrir decisão".
+Cada spike do M0 que concluir terá sua ADR (numeração seguinte, 0027 em diante) com o resultado "passou" ou "reabrir decisão".

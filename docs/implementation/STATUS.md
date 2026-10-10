@@ -1,11 +1,11 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 e M0-02 `verified` localmente; ainda sem CI)  
+**Estado:** M0 em andamento (M0-01 e M0-02 `verified` localmente; M0-11 spike passou; ainda sem CI)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-11 (spike Bun/Windows, local); M0-12 e M0-03 só depois do `wrangler login --profile neurocapacitar` (não autorizadas)  
+**Próxima tarefa recomendada:** M0-12 (spike de latência do Neon; o perfil `neurocapacitar` da Neon já funciona) e, depois do `wrangler login --profile neurocapacitar`, M0-03 (não autorizadas)  
 **Task em execução:** nenhuma  
-**Última tarefa comprovadamente verificada:** M0-02 (2026-10-10, local)
+**Última tarefa comprovadamente verificada:** M0-11 (spike, 2026-10-10)
 
 > Nunca marcar tarefa ou marco como concluído com base em decisão, texto de plano, instrução para IA ou intenção. Só evidências reais de arquivos, comandos, testes, SHA e homologação justificam o status.
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 e M0-02 `verified` localmente (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 e M0-02 `verified` localmente; M0-11 passou (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,14 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-11 (spike 2) — passou (2026-10-10)
+
+- **Entrega:** [ADR 0026](../adr/0026-spike-m0-11-bun-vitest-dependency-cruiser.md). Código do spike na branch descartável `spike/m0-11` (**nunca mesclar**); só a ADR entra na `main`.
+- **Matriz testada:** Bun 1.4.2, Node 24.21.0, TypeScript 7.0.2, Vitest 5.0.3, `@cloudflare/vitest-plugin` 1.4.0, Wrangler 4.149.0, dependency-cruiser 18.5.0 + `@swc/core` 1.16.13, oxlint 1.87.0, oxfmt 0.72.0. Windows 11 e GitHub Actions `ubuntu-latest`.
+- **Resultado:** frozen install e `verify:quick` passaram nos dois sistemas; `bun.lock` regenerado do zero no Windows é idêntico; Vitest no workerd passou com Node (via `bunx`), com runtime Bun e com Node direto (5/5 estável no Windows; falha injetada falha); dependency-cruiser sob TS 7 detecta o import proibido (exit 2) e passa em árvore limpa (exit 0), com aviso não fatal.
+- **Lacuna aberta:** a máquina não tem Docker, WSL nem PostgreSQL local; o Postgres 18 local do M0-06 não foi testado (opções na ADR 0026).
+- **Não usado:** Cloudflare e Neon (nenhum recurso remoto).
 
 ### M0-02 — verified localmente (2026-10-10; o CI só chega no M0-05)
 
