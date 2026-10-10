@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { healthProbe } from '../../db/schema';
+void healthProbe;
 
 export const Route = createFileRoute('/sobre')({ component: Sobre });
 
