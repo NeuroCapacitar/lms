@@ -5,18 +5,11 @@ import type { Database } from '../../db/client';
 import { reauthChallenge, reauthProof } from '../../db/schema';
 import { LINK_LIMITS } from '../../features/identity/link-policy';
 import { sha256Hex } from '../crypto';
+import { randomToken } from './token';
 import type { AuthVars } from './types';
 
 /** Janela da prova de reautenticação (proposta: 10 minutos). */
 const REAUTH_MAX_MINUTES = 10;
-
-function randomToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replaceAll('=', '');
-}
 
 /** Cria um desafio ligado A UMA sessão. Devolve o token em texto; o banco guarda só o hash. */
 export async function createReauthChallenge(

@@ -47,3 +47,16 @@ IDs dos projetos: `neon projects list --org-id <org> --profile neurocapacitar`. 
 Cache de query **desligado** (confirmado por `wrangler hyperdrive get`); conexão direta; um cliente `pg` por requisição, fechado no fim (`src/db/client.ts`). **Proibidos:** advisory locks (`pg_advisory_lock`), `LISTEN/NOTIFY` e `PREPARE` em SQL. Fencing por lease em linha (`FOR UPDATE SKIP LOCKED`).
 
 `GET /api/health/ready` faz `SELECT 1` e **acorda o Neon Free**: a proteção do endpoint (limite de taxa ou acesso restrito) é pendência do M4/M9.
+
+## Primeiro Admin (M1-04)
+
+Execução **manual** do responsável, só em dev e staging neste marco (Production é recusada pelo script). Usa a conexão direta com a role de migração e as mesmas travas de host de `scripts/db/guards.ts`.
+
+```bash
+# ensaio: mostra o alvo e não grava nada
+DATABASE_URL_MIGRATION=... bun run admin:bootstrap staging --email pessoa@exemplo.com
+# aplica
+DATABASE_URL_MIGRATION=... bun run admin:bootstrap staging --email pessoa@exemplo.com --apply
+```
+
+Recusa se já existir qualquer Admin. A pessoa é criada sem senha e entra por link de acesso em `/entrar`; o primeiro login confirma o e-mail. Para Staging use o perfil `neurocapacitar` (`--role-name neondb_owner`) como nas migrations e **só com autorização explícita**.

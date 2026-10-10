@@ -62,3 +62,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `e2e/security.spec.ts` confere os cabeçalhos de `public/_headers` e **zero violações de CSP** (`securitypolicyviolation`) em cada tela; tela nova entra na lista. O Turnstile e o Sentry são simulados.
 - Os testes negativos de CSRF no navegador não enviam corpo: o proxy do `vite preview` falha de forma intermitente quando a resposta chega antes de o corpo ser lido (só local).
 - Resposta `no-store` cujo corpo a interface não lê deixa a requisição aberta no Chromium e trava `waitForLoadState('networkidle')`: leia ou cancele o corpo.
+
+## Convite de Staff e bootstrap (M1-04)
+
+- `test/pg/staff-invitation.pg.test.ts` usa `apiApp()` e monta o Admin com **prova de reautenticação inserida direto** em `reauth_proof` (o fluxo do link já tem teste próprio em `reauth.pg.test.ts`). Aceite de ponta a ponta exige um usuário com e-mail verificado e uma sessão do próprio convidado.
+- Testes de corrida precisam de **conexões separadas** (`openDatabase` por chamada): `tools.db` é uma conexão só e serializaria as duas transações, escondendo a corrida.
+- O Drizzle embrulha o erro do `pg`: o nome da constraint violada fica em `error.cause` (ver `expectViolation`).
+- `e2e/convite.spec.ts` simula a API; o aceite real fica coberto pelos testes em Postgres.

@@ -25,6 +25,7 @@ import { createAuth, type Auth } from './create-auth';
 import { getProfile, updateProfile } from './profile-store';
 import { isStaffEmail as lookupStaffEmail, isSuspended, loadAccess } from './access-store';
 import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
+import { staffRoutes } from './staff-routes';
 import type { AuthVars } from './types';
 import { verifyTurnstile } from './turnstile';
 
@@ -256,6 +257,16 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       ? c.json({ status: 'ok' })
       : c.json({ error: { code: 'invalid_or_expired_link' } }, 400);
   });
+
+  // Convite de Staff (M1-04): /api/staff/invitations/*.
+  routes.route(
+    '/staff',
+    staffRoutes({
+      withDatabase,
+      emailSender: (c) => overrides.emailSender ?? createEmailSender(c.env),
+      globalPerDay: limits.globalPerDay,
+    }),
+  );
 
   routes.on(['GET', 'POST'], '/auth/*', (c) => c.var.auth.handler(c.req.raw));
 

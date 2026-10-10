@@ -28,12 +28,14 @@ export class TargetNotSupportError extends Error {
   }
 }
 
-type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
+export type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 interface Change {
   /** Quem fez a mudança. `null` = o sistema (ex.: criação do primeiro Admin pelo script de bootstrap). */
   actorId: string | null;
   targetId: string;
+  /** Contexto extra da auditoria (ex.: `via: 'invitation'`). Nunca e-mail nem segredo. */
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -87,6 +89,26 @@ export async function isStaffEmail(db: Database, email: string): Promise<boolean
   return rows.length > 0;
 }
 
+/** Linha de auditoria na transação do chamador (append-only; só IDs e dados mínimos, sem e-mail). */
+export async function auditEvent(
+  tx: Tx,
+  entry: {
+    actorId: string | null;
+    action: string;
+    targetType: string;
+    targetId: string;
+    details?: Record<string, unknown>;
+  },
+) {
+  await tx.insert(auditLog).values({
+    actorId: entry.actorId,
+    action: entry.action,
+    targetType: entry.targetType,
+    targetId: entry.targetId,
+    details: entry.details ?? {},
+  });
+}
+
 async function audit(
   tx: Tx,
   entry: {
@@ -96,13 +118,7 @@ async function audit(
     details?: Record<string, unknown>;
   },
 ) {
-  await tx.insert(auditLog).values({
-    actorId: entry.actorId,
-    action: entry.action,
-    targetType: 'user',
-    targetId: entry.targetId,
-    details: entry.details ?? {},
-  });
+  await auditEvent(tx, { ...entry, targetType: 'user' });
 }
 
 /** Mudança de papel, grant ou suspensão encerra as sessões da pessoa (ADR 0008). */
@@ -134,32 +150,38 @@ async function lockActiveAdmins(tx: Tx): Promise<string[]> {
   return ids.filter((id) => !suspendedIds.has(id));
 }
 
+/**
+ * Concede o papel DENTRO da transação do chamador (convite e bootstrap compõem isto com outras
+ * escritas). Devolve `false` se a pessoa já o tinha (nada muda, nada é auditado).
+ */
+export async function grantRoleIn(tx: Tx, change: Change & { role: Role }): Promise<boolean> {
+  const [existing] = await tx
+    .select({ id: userRole.id })
+    .from(userRole)
+    .where(
+      and(
+        eq(userRole.userId, change.targetId),
+        eq(userRole.role, change.role),
+        isNull(userRole.revokedAt),
+      ),
+    );
+  if (existing) return false;
+  await tx
+    .insert(userRole)
+    .values({ userId: change.targetId, role: change.role, grantedBy: change.actorId });
+  await audit(tx, {
+    actorId: change.actorId,
+    action: 'role.grant',
+    targetId: change.targetId,
+    details: { role: change.role, ...change.details },
+  });
+  await endSessions(tx, change.targetId);
+  return true;
+}
+
 /** Concede o papel. Devolve `false` se a pessoa já o tinha (nada muda, nada é auditado). */
 export async function grantRole(db: Database, change: Change & { role: Role }): Promise<boolean> {
-  return db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select({ id: userRole.id })
-      .from(userRole)
-      .where(
-        and(
-          eq(userRole.userId, change.targetId),
-          eq(userRole.role, change.role),
-          isNull(userRole.revokedAt),
-        ),
-      );
-    if (existing) return false;
-    await tx
-      .insert(userRole)
-      .values({ userId: change.targetId, role: change.role, grantedBy: change.actorId });
-    await audit(tx, {
-      actorId: change.actorId,
-      action: 'role.grant',
-      targetId: change.targetId,
-      details: { role: change.role },
-    });
-    await endSessions(tx, change.targetId);
-    return true;
-  });
+  return db.transaction((tx) => grantRoleIn(tx, change));
 }
 
 /**
@@ -214,48 +236,54 @@ export async function revokeRole(db: Database, change: Change & { role: Role }):
   });
 }
 
+/** Concede uma capability delegável a quem é Suporte, na transação do chamador. */
+export async function grantCapabilityIn(
+  tx: Tx,
+  change: Change & { capability: string },
+): Promise<boolean> {
+  if (!isDelegable(change.capability)) throw new NotDelegableError();
+  const capability = change.capability;
+  const [support] = await tx
+    .select({ id: userRole.id })
+    .from(userRole)
+    .where(
+      and(
+        eq(userRole.userId, change.targetId),
+        eq(userRole.role, 'support'),
+        isNull(userRole.revokedAt),
+      ),
+    );
+  if (!support) throw new TargetNotSupportError();
+  const [existing] = await tx
+    .select({ id: staffGrant.id })
+    .from(staffGrant)
+    .where(
+      and(
+        eq(staffGrant.userId, change.targetId),
+        eq(staffGrant.capability, capability),
+        isNull(staffGrant.revokedAt),
+      ),
+    );
+  if (existing) return false;
+  await tx
+    .insert(staffGrant)
+    .values({ userId: change.targetId, capability, grantedBy: change.actorId });
+  await audit(tx, {
+    actorId: change.actorId,
+    action: 'grant.add',
+    targetId: change.targetId,
+    details: { capability, ...change.details },
+  });
+  await endSessions(tx, change.targetId);
+  return true;
+}
+
 /** Concede uma capability delegável a quem é Suporte. Só delegáveis: o banco também recusa. */
 export async function grantCapability(
   db: Database,
   change: Change & { capability: string },
 ): Promise<boolean> {
-  if (!isDelegable(change.capability)) throw new NotDelegableError();
-  const capability = change.capability;
-  return db.transaction(async (tx) => {
-    const [support] = await tx
-      .select({ id: userRole.id })
-      .from(userRole)
-      .where(
-        and(
-          eq(userRole.userId, change.targetId),
-          eq(userRole.role, 'support'),
-          isNull(userRole.revokedAt),
-        ),
-      );
-    if (!support) throw new TargetNotSupportError();
-    const [existing] = await tx
-      .select({ id: staffGrant.id })
-      .from(staffGrant)
-      .where(
-        and(
-          eq(staffGrant.userId, change.targetId),
-          eq(staffGrant.capability, capability),
-          isNull(staffGrant.revokedAt),
-        ),
-      );
-    if (existing) return false;
-    await tx
-      .insert(staffGrant)
-      .values({ userId: change.targetId, capability, grantedBy: change.actorId });
-    await audit(tx, {
-      actorId: change.actorId,
-      action: 'grant.add',
-      targetId: change.targetId,
-      details: { capability },
-    });
-    await endSessions(tx, change.targetId);
-    return true;
-  });
+  return db.transaction((tx) => grantCapabilityIn(tx, change));
 }
 
 export async function revokeCapability(

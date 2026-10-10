@@ -26,6 +26,10 @@
     "test/pg/link.pg.test.ts",
     "test/pg/profile.pg.test.ts",
     "test/pg/access.pg.test.ts",
-    "test/pg/reauth.pg.test.ts"
+    "test/pg/reauth.pg.test.ts",
+    "scripts/admin-bootstrap.ts",
+    "scripts/db/guards.ts",
+    "test/pg/staff-invitation.pg.test.ts",
+    "test/pg/bootstrap.pg.test.ts"
   ]
 }

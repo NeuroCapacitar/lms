@@ -14,6 +14,7 @@ export interface ResendConfig {
 const SUBJECTS: Record<EmailMessage['template'], string> = {
   'magic-link': 'Seu link de acesso ao NeuroCapacitar',
   'reauth-link': 'Confirme sua identidade no NeuroCapacitar',
+  'staff-invitation': 'Você foi convidado para a equipe do NeuroCapacitar',
 };
 
 /**

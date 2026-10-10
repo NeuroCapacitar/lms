@@ -1,0 +1,16 @@
+title = "NeuroCapacitar Hub vNext"
+
+[extend]
+useDefault = true
+
+# IDs dos modelos hospedados do Resend (RESEND_TEMPLATE_*) são UUIDs públicos: identificam o modelo,
+# não autenticam nada. Vivem em `vars` do wrangler.jsonc e nos tipos gerados a partir dele. A regra
+# `generic-api-key` os confunde com chave. A exceção vale só nesses dois arquivos e só para variáveis
+# com esse prefixo (as duas condições juntas): uma chave de verdade nunca passa por aqui.
+[[allowlists]]
+description = "IDs públicos de modelo de e-mail (RESEND_TEMPLATE_*)"
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^(wrangler\.jsonc|worker-configuration\.d\.ts)$''']
+regexTarget = "match"
+regexes = ['''RESEND_TEMPLATE_[A-Z_]+''']

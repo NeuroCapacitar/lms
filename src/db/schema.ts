@@ -7,8 +7,10 @@ import {
   pgTable,
   text,
   jsonb,
+  primaryKey,
   timestamp,
   uniqueIndex,
+  uuid,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -256,3 +258,56 @@ export const reauthProof = pgTable('reauth_proof', {
     .references(() => session.id, { onDelete: 'cascade' }),
   verifiedAt: timestamp({ withTimezone: true }).notNull(),
 });
+
+/**
+ * Convite de Staff (M1-04): uso único, expira (7 dias), revogável e reenviável. Guarda só o HASH do
+ * token. `email` é sempre minúsculo. Pendente = `status = 'pending'`; vencido é calculado por
+ * `expires_at` (sem job). Só o papel `support` é convidável: Admin nasce do bootstrap.
+ */
+export const staffInvitation = pgTable(
+  'staff_invitation',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    email: text().notNull(),
+    role: text().notNull().default('support'),
+    tokenHash: text().notNull().unique(),
+    status: text().notNull().default('pending'),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    invitedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    acceptedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    acceptedAt: timestamp({ withTimezone: true }),
+    revokedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    revokedAt: timestamp({ withTimezone: true }),
+    lastSentAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    ...stamps,
+  },
+  (table) => [
+    check('staff_invitation_role_check', sql`${table.role} = 'support'`),
+    check(
+      'staff_invitation_status_check',
+      sql`${table.status} in ('pending', 'accepted', 'revoked')`,
+    ),
+    check('staff_invitation_email_lower_check', sql`${table.email} = lower(${table.email})`),
+    uniqueIndex('staff_invitation_pending_email_idx')
+      .on(table.email)
+      .where(sql`${table.status} = 'pending'`),
+  ],
+);
+
+/** Grants iniciais do convite (mesma lista do CHECK de `staff_grant`: só delegáveis). */
+export const staffInvitationGrant = pgTable(
+  'staff_invitation_grant',
+  {
+    invitationId: uuid()
+      .notNull()
+      .references(() => staffInvitation.id, { onDelete: 'cascade' }),
+    capability: text().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.invitationId, table.capability] }),
+    check(
+      'staff_invitation_grant_capability_check',
+      sql`${table.capability} in ('course.edit', 'access.grant', 'enrollment.support_edit', 'refund.execute', 'finance.review', 'finance.view', 'certificate.reissue', 'discussion.moderate', 'help.edit', 'audit.view', 'ops.queue')`,
+    ),
+  ],
+);
