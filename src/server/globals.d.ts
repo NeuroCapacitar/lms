@@ -6,4 +6,6 @@ declare const __APP_ENV__: string;
 interface Env {
   /** DSN do projeto Sentry do Worker. Segredo por ambiente; ausente = Sentry desligado. */
   SENTRY_DSN?: string;
+  /** Segredo do Better Auth (ADR 0029). Obrigatório; Worker Secret por ambiente. */
+  BETTER_AUTH_SECRET: string;
 }

@@ -96,6 +96,21 @@ describe('checkArtifact', () => {
     ).toMatch(/variável não permitida/);
   });
 
+  it('rejeita APP_BASE_URL com http, localhost, curinga ou caminho em ambiente publicado', () => {
+    const allowed: ExpectedEnvironment = { ...staging, vars: ['APP_BASE_URL'] };
+    const withUrl = (url: string) =>
+      checkArtifact(artifact({ vars: { APP_BASE_URL: url } }), allowed, 'staging');
+    expect(withUrl('https://hub-staging.example.dev')).toEqual([]);
+    for (const bad of [
+      'http://hub-staging.example.dev',
+      'https://localhost:5173',
+      'https://*.example.dev',
+      'https://a.example.dev/caminho',
+    ]) {
+      expect(withUrl(bad).join('\n'), bad).toMatch(/APP_BASE_URL inválida/);
+    }
+  });
+
   it('rejeita entrada que não é objeto', () => {
     expect(checkArtifact(null, staging, 'staging')).toEqual([
       'artefato inválido: não é um objeto JSON',

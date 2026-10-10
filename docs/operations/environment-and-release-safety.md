@@ -36,7 +36,8 @@ Cloudflare (`cf`, `wrangler`) e Neon (`neon`) só podem ser usados com o perfil 
 
 | Nome (proposto) | Onde vive | Dono | Tarefa |
 |---|---|---|---|
-| `BETTER_AUTH_SECRET` | Worker Secret, por ambiente | responsável | M1-01 |
+| `BETTER_AUTH_SECRET` | Worker Secret, por ambiente (Development: `.env` local, ignorado pelo Git; Staging e Production: ainda não criado) | responsável | M1-01 |
+| `APP_BASE_URL` | `vars` do `wrangler.jsonc` por ambiente (valor público; única origem confiável do Better Auth; Staging e Production só https sem localhost, conferido pelo preflight) | responsável | M1-01 |
 | `TURNSTILE_SECRET_KEY` | Worker Secret, por ambiente | responsável (conta Cloudflare do projeto) | M1-06 |
 | `RESEND_API_KEY` | Worker Secret, por ambiente (Production fora do CI comum) | responsável | M4-04 |
 | `RESEND_WEBHOOK_SECRET` | Worker Secret, por ambiente | responsável | M4-07 |

@@ -30,6 +30,8 @@ export function testDatabaseUrl(): string {
 
 export interface TestSchema {
   readonly name: string;
+  /** URL de conexão com search_path no schema isolado (para código que recebe só a URL). */
+  readonly connectionString: string;
   /** Conexão com `search_path` no schema isolado deste arquivo de teste. */
   client(): Promise<pg.Client>;
   pool(max?: number): pg.Pool;
@@ -66,8 +68,11 @@ export async function createTestSchema(): Promise<TestSchema> {
   }
 
   const open: Array<{ end(): Promise<void> }> = [];
+  const scoped = new URL(url);
+  scoped.searchParams.set('options', options);
   return {
     name,
+    connectionString: scoped.toString(),
     async client() {
       const client = new pg.Client({ connectionString: url, options });
       await client.connect();

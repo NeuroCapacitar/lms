@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "src/server/**/*.ts",
+    "src/db/**/*.ts",
+    "src/features/**/*.ts",
+    "worker-configuration.d.ts",
+    "scripts/environments.ts",
+    "test/helpers/auth.ts",
+    "test/helpers/pg-schema.ts",
+    "test/pg/auth.pg.test.ts"
+  ]
+}
