@@ -1,11 +1,11 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `implemented` localmente, CI em verificação; spikes M0-11 e M0-12 passaram)  
+**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; spikes M0-11 e M0-12 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
 **Próxima tarefa recomendada:** M0-18 (spike evlog + Sentry) e, depois, M0-08 (primeiro deploy em Staging) (não autorizadas)  
 **Task em execução:** nenhuma  
-**Última tarefa comprovadamente verificada:** M0-06 (2026-10-10, no CI)
+**Última tarefa comprovadamente verificada:** M0-07 (2026-10-10, no CI)
 
 > Nunca marcar tarefa ou marco como concluído com base em decisão, texto de plano, instrução para IA ou intenção. Só evidências reais de arquivos, comandos, testes, SHA e homologação justificam o status.
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `implemented`; spikes M0-11 e M0-12 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; spikes M0-11 e M0-12 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -29,16 +29,16 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
-### M0-07 — implemented localmente; CI em verificação (2026-10-10)
+### M0-07 — verified no CI (2026-10-10)
 
-- **Entrega:** PR de `feat/m0-07-base-visual`. Nenhum recurso externo foi criado ou alterado (sem Cloudflare, sem Neon).
+- **Entrega:** PR #17 (`feat/m0-07-base-visual`); CI verde (`bloqueante` 1m36s, `consultivo` 24s), com Playwright, axe e Gitleaks no Linux. Nenhum recurso externo foi criado ou alterado (sem Cloudflare, sem Neon).
 - **Dependências novas (versões exatas, licenças conferidas no registro):** Tailwind CSS 4.3.3 e `@tailwindcss/vite` 4.3.3 (MIT), `@base-ui/react` 1.9.0 (MIT), `@phosphor-icons/react` 2.1.10 (MIT), `@fontsource-variable/lexend-deca` 5.3.0 (OFL-1.1, fonte empacotada pelo Vite e servida da própria origem), `class-variance-authority` 0.7.1, `clsx` 2.1.1, `tailwind-merge` 3.7.0 e, em desenvolvimento, `@axe-core/playwright` 4.13.0 (MPL-2.0, só em testes).
 - **Arquivos:** `src/web/styles/tokens.css` (3 camadas OKLCH), `src/web/styles/app.css`, `src/web/theme.ts`, `src/web/components/{theme-toggle,ui/button,ui/input,ui/field}.tsx`, `src/web/layouts/public-layout.tsx`, `src/web/routes/base-visual.tsx` (vitrine temporária), `test/helpers/color.ts`, `test/unit/contrast.test.ts`, `e2e/accessibility.spec.ts`, `tsconfig.e2e.json`.
 - **Executado e passou (local):** `bun run verify` (typecheck, Oxlint, Oxfmt, `types:check`, drift, Vitest, Playwright, builds de Staging e Production com preflight, Knip, dependency-cruiser, agentes); Gitleaks local pulado (binário ausente; o CI executa).
   - **Contraste:** 54 pares declarados (texto ≥ 4,5:1; borda de controle e anel de foco ≥ 3:1) nos temas claro e escuro, calculados a partir do OKLCH do CSS. O bloco escuro do sistema é conferido contra o bloco escuro forçado e as camadas (marca → função → componente) são validadas. **Teste de mutação:** escurecer o texto do botão e clarear a borda fez o teste falhar com a razão calculada; clarear o texto secundário fez o axe falhar (`color-contrast`).
   - **Playwright (Chromium):** axe (tags WCAG 2.0/2.1/2.2 A e AA) sem violações em `/`, `/sobre` e `/base-visual` com o tema do sistema claro e escuro, e nos temas forçados, inclusive com erro de formulário; fluxo só por teclado (pular para o conteúdo, navegação, alternância de tema, erro anunciado com `aria-invalid`, envio válido); foco visível; tema persiste ao recarregar; nenhum script inline; todas as requisições na mesma origem (fonte autohospedada); nenhuma animação em andamento (WCAG 2.2.2).
 - **Desvios do plano:** (1) tokens em `src/web/styles/` (e não `src/styles/`), junto do código da SPA. (2) Os componentes seguem o padrão shadcn (cva + `cn`) escritos à mão sobre Base UI, sem o CLI do shadcn nem `components.json`: não há catálogo a atualizar e a CLI traria dependências sem uso. (3) Variantes: o laranja usado no botão foi **clareado** (L 0,72 em vez de 0,675 do hex original) para o texto escuro passar com folga; petróleo escurecido para texto e links, terracota e oliva escurecidos no tema claro e clareados no escuro. Todos os matizes seguem **PENDENTES do cliente** (manual de marca em PDF e logo positivo). (4) `/base-visual` é uma vitrine para o teste de acessibilidade e deve sair do menu quando houver telas reais. (5) `tsconfig.e2e.json` separado, com a biblioteca DOM, para tipar os testes do Playwright sem levar DOM aos scripts. (6) Knip ignora `tailwindcss` e a fonte porque são consumidos por `@import` de CSS.
-- **Não verificado:** Firefox e WebKit/Safari (só Chromium); leitor de tela real (o axe cobre regras automáticas, não a experiência de uso); o resultado do CI; `GET /api/health/ready` segue sem proteção (M4/M9).
+- **Não verificado:** Firefox e WebKit/Safari (só Chromium); leitor de tela real (o axe cobre regras automáticas, não a experiência de uso); `GET /api/health/ready` segue sem proteção (M4/M9).
 - **Pendente:** cliente enviar o manual de marca e o logo positivo para substituir os valores provisórios.
 
 ### M0-06 — implemented localmente; CI em verificação (2026-10-10)
