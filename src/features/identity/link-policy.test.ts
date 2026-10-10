@@ -5,13 +5,30 @@ import { decideDelivery } from './link-policy';
 
 describe('decideDelivery', () => {
   it('aluno novo e aluno existente recebem o link', () => {
-    expect(decideDelivery({ userExists: false, isStaffEmail: false })).toBe('send');
-    expect(decideDelivery({ userExists: true, isStaffEmail: false })).toBe('send');
+    expect(decideDelivery({ userExists: false, isStaffEmail: false, isSuspended: false })).toBe(
+      'send',
+    );
+    expect(decideDelivery({ userExists: true, isStaffEmail: false, isSuspended: false })).toBe(
+      'send',
+    );
+  });
+
+  it('conta suspensa não recebe link (o login seria recusado), com ou sem Staff', () => {
+    expect(decideDelivery({ userExists: true, isStaffEmail: false, isSuspended: true })).toBe(
+      'skip',
+    );
+    expect(decideDelivery({ userExists: true, isStaffEmail: true, isSuspended: true })).toBe(
+      'skip',
+    );
   });
 
   it('e-mail de Staff só recebe link se o usuário já existe (convite aceito)', () => {
-    expect(decideDelivery({ userExists: false, isStaffEmail: true })).toBe('skip');
-    expect(decideDelivery({ userExists: true, isStaffEmail: true })).toBe('send');
+    expect(decideDelivery({ userExists: false, isStaffEmail: true, isSuspended: false })).toBe(
+      'skip',
+    );
+    expect(decideDelivery({ userExists: true, isStaffEmail: true, isSuspended: false })).toBe(
+      'send',
+    );
   });
 });
 

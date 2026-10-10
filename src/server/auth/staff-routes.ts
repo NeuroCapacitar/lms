@@ -1,13 +1,18 @@
 import type { Context, MiddlewareHandler } from 'hono';
 import { Hono } from 'hono';
 
+import { eq } from 'drizzle-orm';
+
+import { user } from '../../db/schema';
 import { hitThrottle } from '../../db/throttle';
 import type { EmailSender } from '../../features/identity/link-policy';
+import { USER_ID_PATTERN, suspendUserSchema } from '../../features/identity/suspension';
 import {
   acceptInvitationSchema,
   inviteStaffSchema,
 } from '../../features/identity/staff-invitation';
 import { sha256Hex } from '../crypto';
+import { LastAdminError, liftSuspension, suspendUser } from './access-store';
 import { requireCapability } from './authorization';
 import { requireRecentAuth } from './reauth';
 import {
@@ -128,6 +133,43 @@ export function staffRoutes(deps: StaffRouteDeps) {
     return (await revokeInvitation(c.var.db, { actorId: actor.id, id }))
       ? c.json({ status: 'ok' })
       : c.json({ error: { code: 'not_found' } }, 404);
+  });
+
+  // Suspensão de conta (M1-08): só o Admin (`staff.manage`) com reautenticação recente. Suspender
+  // apaga as sessões da pessoa, nega toda capability na requisição seguinte, impede login novo e
+  // audita, tudo numa transação (`suspendUser`). O último Admin ativo não pode ser suspenso.
+  async function targetUser(c: StaffContext): Promise<string | null> {
+    const id = c.req.param('id') ?? '';
+    if (!USER_ID_PATTERN.test(id)) return null;
+    const [row] = await c.var.db.select({ id: user.id }).from(user).where(eq(user.id, id));
+    return row?.id ?? null;
+  }
+
+  routes.post('/users/:id/suspend', ...sensitive, async (c) => {
+    const parsed = suspendUserSchema.safeParse(await c.req.json().catch(() => ({})));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    const targetId = await targetUser(c);
+    if (!targetId) return c.json({ error: { code: 'not_found' } }, 404);
+    const actor = (await c.var.auth.api.getSession({ headers: c.req.raw.headers }))!.user;
+    try {
+      const changed = await suspendUser(c.var.db, {
+        actorId: actor.id,
+        targetId,
+        ...(parsed.data.reason ? { reason: parsed.data.reason } : {}),
+      });
+      return c.json({ status: 'ok', changed });
+    } catch (error) {
+      if (error instanceof LastAdminError) return c.json({ error: { code: 'last_admin' } }, 409);
+      throw error;
+    }
+  });
+
+  routes.post('/users/:id/reactivate', ...sensitive, async (c) => {
+    const targetId = await targetUser(c);
+    if (!targetId) return c.json({ error: { code: 'not_found' } }, 404);
+    const actor = (await c.var.auth.api.getSession({ headers: c.req.raw.headers }))!.user;
+    const changed = await liftSuspension(c.var.db, { actorId: actor.id, targetId });
+    return c.json({ status: 'ok', changed });
   });
 
   routes.post('/invitations/accept', deps.withDatabase, async (c) => {

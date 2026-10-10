@@ -100,7 +100,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** sem passkeys (adiadas), sem TOTP; credenciais OAuth do Google criadas por quem tem a conta Cloud do cliente (**PENDENTE (responsável/cliente)**).
 
 ### M1-08 — Suspensão auditada
-**Dependências:** M1-03, M1-05 · **Estado:** `not_started`
+**Dependências:** M1-03, M1-05 · **Estado:** `implemented` (verificação local; ver STATUS)
 **Objetivo:** o Admin suspende e reativa contas; a suspensão encerra todas as sessões e impede novo login.
 **Passos:**
 1. Estado `suspended_at`/motivo em `user`; `POST /api/staff/users/:id/suspend` e `/reactivate` (`staff.manage` + reautenticação recente).

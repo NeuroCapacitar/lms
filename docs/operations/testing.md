@@ -69,3 +69,8 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Testes de corrida precisam de **conexões separadas** (`openDatabase` por chamada): `tools.db` é uma conexão só e serializaria as duas transações, escondendo a corrida.
 - O Drizzle embrulha o erro do `pg`: o nome da constraint violada fica em `error.cause` (ver `expectViolation`).
 - `e2e/convite.spec.ts` simula a API; o aceite real fica coberto pelos testes em Postgres.
+
+## Suspensão e corrida com login (M1-08)
+
+- `test/pg/suspension.pg.test.ts` prova a corrida **sem depender de sorte**: duas conexões brutas (`database.client()`), uma segurando a transação aberta, e a outra tentando o login (ou a suspensão); confere que a segunda ESPERA (`settled` falso após 300 ms) e depois o resultado. Há também 15 rodadas de corrida real em conexões separadas.
+- Para provar o gatilho sem passar pelo Better Auth, insere-se a sessão direto com o Drizzle; o erro do `pg` vem em `error.cause` (`code` 23001, mensagem `account_suspended`).
