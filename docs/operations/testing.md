@@ -6,11 +6,17 @@
 
 | Projeto | Onde roda | Arquivos | Comando |
 |---|---|---|---|
-| `unit` | Node | `scripts/**/*.test.ts`, `src/**/*.test.ts` | `bun run test:unit` |
+| `unit` | Node | `scripts/**/*.test.ts`, `src/**/*.test.ts`, `test/unit/**/*.test.ts` | `bun run test:unit` |
 | `workers` | **workerd** (`@cloudflare/vitest-plugin`), Worker **construído** (`dist/hub`), Hyperdrive local apontando ao Postgres de teste | `test/workers/**/*.test.ts` | `bun run test:workers` (faz `bun run build` antes) |
 | `pg` | Node, **Postgres 18 real** | `test/pg/**/*.test.ts` | `bun run test:pg` |
 
 `bun run test` roda os três (com `build` antes). Falha em um projeto não esconde os outros: o Vitest roda todos e o CI tem um passo por projeto. `bun run test:e2e` roda o smoke do Playwright (Chromium) contra o build servido pelo `vite preview` com o banco de teste.
+
+## Contraste e acessibilidade (M0-07)
+
+- `test/unit/contrast.test.ts` lê `src/web/styles/tokens.css`, resolve as camadas de tokens em cada tema e calcula a razão de contraste WCAG (`test/helpers/color.ts`, OKLCH → sRGB, sem dependência). **Para proteger um novo par de cores, acrescente-o à lista `PAIRS`**: texto ≥ 4,5:1; borda de controle, ícone e anel de foco ≥ 3:1.
+- `e2e/accessibility.spec.ts` roda o axe (WCAG 2.0/2.1/2.2 A e AA) nas páginas públicas nos temas claro, escuro e do sistema, o fluxo só por teclado e as regras de tema sem script inline, mesma origem e ausência de animação automática (WCAG 2.2.2). O axe não substitui leitor de tela real nem Firefox/Safari, que ficam para verificação manual.
+- Tela nova: acrescente a rota à lista `PAGES` do spec.
 
 ## Banco de teste (Postgres 18 que pode ser destruído)
 

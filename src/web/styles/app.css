@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/lexend-deca';
+@import './tokens.css';
+
+/* Expõe os tokens funcionais e de componente como utilitários do Tailwind (bg-page, text-muted…). */
+@theme inline {
+  --font-sans: var(--font-family-sans);
+  --color-page: var(--surface-page);
+  --color-raised: var(--surface-raised);
+  --color-default: var(--text-default);
+  --color-muted: var(--text-muted);
+  --color-link: var(--text-link);
+  --color-danger: var(--text-danger);
+  --color-success: var(--text-success);
+  --color-control-border: var(--border-control);
+  --color-focus: var(--focus-ring);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-family-sans);
+    background-color: var(--surface-page);
+    color: var(--text-default);
+  }
+
+  body {
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  a {
+    color: var(--link-fg);
+    text-underline-offset: 0.2em;
+  }
+}

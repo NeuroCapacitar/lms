@@ -1,18 +1,13 @@
-import { Link, Outlet, createRootRoute } from '@tanstack/react-router';
+import { Outlet, createRootRoute } from '@tanstack/react-router';
+
+import { PublicLayout } from '../layouts/public-layout';
 
 export const Route = createRootRoute({ component: RootLayout });
 
 function RootLayout() {
   return (
-    <>
-      <header>
-        <nav aria-label="Principal">
-          <Link to="/">Início</Link> <Link to="/sobre">Sobre</Link>
-        </nav>
-      </header>
-      <main>
-        <Outlet />
-      </main>
-    </>
+    <PublicLayout>
+      <Outlet />
+    </PublicLayout>
   );
 }

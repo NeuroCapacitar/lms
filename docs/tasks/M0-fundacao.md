@@ -94,7 +94,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Fora do escopo / cuidados:** sem Neon Production nem provedores reais nos PRs; mock não prova comportamento de SQL/workerd, então a persistência é sempre testada em PG18 real.
 
 ### M0-07 — Base visual com tokens OKLCH
-**Dependências:** M0-02 · **Estado:** `not_started`
+**Dependências:** M0-02 · **Estado:** `implemented` (CI em verificação; ver STATUS)
 **Objetivo:** primitives e tema (claro/escuro/sistema) acessíveis, com contraste calculado, servindo uma página pública mínima.
 **Passos:**
 1. Tokens em três camadas OKLCH (marca → função → componente) em `src/styles/tokens.css`; variantes escurecidas para texto e ação; botão laranja com texto escuro. Hex da marca **PENDENTE (cliente: manual de marca em PDF e logo positivo)**: usar valores provisórios sinalizados.
