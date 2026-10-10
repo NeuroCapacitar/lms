@@ -42,4 +42,28 @@ bun run build          # build do cliente e do Worker em dist/
 bun run preview        # serve o build em workerd local
 ```
 
-Verificados em 2026-10-10 (ver [STATUS](docs/implementation/STATUS.md)). Também existem `bun run build:staging` e `build:production` (definem `CLOUDFLARE_ENV` antes do build e rodam o preflight de ambiente), `bun run types:check` (confere `wrangler types`) e `bun run test` (testes dos scripts). `verify` ainda não existe. Nenhum desses comandos usa a conta Cloudflare: tudo roda localmente.
+Verificados em 2026-10-10 (ver [STATUS](docs/implementation/STATUS.md)). Também existem `bun run build:staging` e `build:production` (definem `CLOUDFLARE_ENV` antes do build e rodam o preflight de ambiente), `bun run types:check` (confere `wrangler types`) e `bun run test` (testes dos scripts). Nenhum desses comandos usa a conta Cloudflare: tudo roda localmente.
+
+## Matriz de gates do CI (M0-05)
+
+GitHub Free privado **não impõe** checks obrigatórios: o merge só com tudo verde é disciplina do responsável. Workflows sem segredos, permissão `contents: read`, ações fixadas por SHA e `bun install --frozen-lockfile`. `bun run verify` espelha a camada bloqueante localmente (o Gitleaks é pulado com aviso se o binário não estiver no PATH; `GITLEAKS_REQUIRED=1` o torna obrigatório).
+
+| Gate | Comando | Camada |
+|---|---|---|
+| TypeScript (3 projetos) | `bun run typecheck` | bloqueante |
+| Oxlint (`--deny-warnings`) | `bun run lint` | bloqueante |
+| Oxfmt | `bun run format:check` | bloqueante |
+| Tipos do Worker em dia | `bun run types:check` | bloqueante |
+| Drift do schema (Drizzle) | `bun run db:drift` | bloqueante |
+| Testes dos scripts (`node --test`) | `bun run test` | bloqueante |
+| Build do Worker por ambiente + preflight | `bun run build:staging` e `build:production` | bloqueante |
+| Knip (código e dependências não usados) | `bun run knip` | bloqueante |
+| dependency-cruiser (limites de AGENTS §5) | `bun run arch` | bloqueante |
+| Instruções de agentes | `bun run agents:check` | bloqueante |
+| Gitleaks (histórico completo) | `bun run secrets` (no CI: binário com checksum conferido) | bloqueante |
+| Vitest (unitário, workerd, PG18) e Playwright de fumaça | chegam no M0-06 | bloqueante (planejado) |
+| Semgrep CE | job `consultivo` | consultiva |
+| actionlint e zizmor (só quando um workflow muda) | workflow `workflows (consultivo)` | consultiva |
+| Renovate (espera de 7 a 14 dias) | `renovate.json`; **o responsável precisa instalar o app** | consultiva |
+
+Fora da v1 por decisão: Socket, Scorecard, Graphify, CodeRabbit e CodeQL.

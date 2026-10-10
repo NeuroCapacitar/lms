@@ -12,7 +12,7 @@ const listing = () => (existsSync(dir) ? readdirSync(dir, { recursive: true }).j
 rmSync(backup, { recursive: true, force: true });
 cpSync(dir, backup, { recursive: true });
 const before = listing();
-const result = spawnSync('bunx', ['drizzle-kit', 'generate', '--name', 'drift_check'], {
+const result = spawnSync('bun', ['x', 'drizzle-kit', 'generate', '--name', 'drift_check'], {
   encoding: 'utf8',
   shell: process.platform === 'win32',
 });

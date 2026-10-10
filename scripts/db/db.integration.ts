@@ -6,6 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 import pg from 'pg';
@@ -37,7 +38,7 @@ async function journalCount(): Promise<number> {
 describe('banco de desenvolvimento', { skip }, () => {
   it('migrações aplicadas duas vezes: a segunda é no-op', async () => {
     const run = () =>
-      spawnSync('bun', ['scripts/db/migrate.ts', 'dev'], {
+      spawnSync('bun', [fileURLToPath(new URL('./migrate.ts', import.meta.url)), 'dev'], {
         encoding: 'utf8',
         shell: process.platform === 'win32',
         env: process.env,

@@ -22,7 +22,12 @@
     "db:drift": "bun scripts/db/check-drift.ts",
     "db:migrate": "bun scripts/db/migrate.ts",
     "db:roles": "bun scripts/db/setup-roles.ts",
-    "test:db": "node --test \"scripts/**/*.integration.ts\""
+    "test:db": "node --test \"scripts/**/*.integration.ts\"",
+    "knip": "knip",
+    "arch": "depcruise src --config .dependency-cruiser.cjs",
+    "agents:check": "node scripts/check-agent-instructions.mjs",
+    "secrets": "bun scripts/secrets-scan.ts",
+    "verify": "bun run verify:quick && bun run types:check && bun run db:drift && bun run test && bun run build:staging && bun run build:production && bun run knip && bun run arch && bun run agents:check && bun run secrets"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.1",
@@ -35,13 +40,16 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.63.1",
+    "@swc/core": "1.16.13",
     "@tanstack/router-plugin": "1.168.42",
     "@types/node": "24.19.2",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "dependency-cruiser": "18.5.0",
     "drizzle-kit": "0.31.11",
+    "knip": "6.41.0",
     "oxfmt": "0.72.0",
     "oxlint": "1.87.0",
     "typescript": "7.0.2",
