@@ -1,0 +1,116 @@
+/*
+ * Tokens de design em OKLCH, três camadas (ADR 0020):
+ *   1. marca       --brand-*      valores brutos da paleta. Ninguém usa direto em componente.
+ *   2. funcional   --surface-*, --text-*, --action-*…  o que a cor FAZ; muda entre claro e escuro.
+ *   3. componente  --button-*, --input-*…  escolhas de cada componente, sempre via camada 2.
+ *
+ * PENDENTE (cliente): o manual de marca em PDF e o logo positivo ainda não chegaram. Os matizes
+ * abaixo derivam dos hex do hub legado (petróleo #326C71, areia #F1E8DA, laranja #D97B34, oliva
+ * #9EAD7C, terracota #C56A4C) e NÃO são oficiais. Variantes escurecidas/clareadas existem porque
+ * os hex originais reprovam contraste: laranja/areia 2,53:1, oliva/areia 1,98:1,
+ * terracota/areia 3,12:1, branco/laranja 3,07:1. O teste test/unit/contrast.test.ts barra
+ * qualquer par declarado em contrast.test.ts que fique abaixo do mínimo, nos dois temas.
+ *
+ * Tema: sem atributo `data-theme` = segue o sistema; `light` e `dark` forçam. Nenhum script inline.
+ */
+
+/* Camada 1: marca (provisória) */
+:root {
+  --brand-petroleo-950: oklch(0.22 0.03 205);
+  --brand-petroleo-900: oklch(0.27 0.04 205);
+  --brand-petroleo-850: oklch(0.27 0.035 205);
+  --brand-petroleo-700: oklch(0.45 0.065 203);
+  --brand-petroleo-650: oklch(0.45 0.04 205);
+  --brand-petroleo-500: oklch(0.495 0.061 202.9); /* #326C71 original */
+  --brand-petroleo-400: oklch(0.55 0.03 200);
+  --brand-petroleo-350: oklch(0.6 0.03 200);
+  --brand-petroleo-200: oklch(0.78 0.09 195);
+
+  --brand-areia-50: oklch(0.975 0.01 80);
+  --brand-areia-100: oklch(0.934 0.021 79.1); /* #F1E8DA original */
+  --brand-areia-200: oklch(0.94 0.02 80);
+  --brand-areia-500: oklch(0.76 0.03 90);
+
+  --brand-laranja-400: oklch(0.72 0.14 54); /* clareada em relação ao #D97B34 (0,675) */
+  --brand-laranja-300: oklch(0.8 0.12 60);
+  --brand-laranja-950: oklch(0.22 0.03 60);
+
+  --brand-terracota-700: oklch(0.45 0.13 30);
+  --brand-terracota-300: oklch(0.75 0.12 35);
+
+  --brand-oliva-700: oklch(0.42 0.07 125);
+  --brand-oliva-300: oklch(0.8 0.09 122);
+
+  --font-family-sans: 'Lexend Deca Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Camada 2: funcional, tema claro (padrão) */
+:root {
+  color-scheme: light;
+
+  --surface-page: var(--brand-areia-100);
+  --surface-raised: var(--brand-areia-50);
+  --text-default: var(--brand-petroleo-900);
+  --text-muted: var(--brand-petroleo-650);
+  --text-link: var(--brand-petroleo-700);
+  --text-danger: var(--brand-terracota-700);
+  --text-success: var(--brand-oliva-700);
+  --action-bg: var(--brand-laranja-400);
+  --action-fg: var(--brand-laranja-950);
+  --border-control: var(--brand-petroleo-400);
+  --focus-ring: var(--brand-petroleo-700);
+}
+
+/* Camada 2: funcional, tema escuro forçado */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-page: var(--brand-petroleo-950);
+  --surface-raised: var(--brand-petroleo-850);
+  --text-default: var(--brand-areia-200);
+  --text-muted: var(--brand-areia-500);
+  --text-link: var(--brand-petroleo-200);
+  --text-danger: var(--brand-terracota-300);
+  --text-success: var(--brand-oliva-300);
+  --action-bg: var(--brand-laranja-400);
+  --action-fg: var(--brand-laranja-950);
+  --border-control: var(--brand-petroleo-350);
+  --focus-ring: var(--brand-laranja-300);
+}
+
+/* Camada 2: funcional, tema escuro quando o sistema pede e não há escolha explícita.
+   Deve repetir exatamente o bloco acima (o teste confere). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --surface-page: var(--brand-petroleo-950);
+    --surface-raised: var(--brand-petroleo-850);
+    --text-default: var(--brand-areia-200);
+    --text-muted: var(--brand-areia-500);
+    --text-link: var(--brand-petroleo-200);
+    --text-danger: var(--brand-terracota-300);
+    --text-success: var(--brand-oliva-300);
+    --action-bg: var(--brand-laranja-400);
+    --action-fg: var(--brand-laranja-950);
+    --border-control: var(--brand-petroleo-350);
+    --focus-ring: var(--brand-laranja-300);
+  }
+}
+
+/* Camada 3: componente (referencia só a camada 2) */
+:root {
+  --button-primary-bg: var(--action-bg);
+  --button-primary-fg: var(--action-fg);
+  --button-secondary-bg: var(--surface-raised);
+  --button-secondary-fg: var(--text-default);
+  --button-secondary-border: var(--border-control);
+  --input-bg: var(--surface-raised);
+  --input-fg: var(--text-default);
+  --input-border: var(--border-control);
+  --input-placeholder: var(--text-muted);
+  --field-label: var(--text-default);
+  --field-description: var(--text-muted);
+  --field-error: var(--text-danger);
+  --link-fg: var(--text-link);
+}

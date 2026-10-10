@@ -21,9 +21,8 @@
     "vite.config.ts",
     "drizzle.config.ts",
     "vitest.config.ts",
-    "playwright.config.ts",
     "test/helpers/**/*.ts",
-    "test/pg/**/*.ts",
-    "e2e/**/*.ts"
+    "test/unit/**/*.ts",
+    "test/pg/**/*.ts"
   ]
 }
