@@ -1,0 +1,39 @@
+name: spike-m0-11 (descartável; nunca mesclar)
+
+on:
+  push:
+    branches: [spike/m0-11]
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.21.0
+      - name: Ambiente
+        run: |
+          uname -a
+          node -v
+          npm install -g bun@1.4.2
+          bun --version
+      - run: bun install --frozen-lockfile
+      - run: bun run verify:quick
+      - name: Vitest + plugin Cloudflare (node via bunx)
+        run: bunx vitest run
+      - name: Vitest + plugin Cloudflare (runtime Bun)
+        run: bunx --bun vitest run
+      - name: dependency-cruiser (swc) deve falhar com exit 2 por causa do import proibido
+        run: |
+          set +e
+          bunx depcruise src --config spike/depcruise.swc.cjs
+          code=$?
+          echo "exit=$code"
+          test "$code" -eq 2
