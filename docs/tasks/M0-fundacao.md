@@ -107,7 +107,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Fora do escopo / cuidados:** sem design system amplo, Storybook nem CSS do legado (petróleo). Linguagem neutra ("Boas-vindas", "Pessoas inscritas"). Sem teste sobre prosa de documentação (`docs:check` do pacote antigo foi removido).
 
 ### M0-08 — Primeiro deploy em Staging com observabilidade mínima
-**Dependências:** M0-03, M0-04, M0-05, M0-06, M0-18 · **Estado:** `implemented` e `homologated` em Staging (CI em verificação; ver STATUS)
+**Dependências:** M0-03, M0-04, M0-05, M0-06, M0-18 · **Estado:** `homologated` em Staging e `verified` no CI (ver STATUS)
 **Objetivo:** existe um candidato em Staging verificável: Worker real, Neon Staging, versão rastreável ao commit e logs sem dados pessoais.
 **Passos:**
 1. Deploy do Worker Staging por GitHub Actions com token restrito a Staging (nenhuma credencial de Production no GitHub). Domínio `*.workers.dev` até a zona do M0-09 estar ativa; hostname definitivo de Staging **PENDENTE (responsável)**.
