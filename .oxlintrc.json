@@ -1,4 +1,10 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": ["src/web/routeTree.gen.ts", "worker-configuration.d.ts", "dist/**"]
+  "ignorePatterns": [
+    ".agents/**",
+    ".claude/**",
+    "src/web/routeTree.gen.ts",
+    "worker-configuration.d.ts",
+    "dist/**"
+  ]
 }
