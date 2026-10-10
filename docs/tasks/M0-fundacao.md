@@ -215,7 +215,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Fora do escopo / cuidados:** sem Images Hosted; sem plano pago.
 
 ### M0-17 — Spike 8: HTMLRewriter e validadores de compartilhamento
-**Dependências:** M0-08 · **Estado:** `passou tecnicamente`; falta registrar os validadores do LinkedIn e do Meta ([ADR 0031](../adr/0031-spike-m0-17-htmlrewriter-meta-tags.md)) · **Timebox:** 1 dia · **Deve vir antes de:** M2-06
+**Dependências:** M0-08 · **Estado:** `passou tecnicamente` e no Meta; falta o LinkedIn ([ADR 0031](../adr/0031-spike-m0-17-htmlrewriter-meta-tags.md)) · **Timebox:** 1 dia · **Deve vir antes de:** M2-06
 **Objetivo:** provar que meta tags injetadas pelo Worker na SPA são lidas pelos validadores do LinkedIn e do Meta.
 **Passos:**
 1. Rota descartável em Staging público: busca o `index.html` dos assets e reescreve `title`, `description` e `og:*`/`twitter:*` com `HTMLRewriter`; a rota precisa estar em `run_worker_first`.
