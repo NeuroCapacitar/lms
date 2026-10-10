@@ -31,3 +31,6 @@ createRoot(container).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+// Relatório de erros fora do caminho crítico de carregamento.
+void import('./observability').then(({ initWebObservability }) => initWebObservability());

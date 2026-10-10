@@ -17,7 +17,14 @@ const RESOURCE_REFERENCES: Readonly<Record<string, { path: readonly string[]; fi
 };
 
 /** Chaves que podem estar preenchidas sem referenciar recurso de ambiente. */
-const BENIGN_KEYS = new Set(['assets', 'dev', 'rules', 'triggers', 'python_modules']);
+const BENIGN_KEYS = new Set([
+  'assets',
+  'dev',
+  'rules',
+  'triggers',
+  'python_modules',
+  'observability',
+]);
 
 /** Chaves tratadas por regras próprias (recursos e variáveis). */
 const HANDLED_KEYS = new Set([
