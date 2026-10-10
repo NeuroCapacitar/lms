@@ -20,3 +20,5 @@ src/web/routeTree.gen.ts linguist-generated
 *.sql text eol=lf
 drizzle/** text eol=lf
 .env.example text eol=lf
+*.cjs text eol=lf
+*.yml text eol=lf
