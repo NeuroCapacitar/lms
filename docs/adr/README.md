@@ -33,5 +33,6 @@ Crie uma ADR **somente** para decisão arquitetural relevante e cara de reverter
 | 0025 | CLIs Cloudflare e Neon só com o perfil `neurocapacitar` |
 | 0026 | Spike M0-11: Bun, plugin de testes e dependency-cruiser |
 | 0027 | Spike M0-12: região do Neon (São Paulo) e orçamento de compute |
+| 0028 | Spike M0-18: evlog e Sentry 11, com redaction obrigatória |
 
-Cada spike do M0 que concluir terá sua ADR (numeração seguinte, 0028 em diante) com o resultado "passou" ou "reabrir decisão".
+Cada spike do M0 que concluir terá sua ADR (numeração seguinte, 0029 em diante) com o resultado "passou" ou "reabrir decisão".

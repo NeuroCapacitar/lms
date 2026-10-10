@@ -1,0 +1,35 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { chromium } from 'file:///D:/2%20-%20Dev/0%20-%20Projects/lms/node_modules/playwright-core/index.mjs';
+
+const envelopes = [];
+const server = createServer((req, res) => {
+  if (req.method === 'POST') {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => { envelopes.push(Buffer.concat(chunks).toString('utf8')); res.writeHead(200); res.end('{}'); });
+    return;
+  }
+  if (req.url?.startsWith('/app.js')) { res.writeHead(200, { 'content-type': 'text/javascript' }); res.end(readFileSync('client.js')); return; }
+  res.writeHead(200, { 'content-type': 'text/html' });
+  res.end('<!doctype html><title>t</title><button id="boom">boom</button><button id="flush">flush</button><script src="/app.js"></script>');
+});
+await new Promise((r) => server.listen(9999, '127.0.0.1', r));
+const browser = await chromium.launch();
+const context = await browser.newContext();
+await context.addCookies([{ name: 'session', value: 'COOKIE_SECRETO', url: 'http://127.0.0.1:9999' }]);
+const page = await context.newPage();
+page.on('pageerror', () => {});
+await page.goto('http://127.0.0.1:9999/?email=pessoa@example.com&token=SEGREDO#frag');
+await page.click('#boom');
+await page.waitForTimeout(500);
+await page.click('#flush');
+await page.waitForFunction(() => document.title === 'flushed');
+await browser.close();
+server.close();
+writeFileSync('out-spa-envelopes.txt', envelopes.join('\n---\n'));
+console.log('envelopes:', envelopes.length);
+for (const s of ['pessoa@example', 'COOKIE_SECRETO', 'SEGREDO', 'frag']) console.log(s, envelopes.join('').includes(s));
+const ev = envelopes.join('\n').split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).find((o) => o?.exception);
+console.log(JSON.stringify({ value: ev?.exception.values[0].value, request: ev?.request, breadcrumbs: ev?.breadcrumbs, user: ev?.user }));
+process.exit(0);

@@ -1,0 +1,44 @@
+import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
+
+const envelopes = [];
+const ingest = createServer((req, res) => {
+  const chunks = [];
+  req.on('data', (c) => chunks.push(c));
+  req.on('end', () => {
+    envelopes.push({ url: req.url, body: Buffer.concat(chunks).toString('utf8') });
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end('{}');
+  });
+});
+await new Promise((r) => ingest.listen(9999, '127.0.0.1', r));
+
+const logs = [];
+const child = spawn('node_modules/.bin/wrangler.exe', ['dev', '--local', '--port', '8799'], {
+
+  env: { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: '1' },
+});
+for (const stream of [child.stdout, child.stderr]) stream.on('data', (d) => logs.push(d.toString()));
+
+const base = 'http://127.0.0.1:8799';
+for (let i = 0; i < 60; i++) {
+  try { if ((await fetch(base + '/api/health/live')).ok) break; } catch {}
+  await new Promise((r) => setTimeout(r, 1000));
+}
+
+if (!(await fetch(base + '/api/health/live').catch(() => null))?.ok) { console.log(logs.join('')); child.kill(); process.exit(1); }
+const ok = await fetch(base + '/api/log?email=pessoa@example.com&token=SEGREDO', {
+  headers: { cookie: 'session=COOKIE_SECRETO', authorization: 'Bearer TOKEN_SECRETO', 'x-request-id': 'req-1' },
+});
+const boom = await fetch(base + '/api/boom?email=pessoa@example.com', {
+  headers: { cookie: 'session=COOKIE_SECRETO' },
+});
+await new Promise((r) => setTimeout(r, 3000));
+const q = await fetch(base + '/api/_events');
+(await import('node:fs')).writeFileSync('out-events.json', await q.text());
+spawn('taskkill', ['/pid', String(child.pid), '/T', '/F']);
+ingest.close();
+import { writeFileSync } from 'node:fs';
+writeFileSync('out-logs.txt', logs.join(''));
+writeFileSync('out-envelopes.json', JSON.stringify(envelopes, null, 2));
+console.log('status log:', ok.status, 'status boom:', boom.status, 'envelopes:', envelopes.length); process.exit(0);

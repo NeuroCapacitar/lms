@@ -1,0 +1,78 @@
+{
+  "exception": {
+    "values": [
+      {
+        "type": "Error",
+        "value": "Falha no SPA para [email]",
+        "mechanism": {
+          "type": "auto.browser.browserapierrors.addEventListener",
+          "handled": false,
+          "data": {
+            "handler": "<anonymous>",
+            "target": "EventTarget"
+          }
+        }
+      }
+    ]
+  },
+  "level": "error",
+  "event_id": "acd7a8429beb48669556286624f7e35f",
+  "platform": "javascript",
+  "request": {
+    "url": "http://127.0.0.1:9999/"
+  },
+  "contexts": {
+    "trace": {
+      "trace_id": "dbd15d44113548e8809b5e135b45dd75",
+      "span_id": "89ad4b72586c96f5"
+    },
+    "react": {
+      "version": "19.3.0"
+    },
+    "culture": {
+      "locale": "pt-BR",
+      "timezone": "America/Sao_Paulo",
+      "calendar": "gregory"
+    }
+  },
+  "timestamp": 1791625021.055,
+  "environment": "production",
+  "sdk": {
+    "integrations": [
+      "EventFilters",
+      "FunctionToString",
+      "ConversationId",
+      "BrowserApiErrors",
+      "Breadcrumbs",
+      "Console",
+      "GlobalHandlers",
+      "LinkedErrors",
+      "Dedupe",
+      "HttpContext",
+      "CultureContext",
+      "BrowserSession"
+    ],
+    "name": "sentry.javascript.react",
+    "version": "11.6.0",
+    "packages": [
+      {
+        "name": "npm:@sentry/react",
+        "version": "11.6.0"
+      }
+    ],
+    "settings": {
+      "infer_ip": "auto"
+    }
+  },
+  "extra": {
+    "arguments": [
+      {
+        "type": "click",
+        "target": "[HTMLElement: body > button#boom]",
+        "currentTarget": "[HTMLElement: body > button#boom]",
+        "detail": 1,
+        "isTrusted": true
+      }
+    ]
+  }
+}
