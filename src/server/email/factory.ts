@@ -13,10 +13,15 @@ export function createEmailSender(env: Env): EmailSender {
     const allowlist = env.EMAIL_ALLOWLIST ?? '';
     const magicLinkTemplate: string = env.RESEND_TEMPLATE_MAGIC_LINK;
     const reauthTemplate: string = env.RESEND_TEMPLATE_REAUTH_LINK;
+    const invitationTemplate: string = env.RESEND_TEMPLATE_STAFF_INVITATION;
     return createResendSender({
       apiKey: env.RESEND_API_KEY,
       from: env.EMAIL_FROM,
-      templates: { 'magic-link': magicLinkTemplate, 'reauth-link': reauthTemplate },
+      templates: {
+        'magic-link': magicLinkTemplate,
+        'reauth-link': reauthTemplate,
+        'staff-invitation': invitationTemplate,
+      },
       allowlist: allowlist
         .split(',')
         .map((item) => item.trim().toLowerCase())

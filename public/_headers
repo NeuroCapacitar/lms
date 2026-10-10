@@ -18,3 +18,8 @@
   ! Referrer-Policy
   Referrer-Policy: no-referrer
   Cache-Control: no-store
+
+/convite
+  ! Referrer-Policy
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store

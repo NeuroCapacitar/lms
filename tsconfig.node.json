@@ -26,5 +26,6 @@
     "test/unit/**/*.ts",
     "test/pg/schema.pg.test.ts",
     "test/pg/race.pg.test.ts"
-  ]
+  ],
+  "exclude": ["scripts/admin-bootstrap.ts"]
 }

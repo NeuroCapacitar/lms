@@ -4,6 +4,14 @@
  */
 export type RequestLinkResult = 'sent' | 'captcha_failed' | 'invalid_email' | 'unavailable';
 export type ConfirmLinkResult = 'ok' | 'invalid_or_expired' | 'unavailable';
+export type AcceptInvitationResult =
+  | 'ok'
+  | 'unauthenticated'
+  | 'invalid_or_expired'
+  | 'suspended'
+  | 'unverified'
+  | 'rate_limited'
+  | 'unavailable';
 export type ConfirmReauthResult = ConfirmLinkResult | 'unauthenticated';
 
 async function postJson(path: string, body: unknown): Promise<Response | null> {
@@ -43,5 +51,20 @@ export async function confirmLink(token: string): Promise<ConfirmLinkResult> {
   if (!response) return 'unavailable';
   if (response.ok) return 'ok';
   if (response.status === 400) return 'invalid_or_expired';
+  return 'unavailable';
+}
+
+/** Aceita o convite de Staff na sessão atual. O servidor compara o e-mail da sessão com o do convite. */
+export async function acceptStaffInvitation(token: string): Promise<AcceptInvitationResult> {
+  const response = await postJson('/api/staff/invitations/accept', { token });
+  if (!response) return 'unavailable';
+  if (response.ok) return 'ok';
+  if (response.status === 401) return 'unauthenticated';
+  if (response.status === 400) return 'invalid_or_expired';
+  if (response.status === 429) return 'rate_limited';
+  if (response.status === 403) {
+    const body = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
+    return body?.error?.code === 'email_not_verified' ? 'unverified' : 'suspended';
+  }
   return 'unavailable';
 }

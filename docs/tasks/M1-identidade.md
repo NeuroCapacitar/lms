@@ -53,7 +53,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** sem papel exclusivo, sem permissão "curinga", sem endpoint genérico de update de usuário.
 
 ### M1-04 — Bootstrap do Admin e convite de Staff
-**Dependências:** M1-03, M1-05, M1-06 · **Estado:** `not_started`
+**Dependências:** M1-03, M1-05, M1-06 · **Estado:** `implemented` (verificação local; ver STATUS)
 **Objetivo:** o primeiro Admin nasce sem senha embutida e o Admin convida pessoas da Staff por e-mail; o convite é de uso único e expira.
 **Passos:**
 1. Script `admin:bootstrap -- --email <endereço>` (execução manual; recusa se já existir Admin; sem senha); o Admin entra depois por magic link. Rodar só em Dev/Staging neste marco.

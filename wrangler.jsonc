@@ -10,6 +10,7 @@
     "EMAIL_FROM": "NeuroCapacitar <acesso@neurocapacitar.com.br>",
     "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
     "RESEND_TEMPLATE_REAUTH_LINK": "1b066eb8-2a71-4e41-94b7-15475b1e3d4d",
+    "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
   },
   "assets": {
     "not_found_handling": "single-page-application",
@@ -24,6 +25,7 @@
         "EMAIL_FROM": "NeuroCapacitar <acesso@neurocapacitar.com.br>",
         "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
         "RESEND_TEMPLATE_REAUTH_LINK": "1b066eb8-2a71-4e41-94b7-15475b1e3d4d",
+        "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea4be9d4370457b93f1feb7469d2ceb" }],
     },
@@ -34,6 +36,7 @@
         "EMAIL_FROM": "NeuroCapacitar <acesso@neurocapacitar.com.br>",
         "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
         "RESEND_TEMPLATE_REAUTH_LINK": "1b066eb8-2a71-4e41-94b7-15475b1e3d4d",
+        "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "f31b83e0d8044d00a9651c81d121bc91" }],
     },
