@@ -1,11 +1,11 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 e M0-02 `verified` localmente; M0-11 spike passou; ainda sem CI)  
+**Estado:** M0 em andamento (M0-01 e M0-02 `verified` localmente; spikes M0-11 e M0-12 passaram; ainda sem CI)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-12 (spike de latência do Neon; o perfil `neurocapacitar` da Neon já funciona) e M0-03 (o Wrangler já está autenticado no perfil `neurocapacitar`) (não autorizadas)  
+**Próxima tarefa recomendada:** M0-03 (Wrangler, tipos e ambientes) e M0-04 (banco); o perfil `neurocapacitar` está autenticado na Neon e no Wrangler (não autorizadas)  
 **Task em execução:** nenhuma  
-**Última tarefa comprovadamente verificada:** M0-11 (spike, 2026-10-10)
+**Última tarefa comprovadamente verificada:** M0-12 (spike, 2026-10-10)
 
 > Nunca marcar tarefa ou marco como concluído com base em decisão, texto de plano, instrução para IA ou intenção. Só evidências reais de arquivos, comandos, testes, SHA e homologação justificam o status.
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 e M0-02 `verified` localmente; M0-11 passou (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 e M0-02 `verified` localmente; spikes M0-11 e M0-12 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,13 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-12 (spike 3) — passou (2026-10-10)
+
+- **Entrega:** [ADR 0027](../adr/0027-spike-m0-12-regiao-neon-e-orcamento-de-compute.md) e medições brutas em [evidencias/m0-12/](../review/evidencias/m0-12/README.md). Código do spike (Worker de teste) ficou fora do repositório.
+- **Resultado:** Worker (colo GRU) → Hyperdrive (cache desligado) → Neon, 3 rodadas por região: **São Paulo ~5 a 8 ms por query** contra **~120 a 137 ms em us-east-1**; despertar frio via Hyperdrive em São Paulo 595 a 1119 ms (p50 633 ms, n = 5), abaixo do limite de 5 s. O pool do Hyperdrive não impede o scale-to-zero (endpoint `idle` ~5 min após a última query). Decisão: **São Paulo (`aws-sa-east-1`)**, cron de 30 min (modelo: ~32 CU-h/mês sem tráfego), nunca abaixo de 10 min.
+- **Não medido:** consumo real de CU-h (as métricas do projeto ficaram em 0 durante o spike); p95 do despertar com n maior.
+- **Recursos criados e apagados (perfil `neurocapacitar`):** 2 projetos Neon Free, 2 configs Hyperdrive, 1 Worker. Verificado depois: restam só os 3 projetos Neon que já existiam, 0 configs Hyperdrive `spike-m0-12-*` e o Worker respondeu 404. Nenhum projeto pré-existente foi tocado. Plano Workers Free (sem Paid).
 
 ### M0-11 (spike 2) — passou (2026-10-10)
 
