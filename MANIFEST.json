@@ -268,10 +268,16 @@
       "bytes": 1839
     },
     {
+      "path": "docs/adr/0026-spike-m0-11-bun-vitest-dependency-cruiser.md",
+      "kind": "file",
+      "sha256": "8edaea8e7224dc4cefb649e87110a8e18adb7bd84c3e151ccb395df6e370c303",
+      "bytes": 4217
+    },
+    {
       "path": "docs/adr/README.md",
       "kind": "file",
-      "sha256": "0da6ef8904bf439b11112bd2363c60d9cf381ccbb4dc08591de92d60a71fdbab",
-      "bytes": 1843
+      "sha256": "d95db87ead3b8ab435e3cba7281b668067dae663ae8ecaf82fe03ba3ec5d8755",
+      "bytes": 1910
     },
     {
       "path": "docs/adr/TEMPLATE.md",
@@ -288,8 +294,8 @@
     {
       "path": "docs/decisions.md",
       "kind": "file",
-      "sha256": "5f8a2015e1aaf6c46bf13d37f10f80d9f7dac19faad1310504427ea930cdf53f",
-      "bytes": 3693
+      "sha256": "4f5aea915b39edba6a9f277ebe8f01d492bdf826f5b273b9fb1c273694d50ea0",
+      "bytes": 3847
     },
     {
       "path": "docs/implementation/M0-01.md",
@@ -306,8 +312,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "bdb8aecb79f3176c53e2744c57623c72afc5390f3e1c12ad4a1d9f4ce1f2ece4",
-      "bytes": 8025
+      "sha256": "028d58afc43dca3b522a35f657fda448c19139010317de21913ad88399908692",
+      "bytes": 9177
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",

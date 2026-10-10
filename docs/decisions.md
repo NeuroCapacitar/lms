@@ -29,6 +29,7 @@
 | [0023](adr/0023-observabilidade-backup-operacao.md) | Observabilidade, backup, operação | B15C (6 h/trimestral) |
 | [0024](adr/0024-processo-enxuto-um-dev-mais-ia.md) | Processo enxuto, regra de corte, spikes | B16 (pacote extenso) |
 | [0025](adr/0025-clis-cloudflare-neon-so-perfil-neurocapacitar.md) | CLIs Cloudflare e Neon só com o perfil `neurocapacitar` | — |
+| [0026](adr/0026-spike-m0-11-bun-vitest-dependency-cruiser.md) | Spike M0-11 passou: Bun, plugin de testes, dependency-cruiser sob TS 7 | confirma Q51 |
 
 ## Convenção
 
