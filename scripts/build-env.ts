@@ -14,7 +14,7 @@ if (!isEnvironmentName(environment) || environment === 'dev') {
 }
 
 const cloudflareEnv = ENVIRONMENTS[environment].cloudflareEnv;
-const build = spawnSync('bunx', ['vite', 'build'], {
+const build = spawnSync('bun', ['x', 'vite', 'build'], {
   stdio: 'inherit',
   shell: process.platform === 'win32',
   env: { ...process.env, CLOUDFLARE_ENV: cloudflareEnv ?? '' },
