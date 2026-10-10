@@ -2,11 +2,11 @@
 
 **Estado:** especificação vigente (2026-10-10); código não implementado.
 
-**Entrega e gate.** Um esqueleto executável (React SPA + Hono no mesmo Worker, Neon Postgres 18 via Hyperdrive sem cache, CI em duas camadas, base visual acessível, primeiro deploy em Staging com observabilidade mínima), a zona DNS planejada/copiada para a Cloudflare e nove spikes técnicos resolvidos por ADR curta. **Gate de aceite:** M0-01..M0-09 concluídas; M0-10, M0-11, M0-12 e M0-18 com ADR "passou"; Staging responde `health` com commit identificável e consulta real ao Neon Staging. Os spikes M0-13..M0-17 podem ser feitos mais tarde, mas **cada marco só começa depois do ADR "passou" do spike que o bloqueia** (indicado em cada spike). Nenhuma Production da vNext existe neste marco (big-bang).
+**Entrega e gate.** Um esqueleto executável (React SPA + Hono no mesmo Worker, Neon Postgres 18 via Hyperdrive sem cache, CI em duas camadas, base visual acessível, primeiro deploy em Staging com observabilidade mínima), a zona DNS **inventariada** (a cópia para a Cloudflare e a troca de nameservers ficam para antes do M10) e nove spikes técnicos resolvidos por ADR curta. **Gate de aceite:** M0-01..M0-08 concluídas (o M0-09 foi adiado para antes do M10, ver abaixo); M0-10, M0-11, M0-12 e M0-18 com ADR "passou"; Staging responde `health` com commit identificável e consulta real ao Neon Staging. Os spikes M0-13..M0-17 podem ser feitos mais tarde, mas **cada marco só começa depois do ADR "passou" do spike que o bloqueia** (indicado em cada spike). Nenhuma Production da vNext existe neste marco (big-bang).
 
 ## Ordem recomendada de execução
 
-M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0-12** (latência Neon, antes de criar os bancos definitivos) → M0-03 → M0-04 → M0-05, M0-06, M0-07 → **M0-10** (Better Auth, antes de M1) e **M0-18** (evlog/Sentry, antes de M0-08) → M0-08 → M0-14, M0-17 (precisam do Staging público) → M0-13, M0-15, M0-16 (antes de M5, M7 e do upload de mídia). **M0-09 (DNS)** corre em paralelo desde o início: depende só do responsável e do registrador.
+M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0-12** (latência Neon, antes de criar os bancos definitivos) → M0-03 → M0-04 → M0-05, M0-06, M0-07 → **M0-10** (Better Auth, antes de M1) e **M0-18** (evlog/Sentry, antes de M0-08) → M0-08 → M0-14, M0-17 (precisam do Staging público) → M0-13, M0-15, M0-16 (antes de M5, M7 e do upload de mídia). **M0-09 (DNS)** foi **adiado por decisão do responsável (2026-10-10)**: o desenvolvimento segue no domínio temporário `*.workers.dev` e a zona só precisa estar na Cloudflare antes do cutover (M10) ou antes do que exigir zona (hostname definitivo, transformação de imagens). Não bloqueia o gate do M0 nem os marcos M1 a M9.
 
 ## Regras para todas as tarefas
 
@@ -119,7 +119,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Fora do escopo / cuidados:** não declarar "pronto para produção". Sem Operations Center e alertas P0–P3 (M4). Bot Fight Mode desligado.
 
 ### M0-09 — Zona DNS na Cloudflare (só planejar e copiar; sem cutover)
-**Dependências:** nenhuma (ação do responsável; começar cedo) · **Estado:** `in_progress` (inventário público e ferramenta de paridade prontos; falta a exportação da zona e a criação da zona na Cloudflare; ver [dns-inventory-and-cutover](../operations/dns-inventory-and-cutover.md))
+**Dependências:** nenhuma (ação do responsável) · **Estado:** `deferred` até antes do M10 (decisão de 2026-10-10: desenvolver no domínio temporário; inventário público e ferramenta de paridade prontos; falta a exportação da zona e a criação da zona na Cloudflare; ver [dns-inventory-and-cutover](../operations/dns-inventory-and-cutover.md))
 **Objetivo:** a zona de `neurocapacitar.com.br` está inventariada e replicada na Cloudflare com paridade comprovada, e `app.neurocapacitar.com.br` **continua apontando para o legado**.
 **Passos:**
 1. Com o responsável, identificar registrador, provedor de DNS atual e qual é a zona (provavelmente o domínio raiz; confirmar se o plano Free aceita delegar só o subdomínio — **PENDENTE (verificar)**).
@@ -207,7 +207,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Dependências:** M0-08 (zona ativa do M0-09 se a transformação exigir) · **Estado:** `not_started` · **Timebox:** 1 dia · **Deve vir antes de:** M5 (mídia)
 **Objetivo:** confirmar redimensionamento/formatos no Free e o comportamento quando as 5.000 transformações únicas do mês acabam.
 **Passos:**
-1. Verificar se a transformação por URL exige zona na Cloudflare (se sim, depende da troca de nameservers do M0-09).
+1. Verificar se a transformação por URL exige zona na Cloudflare (se sim, só a parte que exigir zona espera o M0-09, que foi adiado para antes do M10: testar no `workers.dev` o que for possível e registrar o resto como pendente).
 2. Servir um objeto do R2 em duas variantes; confirmar cache e contagem de transformações únicas.
 3. Simular o limite (erro de cota) e comprovar o fallback para a imagem original estática (`onerror` ou equivalente).
 **Testes:** com cota "esgotada" simulada, a página continua exibindo a imagem; sem URL de variante pública para arquivo privado.

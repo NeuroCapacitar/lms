@@ -3,7 +3,7 @@
 **Atualização:** 2026-10-10  
 **Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** concluir o M0-09 (depende do responsável: exportar a zona DNS, dizer onde se troca a delegação, autorizar a criação da zona na Cloudflare); em paralelo, os spikes M0-15 (PDF no Browser Run) e M0-17 (HTMLRewriter) não dependem de ninguém (não autorizadas)  
+**Próxima tarefa recomendada:** spikes M0-15 (PDF no Browser Run) e M0-17 (HTMLRewriter), M0-16 (imagens, parte que não exige zona) e M1-01; o M0-09 (DNS) está **adiado para antes do M10** (não autorizadas)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-08 (2026-10-10, no CI e em Staging)
 
@@ -29,13 +29,13 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
-### M0-09 — em andamento (2026-10-10): inventário público e ferramenta de paridade; falta o responsável
+### M0-09 — adiado para antes do M10 (decisão do responsável, 2026-10-10); inventário público e ferramenta de paridade prontos
 
 - **Entrega:** [dns-inventory-and-cutover](../operations/dns-inventory-and-cutover.md), `scripts/dns-parity.ts` (+ `dns-parity-core.ts`, `dns-names.json`, teste unitário) e o script `dns:parity`. Só consultas DNS e RDAP públicas (somente leitura). **Não criei a zona na Cloudflare e não troquei nameservers.**
 - **Fatos:** domínio no Registro.br (registro em 2026-05-21, expira em 2029-05-21); nameservers atuais `athena.` e `apollo.dns-parking.com`; DNSSEC desligado; e-mail da equipe no Lark Suite (MX, SPF); Resend já configurado em `send.` e `resend._domainkey` (usado pelo legado); `app` e `www` são CNAME para a Vercel (o legado); DMARC `p=none`.
 - **Executado e passou:** teste unitário do núcleo de comparação (5 casos); a ferramenta rodada entre os dois nameservers atuais (15 registros em cada, paridade total), o que valida a consulta direta aos servidores autoritativos.
 - **Achados:** o apex tem **dois IPs** (`76.76.21.21`, da Vercel, e `2.57.91.91`, que não identifiquei); o seletor DKIM do Lark é desconhecido, então o DKIM do e-mail da equipe não aparece no inventário; DNS público não permite listar a zona, então o inventário só fica completo com a exportação do painel.
-- **Pendente (responsável):** exportar a zona completa; informar onde se altera a delegação e quem tem acesso; confirmar `2.57.91.91`; autorizar a criação da zona (pendente) na Cloudflare; a troca de nameservers continua sendo etapa autorizada à parte, com janela e rollback.
+- **Decisão (2026-10-10):** o responsável decidiu desenvolver no domínio temporário (`workers.dev`) e ajustar para o definitivo depois; o M0-09 sai do gate do M0 e passa a ser pré-requisito do M10 (e do que exigir zona na Cloudflare). **Pendente (responsável, quando retomar):** exportar a zona completa; informar onde se altera a delegação e quem tem acesso; confirmar `2.57.91.91`; autorizar a criação da zona (pendente) na Cloudflare; a troca de nameservers continua sendo etapa autorizada à parte, com janela e rollback.
 
 ### M0-10 — spike passou (2026-10-10)
 
