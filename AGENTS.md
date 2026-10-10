@@ -62,7 +62,7 @@
 
 - Prove a situação no checkout antes de mudar. Bug: reproduza ou ache evidência; crie regressão.
 - Rode primeiro o teste focado, depois as verificações existentes. **Financeiro:** eventos falsos, duplicados e fora de ordem, preço alterado, reembolso concorrente, resultado incerto. **Auth e permissões:** CSRF, XSS, sessão, grants e acesso cruzado direto pela API. **Banco:** PG descartável, drift e locks; nada destrutivo em Staging ou Production. **Async:** retry, DLQ, crash e fencing. **PWA:** troca de usuário, logout, lease, offline, WebKit/iOS. **PDF/R2:** autorização, integridade, escaping, SSRF.
-- `bun run dev`, `verify:quick` e `verify` são **nomes planejados** até o M0 criá-los: leia o `package.json` antes de afirmar execução.
+- Existem hoje (M0-01): `bun run typecheck`, `lint`, `format:check` e `verify:quick`. `dev`, `test` e `verify` são **nomes planejados** até o M0 criá-los: leia o `package.json` antes de afirmar execução.
 - Reporte **comandos reais**, resultado e o que não pôde rodar. Mock não prova workerd, SQL real nem provider.
 - Releia o diff: segredos, arquivos alheios, permissões extras, migrations conflitantes, mudança de contrato, custo.
 

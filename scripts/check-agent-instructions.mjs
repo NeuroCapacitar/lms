@@ -7,14 +7,22 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const canonical = join(root, 'AGENTS.md');
+/** @type {string[]} */
 const errors = [];
+/** @type {string[]} */
 const results = [];
+/** @param {string} path */
 const text = (path) => readFileSync(path, 'utf8');
 const canonicalText = text(canonical);
 if (!canonicalText.includes('NeuroCapacitar Hub vNext') || canonicalText.length < 3000) {
   errors.push('AGENTS.md ausente, incompleto ou inesperado');
 }
 
+/**
+ * @param {string} relative
+ * @param {string} expectedLink
+ * @param {string} expectedImport
+ */
 function check(relative, expectedLink, expectedImport) {
   const file = join(root, relative);
   if (!existsSync(file)) {

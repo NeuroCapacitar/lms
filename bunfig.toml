@@ -1,0 +1,3 @@
+[install]
+# Versões exatas: o Renovate (com espera de 7 a 14 dias) propõe as atualizações.
+exact = true
