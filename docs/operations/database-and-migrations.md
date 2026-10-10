@@ -23,8 +23,10 @@ IDs de Hyperdrive e hosts diretos estão em `scripts/environments.ts` (não são
 - **Migração:** não fica em arquivo. Obtenha na hora, com o perfil do projeto, e passe por variável de ambiente do comando:
 
 ```bash
-DATABASE_URL_MIGRATION="$(neon connection-string --project-id <id> --pooled false --ssl require --profile neurocapacitar)" bun run db:migrate dev
+DATABASE_URL_MIGRATION="$(neon connection-string --project-id <id> --pooled false --ssl require --role-name neondb_owner --profile neurocapacitar)" bun run db:migrate dev
 ```
+
+`--role-name neondb_owner` é obrigatório (o projeto tem duas roles: a de migração e `hub_runtime`). Se o migrator tentar reaplicar uma migração antiga, compare o `created_at` do journal do banco (`drizzle.__drizzle_migrations`) com o `when` de `drizzle/meta/_journal.json` e o hash do SQL: o migrator só compara o carimbo (aconteceu no Staging em 2026-10-10; o SQL era idêntico e só o carimbo foi corrigido).
 
 IDs dos projetos: `neon projects list --org-id <org> --profile neurocapacitar`. Os scripts **recusam** host de pooler (`-pooler`), host diferente do aprovado para o ambiente e, em Production, exigem `CONFIRM_MIGRATE_PRODUCTION=<host>` (execução manual do responsável, com backup e Go/No-Go).
 
