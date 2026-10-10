@@ -9,5 +9,3 @@ export const healthProbe = pgTable('health_probe', {
   note: text().notNull(),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
-
-export const naoUsado = 1;

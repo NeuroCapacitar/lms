@@ -22,3 +22,5 @@ export async function withDatabase<T>(
     await client.end();
   }
 }
+
+export const naoUsado = 1;
