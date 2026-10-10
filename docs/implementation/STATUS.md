@@ -1,9 +1,9 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `verified` no CI (sem Staging com e-mail real). M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
+**Estado:** M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `homologated` em Staging com e-mail real. M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M1-02 (perfil e preferências) e M1-03 (papéis e grants), que também fornecem a consulta de Staff que a M1-06 aguarda; antes do Staging com e-mail real: criar o modelo no Resend, a chave de API e o widget do Turnstile, e aplicar as migrations 0001 e 0002 e os segredos (autorização); LinkedIn do M0-17 pendente; M0-09 adiado (não autorizadas)  
+**Próxima tarefa recomendada:** M1-02 (perfil e preferências) e M1-03 (papéis e grants, que também entrega a consulta de Staff que a M1-06 aguarda); LinkedIn do M0-17 pendente; M0-09 adiado (não autorizadas)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-08 (2026-10-10, no CI e em Staging)
 
@@ -29,6 +29,14 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
+### M1-06 — homologação em Staging (2026-10-10)
+
+- **Preparação (autorizada):** widget Turnstile `hub-staging` (modo gerenciado, só para o host do Staging; chave secreta no Worker, chave do site como variável do GitHub `VITE_TURNSTILE_SITE_KEY`), PR #37 (deploy passa a chave ao build) e deploy do commit `7b57cfe` pelo workflow. Antes do teste: `/api/me` 401, `/entrar` e `/entrar/confirmar` com `Referrer-Policy: no-referrer` e `Cache-Control: no-store`, endpoint nativo de verificação 404, pedido inválido 400.
+- **Teste real, feito pelo responsável no navegador (2026-10-10 ~18:44 UTC):** pediu o link em `/entrar` com o Turnstile real, recebeu o e-mail, abriu `/entrar/confirmar`, clicou em "Entrar" e `GET /api/me` devolveu a pessoa: **"funcionou perfeitamente"**. Um navegador automatizado (Chromium sem interface) **não** obteve o token do Turnstile, como esperado de um captcha; não houve tentativa de contorno.
+- **Verificado depois pelo agente:** o Resend mostra o envio `NeuroCapacitar <acesso@neurocapacitar.com.br>` para o e-mail do projeto com `last_event: delivered` (domínio verificado, sem remetente de teste); o **mesmo link usado de novo** é recusado (HTTP 400 `invalid_or_expired_link`); o **Workers Logs persistido** (`cf observability telemetry query`, 10 eventos do Worker) **não contém o token, o e-mail nem `#token`**: a única ocorrência de `token=` é a URL de um GET de teste do próprio agente, com o valor já mascarado como `REDACTED` pela Cloudflare.
+- **Atenção registrada:** o Resend guarda o HTML dos e-mails enviados e a API o devolve (usei isso para obter o link já consumido e testar o reuso). Quem tem acesso à conta Resend, **compartilhada com o legado**, enxerga links de acesso dentro dos 15 minutos de validade. Risco aceito pela validade curta e uso único; mitigação futura: conta ou chave do Resend separada para a vNext.
+- **Limites desta homologação:** um e-mail (o da lista de permitidos), um navegador, um fluxo; sem teste de carga nem de múltiplos dispositivos; a consulta de Staff segue como porta (M1-03/M1-04); valores dos limites ainda propostos; Production não existe.
+
 ### Resend: modelo, chave e remetente do Staging (2026-10-10, pela CLI do Resend já autenticada)
 
 - **Modelo hospedado criado e publicado:** `vnext-magic-link` (ID `bcbd5da9-a043-4014-aba9-8b27c8e55f9d`, variável `LINK_URL`, assunto "Seu link de acesso ao NeuroCapacitar", remetente `NeuroCapacitar <acesso@neurocapacitar.com.br>`). Texto e HTML em `docs/operations/email-templates/`. Nenhum modelo do legado foi tocado (a conta tem 10 modelos antigos, como `auth-password-reset`).
@@ -42,7 +50,7 @@ Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, re
 - **Achado:** a primeira tentativa falhou porque o journal do Staging guardava o 0000 com `created_at` 1791619928128, e o `_journal.json` atual diz 1791620178127 (o arquivo foi regenerado depois do M0-04). O migrator do Drizzle compara só esse carimbo e tentou rodar o 0000 de novo. O SQL do 0000 é idêntico (mesmo SHA-256 do registro), então corrigi só o carimbo no journal do Staging (uma linha) e rodei de novo. O `neon connection-string` exige `--role-name neondb_owner` (o projeto tem duas roles).
 - **Não feito:** `TURNSTILE_SECRET_KEY` e `RESEND_API_KEY` ainda não existem no Staging (dependem do widget do Turnstile e da chave/modelo do Resend); o código do M1 **não foi implantado** no Staging (o Worker publicado continua o do M0-08), então `/api/auth/*` ainda não existe lá.
 
-### M1-06 — verified no CI (2026-10-10); falta o Staging com e-mail real
+### M1-06 — homologated em Staging com e-mail real (2026-10-10)
 
 - **Entrega:** PR #33 (`feat/m1-06-magic-link`), CI verde (`bloqueante` 2m7s, com Postgres 18 e Playwright no Linux). Pedido e confirmação do link de acesso sobre o Better Auth 1.7.7 (plugin `magicLink`), com as proteções da tarefa. Sem Google, senha nem passkey (M1-07).
 - **Servidor:** `POST /api/auth/link/request` (Zod, e-mail normalizado, **Turnstile antes de abrir o banco**, limites no Postgres por e-mail 3/10 min, por IP 10/10 min e teto global 60/dia **propostos**, resposta única `{status:"ok"}` para e-mail existente, novo, de Staff ou limitado; o envio roda **depois** da resposta) e `POST /api/auth/link/confirm` (único ponto que cria sessão; devolve só `{status:"ok"}` e o cookie HttpOnly, sem o token de sessão no corpo). Os endpoints nativos do plugin (`sign-in/magic-link` e `magic-link/verify`) **respondem 404**: o primeiro pularia captcha e limites, o segundo cria sessão em GET. Ambos os POST exigem `Origin` igual a `APP_BASE_URL`. Token guardado com **hash**, validade de 15 minutos, uso único. `EmailSender` (porta no domínio) com implementação **falsa** (testes; em Development o link sai no terminal) e **Resend** (REST com modelo hospedado, `Idempotency-Key`, lista de permitidos para Staging); sem `RESEND_API_KEY` fora de Development o envio **falha** em vez de fingir.
