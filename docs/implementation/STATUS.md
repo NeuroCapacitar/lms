@@ -29,6 +29,13 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
+### Resend: modelo, chave e remetente do Staging (2026-10-10, pela CLI do Resend já autenticada)
+
+- **Modelo hospedado criado e publicado:** `vnext-magic-link` (ID `bcbd5da9-a043-4014-aba9-8b27c8e55f9d`, variável `LINK_URL`, assunto "Seu link de acesso ao NeuroCapacitar", remetente `NeuroCapacitar <acesso@neurocapacitar.com.br>`). Texto e HTML em `docs/operations/email-templates/`. Nenhum modelo do legado foi tocado (a conta tem 10 modelos antigos, como `auth-password-reset`).
+- **Domínio:** `neurocapacitar.com.br` já está **verificado** no Resend (região sa-east-1, envio habilitado), então o remetente de teste do Resend não é necessário e o M0-09 não bloqueia o e-mail. **A conta e a cota são as mesmas do legado** (Free: 100/dia, compartilhados).
+- **Chave:** `vnext-hub-staging`, só envio e restrita ao domínio, gravada direto como segredo `RESEND_API_KEY` do Worker `hub-staging` (nunca impressa). Segredo `EMAIL_ALLOWLIST` do Staging com só o e-mail da conta do projeto.
+- **Não feito:** nenhum e-mail de teste foi enviado; o código do M1 ainda não foi implantado no Staging; falta o widget do Turnstile (`TURNSTILE_SECRET_KEY`).
+
 ### Staging: migrations 0001 e 0002 e segredo do Better Auth (2026-10-10, autorizado pelo responsável)
 
 - **Feito (perfil `neurocapacitar`, identidade verificada no Neon e na Cloudflare):** migrations `0001_better_auth_identity` e `0002_auth_throttle` aplicadas no banco `hub-staging` (journal com 3 registros); conferido que a role de runtime `hub_runtime` tem SELECT, INSERT, UPDATE e DELETE nas 7 tabelas (os privilégios padrão cobrem tabelas novas); segredo `BETTER_AUTH_SECRET` criado no Worker `hub-staging` (valor aleatório de 32 bytes, nunca impresso).

@@ -7,9 +7,8 @@
   "observability": { "enabled": true, "logs": { "invocation_logs": false } },
   "vars": {
     "APP_BASE_URL": "http://localhost:5173",
-    "EMAIL_FROM": "NeuroCapacitar <onboarding@resend.dev>",
-    "RESEND_TEMPLATE_MAGIC_LINK": "",
-    "EMAIL_ALLOWLIST": "",
+    "EMAIL_FROM": "NeuroCapacitar <acesso@neurocapacitar.com.br>",
+    "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
   },
   "assets": {
     "not_found_handling": "single-page-application",
@@ -21,9 +20,8 @@
       "name": "hub-staging",
       "vars": {
         "APP_BASE_URL": "https://hub-staging.neurocapacitar-projetos.workers.dev",
-        "EMAIL_FROM": "NeuroCapacitar <onboarding@resend.dev>",
-        "RESEND_TEMPLATE_MAGIC_LINK": "",
-        "EMAIL_ALLOWLIST": "",
+        "EMAIL_FROM": "NeuroCapacitar <acesso@neurocapacitar.com.br>",
+        "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea4be9d4370457b93f1feb7469d2ceb" }],
     },
@@ -31,9 +29,8 @@
       "name": "hub-production",
       "vars": {
         "APP_BASE_URL": "https://hub-production.neurocapacitar-projetos.workers.dev",
-        "EMAIL_FROM": "NeuroCapacitar <onboarding@resend.dev>",
-        "RESEND_TEMPLATE_MAGIC_LINK": "",
-        "EMAIL_ALLOWLIST": "",
+        "EMAIL_FROM": "NeuroCapacitar <acesso@neurocapacitar.com.br>",
+        "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "f31b83e0d8044d00a9651c81d121bc91" }],
     },
