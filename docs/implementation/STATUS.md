@@ -1,9 +1,9 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; spikes M0-11, M0-12 e M0-18 passaram)  
+**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging (CI em verificação); spikes M0-11, M0-12 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-08 (primeiro deploy em Staging; precisa da conta Sentry criada pelo responsável e do seu OK explícito) (não autorizada)  
+**Próxima tarefa recomendada:** M0-09 (plano da zona DNS; depende do responsável e do registrador) ou os spikes M0-10 (Better Auth) e M0-14/M0-17, que já podem usar o Staging público (não autorizadas)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-07 (2026-10-10, no CI)
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; spikes M0-11, M0-12 e M0-18 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; M0-08 `homologated` em Staging; spikes M0-11, M0-12 e M0-18 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,21 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-08 — homologated em Staging (2026-10-10); CI em verificação
+
+- **Entrega:** PR de `feat/m0-08-staging`. Código publicado: commit `06fb96d91fdfe592da73191d4e735f0a34a34af9` (os commits de documentação posteriores não mudam o código). Perfil `neurocapacitar` verificado antes (`cf auth whoami`, `wrangler auth list`, `sentry auth whoami`).
+- **Recursos criados:** Worker `hub-staging` (https://hub-staging.neurocapacitar-projetos.workers.dev, plano Workers **Free**: o Paid segue não contratado), segredo `SENTRY_DSN` do Worker; no Sentry (org `neurocapacitar`, plano Developer) os projetos `hub-vnext-worker` e `hub-vnext-web`, com descarte de IP e limpador de dados ligados. O projeto `hub-web` pré-existente **não foi tocado**. Nada em Production.
+- **Código:** `src/server/logging.ts` (evlog 2.30.1 fixado, redação de e-mail, token, cookie e link de acesso), `src/server/sentry.ts` e `src/web/observability.ts` (Sentry 11.6.0 com `dataCollection` mínima, `beforeSend`, sem breadcrumbs, sem tracing; o SPA carrega o Sentry depois da primeira renderização), `src/features/observability/*` (padrões e limpeza, puros, testados), `src/server/index.ts` (id de correlação gerado no servidor, ignora o `x-request-id` do cliente, devolve `x-request-id`), `health/live` e `health/ready` com `releaseId` (SHA embutido no build pelo Vite), Workers Logs ligado (`invocation_logs: false`), `scripts/deploy-staging.ts` (recusa árvore suja e commit fora do GitHub), `scripts/smoke.ts`, `.github/workflows/deploy-staging.yml` (manual, **sem os segredos no GitHub**).
+- **Executado e passou:**
+  - `bun run verify` completo local (exit 0; Gitleaks local pulado, o CI executa): 77 testes Vitest (inclui `src/server/app.test.ts`: `ready` com banco inalcançável devolve 503 com log de erro legível; e-mail, token, cookie, `Authorization` e `x-request-id` forjado não aparecem nos registros) e 18 do Playwright.
+  - `bun run deploy:staging` e `bun run smoke`: `live` e `ready` 200 com `releaseId` igual ao SHA do commit; `ready` consulta o **Neon Staging** pelo Hyperdrive (648 ms no primeiro acesso, com o banco acordando).
+  - **Varredura de logs com dados de teste** (e-mail `pessoa@example.com`, `TOKEN_SECRETO`, `COOKIE_SECRETO`, `x-request-id` forjado): o Workers Logs **persistido** (`cf observability telemetry query --profile neurocapacitar`) não contém nenhum deles; o e-mail da mensagem de erro saiu `[REDACTED]` e o id de correlação foi o gerado no servidor.
+  - **Falha proposital:** um Worker temporário (versão `2ff69688…`, rota que lança erro, **não commitada**, já substituída pela versão `158a7a81…` do commit) mostrou o erro chegando ao Sentry (`HUB-VNEXT-WORKER-1`, título com `[email]`, sem usuário, cookies, cabeçalhos nem query). No SPA, um erro lançado no Chromium contra o Staging chegou como `HUB-VNEXT-WEB-1`, sem e-mail, query nem fragmento.
+- **Achados corrigidos:** (1) **no Sentry 11 `sendDefaultPii` não existe e o padrão coleta tudo** (cookies, cabeçalhos, corpos, query, variáveis das pilhas): trocado por `dataCollection` mínima (ADR 0028, emenda). (2) O Sentry preencheu a geografia do usuário a partir do IP: `scrubIPAddresses` ligado nos dois projetos. (3) O preflight rejeitava `observability`: agora é chave benigna. (4) O `wrangler tail` mostra a URL com query e o `x-request-id` do cliente (só ao vivo; o log persistido está limpo).
+- **Desvios do plano:** (1) o primeiro deploy foi feito **da máquina do responsável com o perfil `neurocapacitar`**, não pelo GitHub Actions: o workflow existe, mas o token Cloudflare para o GitHub não foi criado (a permissão de editar Workers vale para a conta toda e permitiria também publicar Production; passo a passo em [ambientes](../operations/environment-and-release-safety.md#staging-publicação-m0-08)). (2) Web Analytics **não foi ligado** (depende de confirmar a ausência de cookie e de um domínio definitivo; M0-09). (3) O Hyperdrive indisponível foi provado em teste de unidade, não derrubando o Hyperdrive real do Staging.
+- **Riscos abertos:** `hub-staging` e `health/ready` são públicos em `workers.dev` e acordam o Neon a cada chamada (aceitável em Staging vazio; proteger antes de dados reais); source maps do Sentry não enviados (a pilha sai com nomes do bundle); limites do plano Free do Workers (CPU, requisições) não medidos sob carga; o endpoint de pagamento e a CSP ainda não existem.
+- **Responsável pela homologação:** quem abrir a URL do Staging e conferir o `releaseId`; o resultado do CI do PR é registrado depois.
 
 ### M0-18 — spike passou (2026-10-10)
 

@@ -26,7 +26,7 @@ test('rota profunda aberta direto no navegador recarrega a SPA sem 404', async (
 test('a API responde JSON e /api desconhecida não devolve HTML', async ({ request }) => {
   const live = await request.get('/api/health/live');
   expect(live.status()).toBe(200);
-  expect(await live.json()).toEqual({ status: 'ok' });
+  expect(await live.json()).toEqual({ status: 'ok', releaseId: expect.any(String) });
   const missing = await request.get('/api/nada');
   expect(missing.status()).toBe(404);
   expect(missing.headers()['content-type']).toContain('application/json');

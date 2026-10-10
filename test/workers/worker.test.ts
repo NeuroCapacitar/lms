@@ -10,7 +10,16 @@ describe('Worker no workerd', () => {
     const response = await exports.default.fetch(new Request('http://example.com/api/health/live'));
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('application/json');
-    expect(await response.json()).toEqual({ status: 'ok' });
+    expect(await response.json()).toEqual({ status: 'ok', releaseId: expect.any(String) });
+  });
+
+  it('gera o id de correlação no servidor e ignora o x-request-id do cliente', async () => {
+    const response = await exports.default.fetch(
+      new Request('http://example.com/api/health/live', { headers: { 'x-request-id': 'forjado' } }),
+    );
+    const id = response.headers.get('x-request-id');
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(id).not.toBe('forjado');
   });
 
   it('GET /api/nada devolve 404 JSON, nunca o HTML da SPA', async () => {
@@ -24,6 +33,6 @@ describe('Worker no workerd', () => {
       new Request('http://example.com/api/health/ready'),
     );
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ status: 'ok' });
+    expect(await response.json()).toEqual({ status: 'ok', releaseId: expect.any(String) });
   });
 });

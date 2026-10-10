@@ -1,0 +1,59 @@
+name: Deploy Staging
+
+# Publica SÓ o Worker de Staging, e só quando alguém dispara à mão (M0-08). Nunca Production:
+# nenhuma credencial de Production existe no GitHub (AGENTS.md §3, ADR 0021).
+# Requer, em Settings > Secrets and variables > Actions (ver docs/operations/environment-and-release-safety.md):
+#   secret   CLOUDFLARE_API_TOKEN   token da conta do projeto, com permissão de editar Workers
+#   secret   CLOUDFLARE_ACCOUNT_ID  ID da conta do projeto
+#   variable VITE_SENTRY_DSN        DSN público do projeto Sentry do SPA (hub-vnext-web)
+#   variable STAGING_URL            URL do Worker de Staging (https://hub-staging.<subdomínio>.workers.dev)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+env:
+  BUN_VERSION: 1.4.2
+  NODE_VERSION: 24.21.0
+  BUN_SHA256: 36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913
+
+jobs:
+  deploy:
+    name: deploy-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Só de branches persistentes: o commit publicado precisa estar na história revisada.
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Instalar Bun (binário oficial, checksum conferido)
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/bun.zip" "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-linux-x64.zip"
+          echo "${BUN_SHA256}  $RUNNER_TEMP/bun.zip" | sha256sum --check -
+          unzip -q "$RUNNER_TEMP/bun.zip" -d "$RUNNER_TEMP/bun-dist"
+          echo "$RUNNER_TEMP/bun-dist/bun-linux-x64" >> "$GITHUB_PATH"
+      - name: Instalar dependências (lockfile congelado)
+        run: bun install --frozen-lockfile
+      - name: Build do Staging, preflight e deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+        run: bun run deploy:staging
+      - name: Smoke (o SHA no ar precisa ser o deste commit)
+        env:
+          STAGING_URL: ${{ vars.STAGING_URL }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: bun run smoke "$STAGING_URL" "$RELEASE_SHA"

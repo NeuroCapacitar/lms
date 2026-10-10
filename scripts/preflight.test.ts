@@ -34,6 +34,7 @@ function artifact(overrides: Record<string, unknown> = {}) {
     vars: {},
     durable_objects: { bindings: [] },
     assets: { directory: '../client' },
+    observability: { enabled: true, logs: { invocation_logs: false } },
     ...overrides,
   };
 }
