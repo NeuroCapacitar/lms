@@ -1,0 +1,9 @@
+Seu link de acesso ao NeuroCapacitar
+
+Recebemos um pedido de acesso com este e-mail. Para entrar, abra o endereço abaixo. O link vale por 15 minutos e só funciona uma vez.
+
+{{{LINK_URL}}}
+
+Se você não pediu este acesso, pode ignorar este e-mail: ninguém entra na sua conta sem usar o link.
+
+NeuroCapacitar

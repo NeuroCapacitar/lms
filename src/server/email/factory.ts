@@ -10,7 +10,7 @@ import { createResendSender } from './resend';
 export function createEmailSender(env: Env): EmailSender {
   if (env.RESEND_API_KEY) {
     // As variáveis do `wrangler types` têm tipo literal (por ambiente); aqui são só texto.
-    const allowlist: string = env.EMAIL_ALLOWLIST;
+    const allowlist = env.EMAIL_ALLOWLIST ?? '';
     const templateId: string = env.RESEND_TEMPLATE_MAGIC_LINK;
     return createResendSender({
       apiKey: env.RESEND_API_KEY,

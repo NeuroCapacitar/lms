@@ -12,4 +12,9 @@ interface Env {
   TURNSTILE_SECRET_KEY: string;
   /** Chave da API do Resend. Ausente só é aceito em Development (e-mail falso). */
   RESEND_API_KEY?: string;
+  /**
+   * Lista de destinatários permitidos, separados por vírgula (Staging). Worker Secret, não variável:
+   * são e-mails de pessoas e não entram no repositório. Ausente = sem filtro.
+   */
+  EMAIL_ALLOWLIST?: string;
 }
