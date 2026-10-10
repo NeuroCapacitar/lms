@@ -66,7 +66,7 @@ Regras técnicas fixas:
 | Secrets | locais, nunca versionados | escopo Staging | fora do CI comum |
 | Dados | sintéticos | sintéticos | reais; **nunca copiados para os outros** |
 
-Workers Previews não substituem Staging (Cron, rotas e consumers de Queue não funcionam nelas); Version URLs e Previews são públicas por padrão e ficam protegidas. Sem branch Neon por PR. Nenhuma Production da vNext existe antes da v1 integral (big-bang). Possível regra da Neon de apagar projetos Free inativos (prazo e escopo **não confirmados** nas evidências; verificar na página de planos no provisionamento, spike M0-12): manter atividade periódica em Dev/Staging até confirmar.
+Workers Previews não substituem Staging (Cron, rotas e consumers de Queue não funcionam nelas); Version URLs e Previews são públicas por padrão e ficam protegidas. Sem branch Neon por PR. Nenhuma Production da vNext existe antes da v1 integral (big-bang). Possível regra da Neon de apagar projetos Free inativos (prazo e escopo **não confirmados** nas evidências; verificar na página de planos no provisionamento; o spike M0-12 não a observou): manter atividade periódica em Dev/Staging até confirmar.
 
 ## 5. Dados e recuperação
 
@@ -83,7 +83,7 @@ Workers Previews não substituem Staging (Cron, rotas e consumers de Queue não 
 - Execução: o dump diário exige agendamento. Se for GitHub Actions, usar **repositório administrativo isolado** (só se necessário) com secrets mínimos: role PG somente leitura, credencial R2 só de escrita no bucket de backup, chave `age` pública; sem DDL, sem deploy. Cron do GitHub atrasa (o legado viu 3h34–5h08): alerta se não houver backup íntegro há > 26 h.
 - **Egress do Neon Free** (limite de 5 GB/projeto **não confirmado** nas evidências; verificar no provisionamento) pode limitar o dump diário: tamanho compactado × 31 + dumps de release não pode estourar. Medir no M0; é o terceiro gatilho prático de upgrade, junto com os do §7.
 - **Pós-restore:** não liberar efeitos externos antes de reconciliar com Asaas (pagamentos/reembolsos), Resend (envios), revogações de acesso/certificado, pedidos de exclusão e caches/mídia. Não afirmar restauração atômica de Neon + R2 + providers.
-- **Orçamento de acordar o Neon Free:** scale-to-zero de 5 min fixo; o Cron de reconciliação a cada 30 min acorda o banco ~48×/dia. Free tem 100 CU-h/projeto/mês; a conta (acordadas × tempo ativo × CU mínimo) é medida no `PENDENTE (spike M0-12)` e acompanhada em produção.
+- **Orçamento de acordar o Neon Free:** scale-to-zero de 5 min fixo; o Cron de reconciliação a cada 30 min acorda o banco ~48×/dia. Free tem 100 CU-h/projeto/mês; modelo do spike M0-12 ([ADR 0027](../adr/0027-spike-m0-12-regiao-neon-e-orcamento-de-compute.md)): ~32 CU-h/mês só com o cron de 30 min (0,25 CU, ~5,1 min ativos por acordada); nunca abaixo de 10 min. O consumo real (`active_time_seconds`) ainda não foi medido e é acompanhado em Staging e Production.
 - **Gatilhos de upgrade do Neon** (qualquer um reabre a decisão de custo): banco > 600 MB (limite 1 GB); consumo > 70 CU-h/mês; **primeiro incidente de perda de dados**. Sem SLA no Free (§11).
 
 ## 6. Observabilidade

@@ -1,6 +1,6 @@
 # ADR-0005 — PostgreSQL 18 no Neon Free via Hyperdrive, com Drizzle 0.45 e sem advisory locks
 
-- **Estado:** accepted-conditional (região e orçamento de wake dependem do spike M0-12)
+- **Estado:** accepted (região e orçamento de wake confirmados pelo spike M0-12, ver [ADR 0027](0027-spike-m0-12-regiao-neon-e-orcamento-de-compute.md); pendente apenas o consumo real em Staging)
 - **Data:** 2026-10-10
 - **Origem:** Q43, Q45, Q53; B11, B15A/B15B
 - **Substitui:** Neon pago/PITR de 7 dias como base; qualquer uso de advisory locks do legado

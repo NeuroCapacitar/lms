@@ -1,0 +1,12 @@
+{
+  "label": "sa-east-1",
+  "mode": "cold",
+  "startedAt": "2026-10-10T06:51:13.884Z",
+  "sample": {
+    "at": "2026-10-10T06:51:15.687Z",
+    "connectMs": 1578.6,
+    "firstQueryMs": 111.8,
+    "totalMs": 1690.5
+  },
+  "finishedAt": "2026-10-10T06:51:15.687Z"
+}

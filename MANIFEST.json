@@ -144,8 +144,8 @@
     {
       "path": "docs/adr/0005-banco-neon-free-hyperdrive-drizzle.md",
       "kind": "file",
-      "sha256": "cf05c1e15f018414a14e817faead8f42ea55d574f858971e8b2edcd8c808add4",
-      "bytes": 2208
+      "sha256": "228e007e67e27c99da326f99467c3e3d71116b37db5418ae73ee6f358890556f",
+      "bytes": 2316
     },
     {
       "path": "docs/adr/0006-assincrono-outbox-duas-filas.md",
@@ -274,10 +274,16 @@
       "bytes": 4217
     },
     {
+      "path": "docs/adr/0027-spike-m0-12-regiao-neon-e-orcamento-de-compute.md",
+      "kind": "file",
+      "sha256": "9fac276fc809c5ecda6fdce9be55d206e993251e82f5216bf4528767028b1bb4",
+      "bytes": 5231
+    },
+    {
       "path": "docs/adr/README.md",
       "kind": "file",
-      "sha256": "d95db87ead3b8ab435e3cba7281b668067dae663ae8ecaf82fe03ba3ec5d8755",
-      "bytes": 1910
+      "sha256": "1aba67a306042f088c52ae3f69dcd771de70b22fefe3c66ebee8645af66ae5ed",
+      "bytes": 1987
     },
     {
       "path": "docs/adr/TEMPLATE.md",
@@ -294,8 +300,8 @@
     {
       "path": "docs/decisions.md",
       "kind": "file",
-      "sha256": "4f5aea915b39edba6a9f277ebe8f01d492bdf826f5b273b9fb1c273694d50ea0",
-      "bytes": 3847
+      "sha256": "2096204e29d64c5ad41ea7451216c08c5ea9eef8b1391434042d5837bf2ad85b",
+      "bytes": 4010
     },
     {
       "path": "docs/implementation/M0-01.md",
@@ -312,8 +318,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "7cd025bb608b563e35ff38c7422dd8825d784ab021bc5307fd22ac407db82ab2",
-      "bytes": 9294
+      "sha256": "ed3e9ce5a748c6a02aa463b2e673478c3054c6f45f5a7ed199f192a31bf63df6",
+      "bytes": 10509
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",
@@ -390,8 +396,8 @@
     {
       "path": "docs/spec/security-operations.md",
       "kind": "file",
-      "sha256": "44fe918eb3793e34fee3247540516fd3660c3c2a1a0d17b73c8c3007dcdd51e9",
-      "bytes": 22044
+      "sha256": "5969ec73adf2e4784ce86f8a1624787b691acd43d433a719d44a43f18ad5e1dd",
+      "bytes": 22252
     },
     {
       "path": "docs/tasks/M0-fundacao.md",

@@ -1,0 +1,1 @@
+{"db":"sa","startedAt":"2026-10-10T07:12:48.812Z","colo":"GRU","country":"BR","scenarios":{"nova_conexao_mais_select1_ms":{"n":30,"min":6,"p50":9,"p95":13,"max":13},"query_simples_conexao_aberta_ms":{"n":100,"min":4,"p50":5,"p95":6,"max":37},"cinco_queries_sequenciais_ms":{"n":30,"min":23,"p50":25,"p95":28,"max":30}}}
