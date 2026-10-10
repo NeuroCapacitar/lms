@@ -15,5 +15,15 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["scripts/**/*.mjs", "scripts/**/*.ts", "vite.config.ts", "drizzle.config.ts"]
+  "include": [
+    "scripts/**/*.mjs",
+    "scripts/**/*.ts",
+    "vite.config.ts",
+    "drizzle.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "test/helpers/**/*.ts",
+    "test/pg/**/*.ts",
+    "e2e/**/*.ts"
+  ]
 }

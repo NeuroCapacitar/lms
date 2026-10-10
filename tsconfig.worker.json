@@ -17,6 +17,7 @@
     "src/server/**/*.ts",
     "src/db/**/*.ts",
     "src/features/**/*.ts",
-    "worker-configuration.d.ts"
+    "worker-configuration.d.ts",
+    "test/workers/**/*.ts"
   ]
 }

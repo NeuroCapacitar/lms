@@ -15,6 +15,10 @@ export async function withDatabase<T>(
   work: (db: Database) => Promise<T>,
 ): Promise<T> {
   const client = new pg.Client({ connectionString: hyperdrive.connectionString });
+  // Sem ouvinte, um 'error' do cliente vira exceção não tratada. O pg-cloudflare emite um erro
+  // ("This socket has been closed") quando o leitor do socket é cancelado ao fechar a conexão; a
+  // resposta não é afetada, mas o erro poluiria os logs. Erros reais de consulta chegam pelo `await`.
+  client.on('error', () => {});
   await client.connect();
   try {
     return await work(drizzle(client, { schema, casing: 'snake_case' }));

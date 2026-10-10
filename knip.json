@@ -5,10 +5,12 @@
     "scripts/*.mjs",
     "scripts/db/*.ts",
     "scripts/**/*.test.ts",
-    "scripts/db/*.integration.ts"
+    "scripts/db/*.integration.ts",
+    "test/**/*.test.ts",
+    "e2e/**/*.spec.ts"
   ],
-  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}", "*.ts"],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}", "*.ts", "test/**/*.ts", "e2e/**/*.ts"],
   "ignore": ["src/web/routeTree.gen.ts"],
-  "ignoreDependencies": ["@swc/core"],
+  "ignoreDependencies": ["@swc/core", "cloudflare"],
   "ignoreBinaries": ["gitleaks"]
 }

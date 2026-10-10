@@ -1,10 +1,10 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 a M0-05 `verified`; spikes M0-11 e M0-12 passaram; CI bloqueante e consultivo ativos)  
+**Estado:** M0 em andamento (M0-01 a M0-05 `verified`; M0-06 implementado, CI em verificação; spikes M0-11 e M0-12 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-06 (Vitest, PG18 e Playwright); depois M0-07 e M0-08 (não autorizadas)  
-**Task em execução:** nenhuma  
+**Próxima tarefa recomendada:** concluir a verificação do M0-06 no CI; depois M0-07 e M0-08 (não autorizadas)  
+**Task em execução:** M0-06 (branch `feat/m0-06-testes`)  
 **Última tarefa comprovadamente verificada:** M0-05 (2026-10-10, no CI)
 
 > Nunca marcar tarefa ou marco como concluído com base em decisão, texto de plano, instrução para IA ou intenção. Só evidências reais de arquivos, comandos, testes, SHA e homologação justificam o status.
@@ -28,6 +28,19 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-06 — implemented localmente; CI em verificação (2026-10-10)
+
+- **Entrega:** PR de `feat/m0-06-testes`. Estratégia e comandos em [testes](../operations/testing.md).
+- **Recurso criado (perfil `neurocapacitar`, identidade verificada):** projeto Neon Free `hub-test` (`aws-sa-east-1`, PG 18), o banco de testes local; URL só em `.env.test` (ignorado pelo Git). Nenhum Worker, Hyperdrive ou projeto existente foi alterado.
+- **Vitest 5.0.3** com três projetos: `unit` (Node), `workers` (`@cloudflare/vitest-plugin` 1.4.0, workerd) e `pg` (Postgres 18 real). **Playwright 1.64.0** (Chromium headless shell 156, 118 MiB baixados do CDN oficial do Playwright).
+- **Executado e passou (local):** `bun run verify` completo (exit 0): 16 testes Vitest (9 unit, 4 pg, 3 workers), 4 testes Playwright, Knip, dependency-cruiser e Gitleaks. `test:workers` rodou 3 vezes seguidas sem erro.
+  - `pg`: migrations em PG 18 (confere `server_version_num` ≥ 180000), schema isolado por arquivo, **corrida de referência** (20 inserções paralelas na mesma chave: exatamente 1 vence) e **serialização com `FOR UPDATE`** (duas transações, contador final 2, espera ≥ 70% da retenção do lock).
+  - `workers`: `/api/health/live` 200 JSON, `/api/nada` 404 JSON e `health/ready` **pelo binding Hyperdrive local até o Postgres de teste**. Com `TEST_DATABASE_URL` inválida o teste `ready` **falha**, provando que usa o banco de teste e não o `.env` de dev.
+  - Playwright: página inicial com "Serviço disponível.", navegação para `/sobre`, **rota profunda `/sobre` aberta direto e recarregada sem 404 em navegador real** (fecha o item "SPA fallback em navegador real" que ficara pendente no M0-02), API em JSON e 404 JSON em `/api` desconhecida.
+- **Achados corrigidos:** (1) no workerd o `pg` não carrega pelo pipeline de módulos do plugin (`pg-protocol` resolve para `esm/index.js`, arquivo ESM dentro de pacote CommonJS; alias, plugin de resolução e otimizador de dependências não resolveram): o projeto `workers` testa o **Worker construído** (`dist/hub`), que já traz o `pg` empacotado. (2) Ao fechar o cliente, o `pg-cloudflare` rejeitava o leitor do socket e emitia um `error` sem ouvinte (exceção não tratada que derrubava o Vitest e poluiria os logs em produção): `withDatabase` agora registra `client.on('error', ...)`. Com `pg` 8.23.1 o problema persistia, então o `pg` segue fixado em 8.16.3 (ADR 0022).
+- **Desvios do plano:** (1) o teste do Worker usa o artefato construído, não o código-fonte. (2) PG18 local é o projeto Neon `hub-test` (sem Docker nesta máquina); no CI é o serviço `postgres:18`. (3) `test:db` (node:test, só Development) permanece à parte por depender de credenciais de dev.
+- **Pendente nesta entrega:** o resultado do CI com o serviço `postgres:18` e o Playwright no Linux (registrado após a execução); duração do CI com os testes novos; uso de minutos do Actions.
 
 ### M0-05 — verified no CI (2026-10-10)
 
