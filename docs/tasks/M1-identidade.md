@@ -76,7 +76,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** sem TOTP, sem passkey; não confundir `freshAge` do Better Auth com reautenticação.
 
 ### M1-06 — Magic link: pedido, confirmação e proteções
-**Dependências:** M1-01, M0-10 · **Estado:** `implemented` localmente (falta Staging com e-mail real; ver STATUS)
+**Dependências:** M1-01, M0-10 · **Estado:** `verified` no CI (falta Staging com e-mail real; ver STATUS)
 **Objetivo:** pedir um link por e-mail e entrar com um clique de confirmação, sem que scanner de e-mail consuma o link, e sem esgotar a cota de e-mails.
 **Passos:**
 1. Interface `EmailSender` com implementação falsa (Dev/testes) e Resend (Staging com allowlist). Template de magic link **hospedado** no Resend. DKIM/SPF do domínio dependem do M0-09 (**PENDENTE (responsável)**); até lá, remetente de teste do Resend.

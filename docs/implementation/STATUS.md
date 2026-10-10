@@ -1,7 +1,7 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `implemented` localmente, CI em verificação. M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
+**Estado:** M0 praticamente concluído (M0-09 adiado, LinkedIn do M0-17 pendente); M1-01 `verified` no CI; M1-06 `verified` no CI (sem Staging com e-mail real). M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
 **Próxima tarefa recomendada:** M1-02 (perfil e preferências) e M1-03 (papéis e grants), que também fornecem a consulta de Staff que a M1-06 aguarda; antes do Staging com e-mail real: criar o modelo no Resend, a chave de API e o widget do Turnstile, e aplicar as migrations 0001 e 0002 e os segredos (autorização); LinkedIn do M0-17 pendente; M0-09 adiado (não autorizadas)  
 **Task em execução:** nenhuma  
@@ -29,9 +29,9 @@
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
 
-### M1-06 — implemented localmente; CI em verificação (2026-10-10)
+### M1-06 — verified no CI (2026-10-10); falta o Staging com e-mail real
 
-- **Entrega:** PR de `feat/m1-06-magic-link`. Pedido e confirmação do link de acesso sobre o Better Auth 1.7.7 (plugin `magicLink`), com as proteções da tarefa. Sem Google, senha nem passkey (M1-07).
+- **Entrega:** PR #33 (`feat/m1-06-magic-link`), CI verde (`bloqueante` 2m7s, com Postgres 18 e Playwright no Linux). Pedido e confirmação do link de acesso sobre o Better Auth 1.7.7 (plugin `magicLink`), com as proteções da tarefa. Sem Google, senha nem passkey (M1-07).
 - **Servidor:** `POST /api/auth/link/request` (Zod, e-mail normalizado, **Turnstile antes de abrir o banco**, limites no Postgres por e-mail 3/10 min, por IP 10/10 min e teto global 60/dia **propostos**, resposta única `{status:"ok"}` para e-mail existente, novo, de Staff ou limitado; o envio roda **depois** da resposta) e `POST /api/auth/link/confirm` (único ponto que cria sessão; devolve só `{status:"ok"}` e o cookie HttpOnly, sem o token de sessão no corpo). Os endpoints nativos do plugin (`sign-in/magic-link` e `magic-link/verify`) **respondem 404**: o primeiro pularia captcha e limites, o segundo cria sessão em GET. Ambos os POST exigem `Origin` igual a `APP_BASE_URL`. Token guardado com **hash**, validade de 15 minutos, uso único. `EmailSender` (porta no domínio) com implementação **falsa** (testes; em Development o link sai no terminal) e **Resend** (REST com modelo hospedado, `Idempotency-Key`, lista de permitidos para Staging); sem `RESEND_API_KEY` fora de Development o envio **falha** em vez de fingir.
 - **Banco:** migration `0002_auth_throttle` (contadores de janela fixa; a chave guarda só **hash** do e-mail).
 - **Web:** `/entrar` (formulário, widget Turnstile, mensagem genérica) e `/entrar/confirmar` (o token vem do fragmento, é **removido da barra de endereço** na abertura e só é enviado no clique em "Entrar"; estados de link expirado e sem token), `public/_headers` com `Referrer-Policy: no-referrer` e `Cache-Control: no-store` nessas rotas.
