@@ -17,3 +17,6 @@ LICENSE text eol=lf
 *.css text eol=lf
 worker-configuration.d.ts linguist-generated
 src/web/routeTree.gen.ts linguist-generated
+*.sql text eol=lf
+drizzle/** text eol=lf
+.env.example text eol=lf
