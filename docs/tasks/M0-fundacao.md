@@ -12,7 +12,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 
 - **Spike:** código descartável (branch `spike/m0-nn`, nunca em `main`); só a ADR (`docs/adr/00NN-spike-<tema>.md`, modelo em `docs/adr/TEMPLATE.md`) entra no repositório. Timebox de 1–2 dias; estourou, pare, registre o que foi provado e peça decisão. **Falha do spike = ADR "reabrir decisão Qxx" com evidência; não improvise substituto.**
 - Credenciais só em `.dev.vars` (ignorado pelo Git) ou nos secrets do ambiente; nunca em código, log ou ADR. Sem dados pessoais reais.
-- **CLIs Cloudflare e Neon: só o perfil `neurocapacitar`**, sempre com `--profile neurocapacitar` e identidade verificada antes do primeiro comando remoto (`neon me`, `cf auth whoami`; nunca `wrangler whoami`). Ver [cli-profiles](../operations/cli-profiles.md) e ADR 0025. O Wrangler só funciona depois de `wrangler login --profile neurocapacitar` (responsável).
+- **CLIs Cloudflare e Neon: só o perfil `neurocapacitar`**, sempre com `--profile neurocapacitar` e identidade verificada antes do primeiro comando remoto (`neon me`, `cf auth whoami`; nunca `wrangler whoami`). Ver [cli-profiles](../operations/cli-profiles.md) e ADR 0025. O perfil do Wrangler `neurocapacitar` já existe (criado com `wrangler auth create neurocapacitar`); verificação em cli-profiles.
 - Nenhum teste destrutivo em Staging/Production. Contas de provedores de terceiros são fornecidas pelo cliente; sem conta, o spike fica `blocked`, não é simulado.
 
 ---

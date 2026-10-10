@@ -28,14 +28,14 @@ A máquina do responsável tem outros perfis que **não pertencem a este projeto
 | `neon me --profile neurocapacitar` | e-mail `neurocapacitar.projetos@gmail.com`, OAuth |
 | `cf auth whoami --profile neurocapacitar` | e-mail `neurocapacitar.projetos@gmail.com`; este diretório está vinculado ao perfil `neurocapacitar` no `cf` |
 | `wrangler whoami` (sem `--profile`) | mostra **outra conta** (login pessoal): **não usar sem `--profile`** |
-| `wrangler ... --profile neurocapacitar` | o perfil **ainda não está autenticado** no Wrangler: o comando falha e pede token. Falhar assim é seguro. O responsável precisa rodar `wrangler login --profile neurocapacitar` (OAuth no navegador) antes do M0-03 |
+| `wrangler ... --profile neurocapacitar` | perfil criado com `wrangler auth create neurocapacitar` (feito pelo responsável em 2026-10-10; `wrangler login --profile ...` não o cria). Verificado: `wrangler auth list` mostra `neurocapacitar`, e um comando com `--profile neurocapacitar` e `WRANGLER_LOG=debug` usa a conta `90058d5a...` (a mesma do `cf auth whoami --profile neurocapacitar`), não a conta pessoal |
 | Variáveis de credencial no ambiente do agente | nenhuma definida |
 
 Na primeira sessão, antes de a regra existir, rodei `wrangler whoami` **sem** `--profile` (somente leitura), que usou a conta pessoal e não o perfil do projeto. Nada foi criado, alterado ou provisionado por esse comando.
 
-## Enquanto o Wrangler não estiver autenticado no perfil
+## Como verificar o Wrangler
 
-Operações remotas da Cloudflare podem usar o `cf` com `--profile neurocapacitar` (autenticado) ou aguardar o `wrangler login --profile neurocapacitar`. Não contornar com `--temporary`, token de outra conta ou o login padrão.
+`wrangler whoami` não serve (não aceita `--profile`). Use `wrangler auth list` (deve listar `neurocapacitar`) e compare o ID da conta usada com o de `cf auth whoami --profile neurocapacitar`: rode um comando somente leitura, por exemplo `WRANGLER_LOG=debug wrangler hyperdrive list --profile neurocapacitar`, e confira `accounts/<id>` nas linhas de depuração. Se o Wrangler pedir `CLOUDFLARE_API_TOKEN` ou oferecer `--temporary`, o perfil não está autenticado: pare. Não contornar com `--temporary`, token de outra conta ou o login padrão.
 
 ## Relacionado
 

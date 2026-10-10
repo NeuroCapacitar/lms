@@ -264,8 +264,8 @@
     {
       "path": "docs/adr/0025-clis-cloudflare-neon-so-perfil-neurocapacitar.md",
       "kind": "file",
-      "sha256": "fb199a3e687948c90be59f2b5d75e4b835860c305b3ba4d16a804f867c49cc35",
-      "bytes": 1839
+      "sha256": "51e528a700bee65bff97bda686ae98ae52b4563e02341b6bbcdb94529b19ca57",
+      "bytes": 2004
     },
     {
       "path": "docs/adr/0026-spike-m0-11-bun-vitest-dependency-cruiser.md",
@@ -312,8 +312,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "028d58afc43dca3b522a35f657fda448c19139010317de21913ad88399908692",
-      "bytes": 9177
+      "sha256": "7cd025bb608b563e35ff38c7422dd8825d784ab021bc5307fd22ac407db82ab2",
+      "bytes": 9294
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",
@@ -336,8 +336,8 @@
     {
       "path": "docs/operations/cli-profiles.md",
       "kind": "file",
-      "sha256": "7eed134cbf0183ce02006a6ba8d73491ed6be0f80e4e1616f586d50a3cc6a990",
-      "bytes": 3894
+      "sha256": "0045c6bae1989a8d220c9322f7e5c3e2df0c582aa8f26d71a15a3b7b22740ede",
+      "bytes": 4337
     },
     {
       "path": "docs/operations/environment-and-release-safety.md",
@@ -348,8 +348,8 @@
     {
       "path": "docs/operations/onboarding.md",
       "kind": "file",
-      "sha256": "d0bd0d013b50dc3ef9fdf9ad855e61858b97be42a38d3edc74d4a67abbde2a01",
-      "bytes": 2308
+      "sha256": "c7d32d61389c20e8f288cd0151656723ce308bc33679e74d84e1daa7008055b6",
+      "bytes": 2331
     },
     {
       "path": "docs/review/brief-reescrita.md",
@@ -396,8 +396,8 @@
     {
       "path": "docs/tasks/M0-fundacao.md",
       "kind": "file",
-      "sha256": "6d849148c9058cd58cf9a2b53d2ebaf06b6e28b72400651169d619d03f34c59f",
-      "bytes": 27718
+      "sha256": "2f250014b57bdc8b5e7e79c6f3fd018be8ded3ced15302efe3538356067854bd",
+      "bytes": 27758
     },
     {
       "path": "docs/tasks/M1-identidade.md",
