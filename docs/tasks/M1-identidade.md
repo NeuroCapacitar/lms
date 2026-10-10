@@ -30,7 +30,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** sem Google, senha ou passkey aqui; sem plugin admin do Better Auth (nem impersonation); sem "Better Auth Infrastructure".
 
 ### M1-02 — Perfil e preferências
-**Dependências:** M1-01 · **Estado:** `implemented` localmente (CI em verificação; ver STATUS)
+**Dependências:** M1-01 · **Estado:** `verified` no CI (ver STATUS)
 **Objetivo:** cada pessoa tem um Profile 1:1 com nome de exibição, preferências (tema = sistema, autoavanço = **desligado**) e o campo do futuro nome de certificado.
 **Passos:**
 1. Tabela `profile` (1:1 com `user`), criada junto do usuário na mesma transação; `display_name`, `certificate_name` (nulo; confirmação antes da 1ª emissão é **PENDENTE (modelagem)**), `theme` (`system|light|dark`), `auto_advance` (default `false`).
