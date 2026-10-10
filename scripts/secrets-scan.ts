@@ -18,7 +18,7 @@ if (probe.status !== 0) {
   process.exit(0);
 }
 
-const scan = spawnSync('gitleaks', ['git', '--no-banner', '--redact', '.'], {
+const scan = spawnSync('gitleaks', ['git', '--no-banner', '--redact', '--log-opts=HEAD', '.'], {
   stdio: 'inherit',
   shell,
 });
