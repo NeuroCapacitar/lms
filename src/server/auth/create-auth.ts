@@ -20,6 +20,8 @@ export interface AuthDeps {
   emailSender: EmailSender;
   /** E-mail de Staff nunca nasce por cadastro livre (hook de criação de usuário). */
   isStaffEmail(email: string): Promise<boolean>;
+  /** Conta suspensa não ganha sessão nova (nem por link de acesso válido). */
+  isSuspended(userId: string): Promise<boolean>;
 }
 
 /** Endereço da página de confirmação. O token vai no FRAGMENTO: não chega a servidores nem a logs. */
@@ -59,6 +61,15 @@ export function authOptions(config: AuthConfig, deps: AuthDeps) {
       accountLinking: { enabled: true, trustedProviders: [], allowDifferentEmails: false },
     },
     databaseHooks: {
+      session: {
+        create: {
+          before: async (newSession) => {
+            if (await deps.isSuspended(newSession.userId)) {
+              throw new APIError('FORBIDDEN', { message: 'account_suspended' });
+            }
+          },
+        },
+      },
       user: {
         create: {
           before: async (user) => {

@@ -74,6 +74,11 @@ describe('Worker no workerd', () => {
     expect(evil.status).toBe(403);
   });
 
+  it('GET /api/me/access sem sessão responde 401', async () => {
+    const response = await exports.default.fetch(new Request('http://example.com/api/me/access'));
+    expect(response.status).toBe(401);
+  });
+
   it('GET /api/nada devolve 404 JSON, nunca o HTML da SPA', async () => {
     const response = await exports.default.fetch(new Request('http://example.com/api/nada'));
     expect(response.status).toBe(404);

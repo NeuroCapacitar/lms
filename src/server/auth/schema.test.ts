@@ -14,7 +14,11 @@ import { authOptions } from './create-auth';
 const expected = getAuthTables(
   authOptions(
     { baseUrl: 'https://app.example', secret: 'x'.repeat(32) },
-    { emailSender: createFakeEmailSender(), isStaffEmail: async () => false },
+    {
+      emailSender: createFakeEmailSender(),
+      isStaffEmail: async () => false,
+      isSuspended: async () => false,
+    },
   ),
 );
 

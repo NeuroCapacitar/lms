@@ -27,3 +27,9 @@ O legado tinha papel único `admin|support|student` e grants em arrays com CHECK
 
 - Testes de acesso cruzado direto pela API, por grant e por estado (usuário suspenso, grant removido sem logout).
 - Teste de corrida: remoção simultânea de dois Admins preserva ≥1 (lock de linha, [ADR-0005](0005-banco-neon-free-hyperdrive-drizzle.md)).
+
+## Emenda (2026-10-10, M1-03)
+
+- **Catálogo fechado** em `src/features/identity/capabilities.ts`: 7 só-Admin, 11 delegáveis (`course.edit`, `access.grant`, `enrollment.support_edit`, `refund.execute`, `finance.review`, `finance.view`, `certificate.reissue`, `discussion.moderate`, `help.edit`, `audit.view`, `ops.queue`) e `staff.read` (leitura básica, sem grant). O nome `access.grant` (spec de domínio) substitui `enrollment.manage` (sugestão da tarefa). Um teste compara o CHECK do banco com o catálogo.
+- **Invariante do Admin sob concorrência:** trava `FOR UPDATE` só nas linhas de papel de Admin e leitura das suspensões **depois** da trava, em instrução separada (uma junção na consulta travada deixava passar um Admin suspenso por operação concorrente em READ COMMITTED; achado dos testes).
+- **Mudança de papel, grant ou suspensão encerra as sessões** da pessoa e grava auditoria na mesma transação; conta suspensa não ganha sessão nova.
