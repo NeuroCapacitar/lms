@@ -30,8 +30,8 @@
     {
       "path": ".gitattributes",
       "kind": "file",
-      "sha256": "fa88a34248c1e6dd017b932fa618956166f6d099e66ff33dd1c734340427fd2c",
-      "bytes": 495
+      "sha256": "7812e7e2e48761150abcb6a1b33c2660c402b521ab125cf8c49bca0590b86b77",
+      "bytes": 531
     },
     {
       "path": ".github/PULL_REQUEST_TEMPLATE.md",
@@ -48,8 +48,8 @@
     {
       "path": ".github/workflows/ci.yml",
       "kind": "file",
-      "sha256": "6bf3bd415bc398ef8df25a5150667ee3234c15b8256468a9cd317dbdd4464d57",
-      "bytes": 3568
+      "sha256": "52f94b766f84646805503ce94a89fdd65ff3a6ac91c11adf1049dfa4f92e6898",
+      "bytes": 3996
     },
     {
       "path": ".github/workflows/workflows-advisory.yml",
@@ -348,8 +348,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "192dd916964d1e708a7403199fe30ab5013d423a0962053ad10d309189bcc088",
-      "bytes": 16812
+      "sha256": "88d0ab75f7a2010a6fc776b39bf75440293c403404ccb23ff339308690a743b2",
+      "bytes": 19678
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",
@@ -558,8 +558,8 @@
     {
       "path": "scripts/build-env.ts",
       "kind": "file",
-      "sha256": "ca0c9b335ecddfc8187f9326acfdd9dbc401925dd48b89173859d41283fcd1f3",
-      "bytes": 1165
+      "sha256": "13479dd07102bc56651a52cd33936c9184ef8669eb0be14001e6b0a442624455",
+      "bytes": 1169
     },
     {
       "path": "scripts/check-agent-instructions.mjs",
@@ -570,8 +570,8 @@
     {
       "path": "scripts/db/check-drift.ts",
       "kind": "file",
-      "sha256": "f0679feefb1caaafe21d0a3e535aab3aabc3d4f3ae67c93e44cfa5a296bc76d9",
-      "bytes": 1248
+      "sha256": "fbe8a6e17aff46a2678ac7d63670349329e477dc4a906880e785d38e449d013a",
+      "bytes": 1252
     },
     {
       "path": "scripts/db/db.integration.ts",
@@ -624,8 +624,8 @@
     {
       "path": "scripts/secrets-scan.ts",
       "kind": "file",
-      "sha256": "6d6a7d669575d6b8bf40dce542aa9d9492fecb00574e99193a9387a86061bb8f",
-      "bytes": 927
+      "sha256": "3126a2c51c1510435d321bac2a5e787162a8cf126b9cbf9067d3a3f42864acbe",
+      "bytes": 946
     },
     {
       "path": "src/db/client.ts",

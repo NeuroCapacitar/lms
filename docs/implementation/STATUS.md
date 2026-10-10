@@ -1,11 +1,11 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 a M0-04 `verified` localmente; spikes M0-11 e M0-12 passaram; ainda sem CI)  
+**Estado:** M0 em andamento (M0-01 a M0-05 `verified`; spikes M0-11 e M0-12 passaram; CI bloqueante e consultivo ativos)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-05 (qualidade e CI em duas camadas); depois M0-06 (não autorizadas)  
+**Próxima tarefa recomendada:** M0-06 (Vitest, PG18 e Playwright); depois M0-07 e M0-08 (não autorizadas)  
 **Task em execução:** nenhuma  
-**Última tarefa comprovadamente verificada:** M0-04 (2026-10-10, local)
+**Última tarefa comprovadamente verificada:** M0-05 (2026-10-10, no CI)
 
 > Nunca marcar tarefa ou marco como concluído com base em decisão, texto de plano, instrução para IA ou intenção. Só evidências reais de arquivos, comandos, testes, SHA e homologação justificam o status.
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 a M0-04 `verified` localmente; spikes M0-11 e M0-12 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 a M0-05 `verified`; spikes M0-11 e M0-12 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,28 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-05 — verified no CI (2026-10-10)
+
+- **Entrega:** PR #10 (`feat/m0-05-ci`). Matriz de gates no [README](../../README.md#matriz-de-gates-do-ci-m0-05).
+- **Arquivos:** `.github/workflows/ci.yml` (jobs `bloqueante` e `consultivo`), `.github/workflows/workflows-advisory.yml` (actionlint e zizmor, só quando um workflow muda), `renovate.json`, `knip.json`, `.dependency-cruiser.cjs` (regras de AGENTS §5), `scripts/secrets-scan.ts`, scripts `knip`, `arch`, `agents:check`, `secrets` e `verify` no `package.json`.
+- **Camada bloqueante (um job, passos que rodam mesmo após falha):** TypeScript, Oxlint, Oxfmt, `wrangler types --check`, drift do Drizzle, testes dos scripts, build de Staging e Production com preflight, Knip, dependency-cruiser, instruções de agentes e Gitleaks. **Consultiva:** Semgrep CE 1.178.0 e, ao mudar workflow, actionlint 1.7.12 e zizmor 1.30.1. Vitest, PG18 e Playwright entram no M0-06.
+- **Segurança do workflow:** `permissions: contents: read`, sem nenhum segredo, ações fixadas por SHA (`checkout` e `setup-node`), `bun install --frozen-lockfile`, Bun e Gitleaks instalados do release oficial com **checksum SHA-256 conferido**.
+- **PR limpo:** CI verde (~30 s) e `bun run verify` local com exit 0.
+- **Cinco PRs descartáveis (#11 a #15, fechados sem merge; cada um com uma falha deliberada):**
+
+  | PR | Falha deliberada | Único passo que falhou |
+  |---|---|---|
+  | #11 | `'ok' as number` (erro de tipo) | TypeScript |
+  | #12 | `debugger` | Oxlint |
+  | #13 | token falso aleatório no formato `ghp_...` | Gitleaks |
+  | #14 | export não usado em `src/db/client.ts` | Knip |
+  | #15 | UI (`src/web`) importando `src/db/schema` | dependency-cruiser |
+
+- **Achados corrigidos durante a tarefa:** (1) o zizmor apontou a instalação do Bun por `npm install -g` fora do lockfile (baixa severidade): trocada por binário oficial com checksum. (2) Sem `bunx` no binário oficial do Bun, `build-env.ts` e `check-drift.ts` falhavam só no CI: passaram a usar `bun x`. (3) O Gitleaks varria **todos os branches** remotos (o segredo de um PR derrubava os outros): agora só `--log-opts=HEAD`. (4) A primeira versão dos testes de erro de tipo e de export não usado também quebrava outros gates (retorno errado em função usada; export em arquivo importado com `import *`) e foi refeita para falhar um passo só.
+- **Ação do responsável pendente:** instalar o app do Renovate no repositório (ver `renovate.json`). Sem ele, a atualização de dependências é manual.
+- **Não verificado:** a duração do CI com Vitest, PG18 e Playwright (M0-06); o uso mensal de minutos do Actions (medir no primeiro mês); o Semgrep consultivo passou, mas não revisei o conjunto de regras do registro.
+- **Limitação:** sem branch protection no GitHub Free privado, o merge com tudo verde continua sendo disciplina do responsável.
 
 ### M0-04 — verified localmente (2026-10-10; o CI só chega no M0-05)
 
