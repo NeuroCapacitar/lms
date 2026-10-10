@@ -3,7 +3,7 @@
 **Atualização:** 2026-10-10  
 **Estado:** M0 em andamento (M0-01 e M0-02 `verified` localmente; M0-11 spike passou; ainda sem CI)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-12 (spike de latência do Neon; o perfil `neurocapacitar` da Neon já funciona) e, depois do `wrangler login --profile neurocapacitar`, M0-03 (não autorizadas)  
+**Próxima tarefa recomendada:** M0-12 (spike de latência do Neon; o perfil `neurocapacitar` da Neon já funciona) e M0-03 (o Wrangler já está autenticado no perfil `neurocapacitar`) (não autorizadas)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-11 (spike, 2026-10-10)
 
@@ -65,7 +65,7 @@ Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, re
 ## Bloqueios e pendências externas
 
 - Repositório vNext criado em 2026-10-10: `NeuroCapacitar/lms` (privado, organização, GitHub Free; opção B da Q49 realizada).
-- **CLIs: só o perfil `neurocapacitar`** (`neurocapacitar.projetos@gmail.com`) na Cloudflare e na Neon, sempre com `--profile neurocapacitar` ([cli-profiles](../operations/cli-profiles.md), ADR 0025). Verificado em 2026-10-10 (somente leitura): `neon me` e `cf auth whoami` com o perfil confirmam o e-mail; o perfil ativo da Neon é `DEFAULT` (outra conta); `wrangler whoami` sem `--profile` mostra outra conta; **o Wrangler ainda não está autenticado no perfil `neurocapacitar`** (precisa de `wrangler login --profile neurocapacitar`, feito pelo responsável, antes do M0-03). Na sessão anterior rodei `wrangler whoami` sem `--profile` (somente leitura, conta pessoal); nada foi criado nem alterado. Nada foi provisionado na Cloudflare nem na Neon.
+- **CLIs: só o perfil `neurocapacitar`** (`neurocapacitar.projetos@gmail.com`) na Cloudflare e na Neon, sempre com `--profile neurocapacitar` ([cli-profiles](../operations/cli-profiles.md), ADR 0025). Verificado em 2026-10-10 (somente leitura): `neon me` e `cf auth whoami` com o perfil confirmam o e-mail; o perfil ativo da Neon é `DEFAULT` (outra conta); `wrangler whoami` sem `--profile` mostra outra conta; o Wrangler passou a ter o perfil `neurocapacitar` autenticado em 2026-10-10 (criado pelo responsável com `wrangler auth create neurocapacitar`; `wrangler login --profile` não o criou) e foi verificado pelo ID da conta (igual ao do `cf auth whoami --profile neurocapacitar`). Na sessão anterior rodei `wrangler whoami` sem `--profile` (somente leitura, conta pessoal); nada foi criado nem alterado. Nada foi provisionado na Cloudflare nem na Neon.
 - Spikes do M0 não executados: nenhuma compatibilidade foi testada (Better Auth + Hyperdrive, Bun/Windows, JMV, Asaas sandbox, Browser Run, Images, HTMLRewriter, evlog/Sentry).
 - Terceiros: contador (NFS-e), advogado do cliente (termos, retenções, transferência internacional), cliente (provedores de vídeo e contas de teste, manual de marca e logo positivo, destino da cópia off-cloud). Ver [relatório final](../review/relatorio-final.md#7-pendências-que-dependem-de-terceiros).
 

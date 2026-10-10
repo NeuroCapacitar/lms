@@ -16,7 +16,7 @@ Qualquer uso de `cf`, `wrangler` e `neon` neste projeto é **estritamente restri
 ## Consequências
 
 - Todo script, tarefa e runbook que chame `wrangler` ou `neon` remoto precisa do `--profile`. No CI vale o token da conta do projeto.
-- O M0-03 em diante depende de o responsável autenticar o Wrangler no perfil (`wrangler login --profile neurocapacitar`).
+- O Wrangler tem perfis próprios (separados dos do `cf`): o perfil `neurocapacitar` foi criado pelo responsável com `wrangler auth create neurocapacitar` (OAuth). Atenção: `wrangler login --profile neurocapacitar` **não** criou o perfil; o comando correto é `wrangler auth create`.
 - Custo: um flag a mais por comando e uma checagem por sessão; em troca, nenhum recurso de outra conta é tocado.
 
 ## Como validar
