@@ -10,6 +10,7 @@
     ".github/**",
     "src/web/routeTree.gen.ts",
     "worker-configuration.d.ts",
-    "dist/**"
+    "dist/**",
+    "drizzle/**"
   ]
 }

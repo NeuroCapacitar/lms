@@ -18,6 +18,7 @@ const staging: ExpectedEnvironment = {
   workerName: 'hub-staging',
   resources: { hyperdrive: [STAGING_HD] },
   vars: [],
+  databaseHost: 'fake-host.example',
 };
 
 function artifact(overrides: Record<string, unknown> = {}) {

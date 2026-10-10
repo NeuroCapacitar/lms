@@ -1,11 +1,11 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01, M0-02 e M0-03 `verified` localmente; spikes M0-11 e M0-12 passaram; ainda sem CI)  
+**Estado:** M0 em andamento (M0-01 a M0-04 `verified` localmente; spikes M0-11 e M0-12 passaram; ainda sem CI)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-04 (Neon ×3, Drizzle e Hyperdrive); depois M0-05 e M0-06 (não autorizadas)  
+**Próxima tarefa recomendada:** M0-05 (qualidade e CI em duas camadas); depois M0-06 (não autorizadas)  
 **Task em execução:** nenhuma  
-**Última tarefa comprovadamente verificada:** M0-03 (2026-10-10, local)
+**Última tarefa comprovadamente verificada:** M0-04 (2026-10-10, local)
 
 > Nunca marcar tarefa ou marco como concluído com base em decisão, texto de plano, instrução para IA ou intenção. Só evidências reais de arquivos, comandos, testes, SHA e homologação justificam o status.
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01, M0-02 e M0-03 `verified` localmente; spikes M0-11 e M0-12 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 a M0-04 `verified` localmente; spikes M0-11 e M0-12 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,27 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-04 — verified localmente (2026-10-10; o CI só chega no M0-05)
+
+- **Entrega:** PR de `feat/m0-04-banco` (o SHA do próprio commit não pode constar aqui). Runbook: [database-and-migrations](../operations/database-and-migrations.md).
+- **Recursos criados (perfil `neurocapacitar`, identidade verificada antes):**
+  - 3 projetos Neon Free, PG 18, `aws-sa-east-1`: `hub-development`, `hub-staging`, `hub-production` (este **vazio**, sem migração e sem Worker).
+  - Role `hub_runtime` (só DML) em cada um; a role de migração é a dona do banco (`neondb_owner`), só pela conexão direta, fora do Worker.
+  - 3 configs Hyperdrive com a role de runtime, **cache desligado** (confirmado por `wrangler hyperdrive get`): `hub-development`, `hub-staging`, `hub-production`. IDs e hosts em `scripts/environments.ts`.
+  - Nenhum projeto pré-existente do legado foi tocado.
+- **Código:** Drizzle 0.45.4 e drizzle-kit 0.31.11 fixados (sem API relacional, colunas `snake_case`), `pg` 8.16.3; `src/db/schema.ts` (tabela `health_probe`), `src/db/client.ts` (um cliente `pg` por requisição), `GET /api/health/ready` (`SELECT 1`), migração `drizzle/0000_init_health_probe.sql` (revisada à mão), scripts `db:generate`, `db:drift`, `db:migrate`, `db:roles`, `test:db`, com guardas (recusam pooler, host de outro ambiente e Production sem confirmação explícita).
+- **Executado e passou:**
+  - `db:migrate` em dev duas vezes (a segunda é no-op: journal continua com 1 registro) e em staging; Production recusada sem `CONFIRM_MIGRATE_PRODUCTION`.
+  - `test:db` no dev (4 testes): `hub_runtime` recebe `permission denied` (42501) em `CREATE TABLE`, `ALTER TABLE` e `DROP TABLE`, não lê o journal de migrações e faz DML em `health_probe`.
+  - `drizzle-kit generate` repetido: "No schema changes" (sem drift); `db:drift` passa.
+  - `GET /api/health/ready` em `vite dev` com a conexão local do binding: 200 `{"status":"ok"}`; sem a variável o `dev` nem inicia (erro explícito do Wrangler).
+  - **Prova de cache desligado:** Worker descartável (apagado) ligado ao Hyperdrive de dev, escrita e leitura na mesma requisição, 3 execuções × 20 rodadas = **0 leituras obsoletas**.
+  - Verificações locais: `verify:quick`, `types:check`, `test` (9) e `build:staging`/`build:production` (preflight aceita os IDs reais).
+- **Achado (cópia limpa):** o `wrangler types` embutia nomes de variáveis do `.env` local no tipo `Env`, então o arquivo gerado dependia da máquina e o `types:check` falhava em checkout limpo. Corrigido: `types` e `types:check` rodam com `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false`; confirmado nas duas árvores (com e sem `.env`).
+- **Não verificado:** `health/ready` no Staging publicado (o Worker de Staging só existe no M0-08; o banco de Staging já está migrado com o mesmo schema); `drizzle-kit generate` sem diff foi provado no checkout local, a verificação em CI chega no M0-05; `test:db` não roda em CI (precisa de credenciais do dev).
+- **Riscos e pendências:** `GET /api/health/ready` é público e acorda o Neon Free (proteção no M4/M9); a senha da role de runtime está só no Hyperdrive e no `.env` local do desenvolvimento (rotação por `db:roles` com nova senha, depois `hyperdrive update`); sem backup independente ainda (M9-05).
+- **Desvios do plano:** (1) a role de migração é o dono do banco (`neondb_owner`) em vez de uma terceira role criada à parte; (2) a prova de cache desligado usou um Worker descartável no Hyperdrive de dev, porque o Staging ainda não existe; (3) `test:db` fica fora do `test` padrão por depender de credenciais.
 
 ### M0-03 — verified localmente (2026-10-10; o CI só chega no M0-05)
 

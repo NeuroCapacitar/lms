@@ -1,6 +1,7 @@
 /**
  * Tabela do que cada ambiente PODE referenciar. O preflight (scripts/preflight-core.ts)
- * rejeita qualquer artefato cujo Worker, ambiente ou recurso não esteja aqui.
+ * rejeita qualquer artefato cujo Worker, ambiente ou recurso não esteja aqui, e os scripts de
+ * banco (scripts/db/guards.ts) só aceitam o host aprovado do ambiente.
  * Só IDs e nomes de recursos; nunca segredos. Production nunca é implantada por CI.
  */
 export type EnvironmentName = 'dev' | 'staging' | 'production';
@@ -13,17 +14,32 @@ export interface ExpectedEnvironment {
   readonly resources: Readonly<Record<string, readonly string[]>>;
   /** Variáveis (`vars`) permitidas, só nomes. */
   readonly vars: readonly string[];
+  /** Host DIRETO (sem pooler) do projeto Neon do ambiente, aprovado para migrações. */
+  readonly databaseHost: string;
 }
 
-// Os recursos entram aqui quando forem criados (Hyperdrive no M0-04, filas no M4, R2 no M5...).
+// Os recursos entram aqui quando forem criados (filas no M4, R2 no M5...).
 export const ENVIRONMENTS: Readonly<Record<EnvironmentName, ExpectedEnvironment>> = {
-  dev: { cloudflareEnv: null, workerName: 'hub', resources: {}, vars: [] },
-  staging: { cloudflareEnv: 'staging', workerName: 'hub-staging', resources: {}, vars: [] },
+  dev: {
+    cloudflareEnv: null,
+    workerName: 'hub',
+    resources: { hyperdrive: ['cda50f48086646dda22bbb4424791e58'] },
+    vars: [],
+    databaseHost: 'ep-raspy-shadow-b6hm9l97.c-2.sa-east-1.aws.neon.tech',
+  },
+  staging: {
+    cloudflareEnv: 'staging',
+    workerName: 'hub-staging',
+    resources: { hyperdrive: ['cea4be9d4370457b93f1feb7469d2ceb'] },
+    vars: [],
+    databaseHost: 'ep-cool-queen-b65b1tx5.c-2.sa-east-1.aws.neon.tech',
+  },
   production: {
     cloudflareEnv: 'production',
     workerName: 'hub-production',
-    resources: {},
+    resources: { hyperdrive: ['f31b83e0d8044d00a9651c81d121bc91'] },
     vars: [],
+    databaseHost: 'ep-damp-sound-b6vbovq8.c-2.sa-east-1.aws.neon.tech',
   },
 };
 

@@ -10,6 +10,18 @@
       "bytes": 285
     },
     {
+      "path": ".env",
+      "kind": "file",
+      "sha256": "ba60185d22bcacfd73444822e76e6dcca904d8b79c7e00ddc7298effbda595e2",
+      "bytes": 223
+    },
+    {
+      "path": ".env.example",
+      "kind": "file",
+      "sha256": "03070a147aba626a9f0441b147744c6c44823840a9a0aee4bd6ad078e46d4add",
+      "bytes": 393
+    },
+    {
       "path": ".gitattributes",
       "kind": "file",
       "sha256": "1cbd8a5efcc4f65ab949e52b44fef73ad2ec69f24ddcebe1a7a90573baa49aca",
@@ -42,8 +54,8 @@
     {
       "path": ".oxfmtrc.json",
       "kind": "file",
-      "sha256": "aa16de86f1d6bb0f99fe8fbcdef965fcc5a3e08cf9a7febc57a3c215f66c659c",
-      "bytes": 301
+      "sha256": "e34f734113b44d767fd34d1a5681c0cf41c42ac05c037b69d3b93664b06c96e7",
+      "bytes": 319
     },
     {
       "path": ".oxlintrc.json",
@@ -54,8 +66,8 @@
     {
       "path": "AGENTS.md",
       "kind": "file",
-      "sha256": "3d8802ff3e83ecb25c775797fac247e7247de386bb27004bc35433e280a3bed4",
-      "bytes": 10768
+      "sha256": "0c560b42727cce7f058aa75d7295b084f3995dd369ae037a6a9b41e820f3888f",
+      "bytes": 10867
     },
     {
       "path": "CLAUDE.md",
@@ -96,14 +108,14 @@
     {
       "path": "README.md",
       "kind": "file",
-      "sha256": "f0ffb02c765677e0f3c6ee234db3e8d4bf61b5bd39094674e002d63b57b8ab52",
-      "bytes": 3311
+      "sha256": "0d6ece785e6b0f1b7cb9b1a1e6f22c8cff13fc1e2e256472a950fb877696c5a2",
+      "bytes": 3406
     },
     {
       "path": "bun.lock",
       "kind": "file",
-      "sha256": "4839efb583de75fbf690cb4d7ab0f708f3e4210c1819a0d0ee93d732845d60d5",
-      "bytes": 67774
+      "sha256": "e7b3f63b08b02406f51464e93c93318517f93c2b48c4ca6f8e56e79d451e5afb",
+      "bytes": 100566
     },
     {
       "path": "bunfig.toml",
@@ -114,8 +126,8 @@
     {
       "path": "docs/README.md",
       "kind": "file",
-      "sha256": "6f552dfaf2d214053f147631bf8167be41c8066e25395205ddeae65d8a48ea68",
-      "bytes": 2111
+      "sha256": "78528e4e3e1481cf4de50b1c60b24108d24d9c1e1a2aefb4c06b7c5ab6d5232d",
+      "bytes": 2175
     },
     {
       "path": "docs/adr/0001-reescrita-sem-ponte-opennext.md",
@@ -318,8 +330,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "3b01c5cd82ed8b3f2477a70b00d4e70a213f95d60364745430f9dc02e2e0a1d4",
-      "bytes": 13228
+      "sha256": "192dd916964d1e708a7403199fe30ab5013d423a0962053ad10d309189bcc088",
+      "bytes": 16812
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",
@@ -344,6 +356,12 @@
       "kind": "file",
       "sha256": "0045c6bae1989a8d220c9322f7e5c3e2df0c582aa8f26d71a15a3b7b22740ede",
       "bytes": 4337
+    },
+    {
+      "path": "docs/operations/database-and-migrations.md",
+      "kind": "file",
+      "sha256": "8b4b3ce1c64b8c20dac81960017340daf730e3f1ee5f92c3a6a309ab0bb57883",
+      "bytes": 3651
     },
     {
       "path": "docs/operations/environment-and-release-safety.md",
@@ -472,6 +490,30 @@
       "bytes": 3489
     },
     {
+      "path": "drizzle/0000_init_health_probe.sql",
+      "kind": "file",
+      "sha256": "166dee93a8c7c9b1f8255e4df606f6544ba634378e0b864a6adc56a129edd64a",
+      "bytes": 279
+    },
+    {
+      "path": "drizzle/meta/0000_snapshot.json",
+      "kind": "file",
+      "sha256": "0beaf7e41ad535007a7369b8e47322c0d0e6f1d486f4fdd0cdae82db016c1f40",
+      "bytes": 1437
+    },
+    {
+      "path": "drizzle/meta/_journal.json",
+      "kind": "file",
+      "sha256": "987b05434a17685937a915cc4019f9d4a3986f96d07589d0eb8de7aec8ef635b",
+      "bytes": 211
+    },
+    {
+      "path": "drizzle.config.ts",
+      "kind": "file",
+      "sha256": "d058612738b72b35a2983caaa2f3afa08467bca2c21b29a97041a0069a1370bd",
+      "bytes": 405
+    },
+    {
       "path": "index.html",
       "kind": "file",
       "sha256": "35e0475b88a72917f07232b2b60877f833e237a2d9745ace4c8d5629c91a5662",
@@ -480,8 +522,8 @@
     {
       "path": "package.json",
       "kind": "file",
-      "sha256": "858cb77dfceac92dba9049d46bd9814ba14765eeb16356f499563863fdb9b9b5",
-      "bytes": 1461
+      "sha256": "4576d30f54b5e5aff709f89d21707f139e586e39f2a3a4ac60f69e911c6efb42",
+      "bytes": 1905
     },
     {
       "path": "scripts/build-env.ts",
@@ -496,10 +538,40 @@
       "bytes": 2511
     },
     {
+      "path": "scripts/db/check-drift.ts",
+      "kind": "file",
+      "sha256": "f0679feefb1caaafe21d0a3e535aab3aabc3d4f3ae67c93e44cfa5a296bc76d9",
+      "bytes": 1248
+    },
+    {
+      "path": "scripts/db/db.integration.ts",
+      "kind": "file",
+      "sha256": "75a45c71766e70a52bc70658a737d2e53be12a531e952dca48e2ad04e62b5a9a",
+      "bytes": 3176
+    },
+    {
+      "path": "scripts/db/guards.ts",
+      "kind": "file",
+      "sha256": "32c3c46f1d21fdf6e7d5d3fbbb2630a751201e046bdf3e710a7841a107791ef4",
+      "bytes": 1636
+    },
+    {
+      "path": "scripts/db/migrate.ts",
+      "kind": "file",
+      "sha256": "1cda6479e5f727dff1711a5bbead2da491ac9e111af8550cf189568840529f3a",
+      "bytes": 1796
+    },
+    {
+      "path": "scripts/db/setup-roles.ts",
+      "kind": "file",
+      "sha256": "8ac043dae9d01ef5d3c84354f32cd784767e012a77fa348482aed66412a21f0b",
+      "bytes": 2862
+    },
+    {
       "path": "scripts/environments.ts",
       "kind": "file",
-      "sha256": "62ca769f403142e986c6b92a8a265a286d019f1347ea72d6ffa6aacecdd6ca9f",
-      "bytes": 1395
+      "sha256": "4c1d7acfb7adf47ef0971b64cad6b3e878d4d9fcb3fa245adb0ccd7f74b0b925",
+      "bytes": 1992
     },
     {
       "path": "scripts/preflight-core.ts",
@@ -510,14 +582,26 @@
     {
       "path": "scripts/preflight.test.ts",
       "kind": "file",
-      "sha256": "6298e84c3f168e8e3e5adaedbec2d6fa194c44fef2ebaf0d770aaf572ac2c1a4",
-      "bytes": 4706
+      "sha256": "672dfd082b84ff3537d2b0a742cd887098241652aad64d9790cbc40d55667afb",
+      "bytes": 4743
     },
     {
       "path": "scripts/preflight.ts",
       "kind": "file",
       "sha256": "848fc8123484cb43aa957698eb49edc03070384c964591d059353d282aaa9757",
       "bytes": 1800
+    },
+    {
+      "path": "src/db/client.ts",
+      "kind": "file",
+      "sha256": "f25a22918807172ee3fb7ac84832cf12a571e2c6ff0b0fec8999356d81b49bc4",
+      "bytes": 781
+    },
+    {
+      "path": "src/db/schema.ts",
+      "kind": "file",
+      "sha256": "b53f5e40dfa333f3087fa6e55e9a459e852edc7d5029001dc0d09974fce00146",
+      "bytes": 427
     },
     {
       "path": "src/features/.gitkeep",
@@ -528,8 +612,8 @@
     {
       "path": "src/server/app.ts",
       "kind": "file",
-      "sha256": "a5423d6264f78911a5b379287833a8392bcb7a0952e0902975ec9a7244217d49",
-      "bytes": 703
+      "sha256": "3fbc24629084497443a2ae7279d1429240ec1d4f74314da2f55035ceb92da051",
+      "bytes": 1331
     },
     {
       "path": "src/server/index.ts",
@@ -576,8 +660,8 @@
     {
       "path": "tsconfig.node.json",
       "kind": "file",
-      "sha256": "c25bd17e22d7ebdabbc2223fda5d2d88b76e7241f40eb6589b003f55c4654356",
-      "bytes": 494
+      "sha256": "0b3bffa8902112e2b5a4bc59ad49552cb86827e132dacf4d6cb61eb8c2ed4744",
+      "bytes": 515
     },
     {
       "path": "tsconfig.web.json",
@@ -588,8 +672,8 @@
     {
       "path": "tsconfig.worker.json",
       "kind": "file",
-      "sha256": "4f35c65d037a08e431eb543f5fcf21886130ffdb4b30f59b15e6cdd98f3239a3",
-      "bytes": 456
+      "sha256": "f9c79babdfda305484409feec70c8e18ba45039146b0c2dd228bc2fa4621e04a",
+      "bytes": 494
     },
     {
       "path": "vite.config.ts",
@@ -600,14 +684,14 @@
     {
       "path": "worker-configuration.d.ts",
       "kind": "file",
-      "sha256": "7aefa27f9683d1553fc230069449a482c06dbb589199193192ce3481899bc188",
-      "bytes": 624302
+      "sha256": "932a31c914351b362d9313949680be7cdd92802732bafbf98d0207f558e6f5ad",
+      "bytes": 624382
     },
     {
       "path": "wrangler.jsonc",
       "kind": "file",
-      "sha256": "a3531cce4a2a1119aed7938fe1dc017b3329dab0d3f52ad425e8b1b6fd0ffaf5",
-      "bytes": 431
+      "sha256": "22eb101f938272fca2cf6bab579a3ec840f38d90fb61a4998ef33dd787bc0ecb",
+      "bytes": 706
     }
   ]
 }

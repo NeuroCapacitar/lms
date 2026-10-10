@@ -14,7 +14,7 @@
 - Decisões fechadas em 2026-10-10 após reabertura completa ([relatório final](docs/review/relatorio-final.md)); 24 [ADRs](docs/adr/README.md).
 - Código da vNext: **não implementado**. M0–M10: **planejados** em [docs/roadmap.md](docs/roadmap.md) e [docs/tasks/](docs/tasks/README.md).
 - Legado Next/Vercel (`NeuroCapacitar/hub`): **referência de casos**; não copiar nem modificar.
-- `package.json`, `bun.lock` e `wrangler.jsonc` existem (M0-01 a M0-03); projetos Neon e recursos Cloudflare de ambiente **ainda não existem** (M0-04 e M0-08).
+- `package.json`, `bun.lock` e `wrangler.jsonc` existem (M0-01 a M0-04); os projetos Neon (Development, Staging e Production) e os Hyperdrive de cada ambiente foram criados no M0-04; **nenhum Worker foi implantado ainda** (primeiro deploy: M0-08).
 
 ## Mapa técnico resumido
 
@@ -37,7 +37,7 @@ Pré-requisitos: Bun 1.4.2 e Node 24.21.0 (`.node-version`).
 ```bash
 bun install --frozen-lockfile
 bun run verify:quick   # typecheck (3 projetos TypeScript 7.0.2) + oxlint --deny-warnings + oxfmt --check
-bun run dev            # Vite + Worker local (workerd): SPA e /api/* na mesma origem (porta padrão do Vite)
+bun run dev            # Vite + Worker local (workerd); exige .env com a conexão do banco de DEV (ver .env.example)
 bun run build          # build do cliente e do Worker em dist/
 bun run preview        # serve o build em workerd local
 ```

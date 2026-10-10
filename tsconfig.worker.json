@@ -13,5 +13,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/server/**/*.ts", "src/features/**/*.ts", "worker-configuration.d.ts"]
+  "include": [
+    "src/server/**/*.ts",
+    "src/db/**/*.ts",
+    "src/features/**/*.ts",
+    "worker-configuration.d.ts"
+  ]
 }
