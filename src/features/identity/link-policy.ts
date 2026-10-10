@@ -28,6 +28,8 @@ export interface DeliveryFacts {
   userExists: boolean;
   /** O e-mail pertence à Staff (papel ou convite). */
   isStaffEmail: boolean;
+  /** A conta existe e está suspensa: um link não serviria (o login é recusado), então não se envia. */
+  isSuspended: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export interface DeliveryFacts {
  * A resposta HTTP é a mesma nos dois casos; só o envio muda.
  */
 export function decideDelivery(facts: DeliveryFacts): 'send' | 'skip' {
+  if (facts.isSuspended) return 'skip';
   if (facts.isStaffEmail && !facts.userExists) return 'skip';
   return 'send';
 }

@@ -52,6 +52,16 @@ type Vars = AuthVars;
 
 type AuthContext = Context<{ Bindings: Env; Variables: Vars }>;
 
+/** Violação `restrict_violation` (SQLSTATE 23001) do Postgres, mesmo embrulhada em `cause`. */
+function isRestrictViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && current; depth += 1) {
+    if ((current as { code?: string }).code === '23001') return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 function waitUntil(c: AuthContext, work: Promise<unknown>): boolean {
   try {
     c.executionCtx.waitUntil(work);
@@ -161,7 +171,16 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       const staff = await (
         overrides.isStaffEmail ?? ((value: string) => lookupStaffEmail(db, value))
       )(email);
-      if (decideDelivery({ userExists: existing !== undefined, isStaffEmail: staff }) === 'send') {
+      const suspended = existing
+        ? await (overrides.isSuspended ?? ((id: string) => isSuspended(db, id)))(existing.id)
+        : false;
+      if (
+        decideDelivery({
+          userExists: existing !== undefined,
+          isStaffEmail: staff,
+          isSuspended: suspended,
+        }) === 'send'
+      ) {
         defer(
           auth.api
             .signInMagicLink({ body: { email }, headers: c.req.raw.headers })
@@ -183,11 +202,21 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   routes.post('/auth/link/confirm', withDatabase, async (c) => {
     const parsed = linkConfirmSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
-    const verified = await c.var.auth.api.magicLinkVerify({
-      query: { token: parsed.data.token },
-      headers: c.req.raw.headers,
-      asResponse: true,
-    });
+    let verified: Response;
+    try {
+      verified = await c.var.auth.api.magicLinkVerify({
+        query: { token: parsed.data.token },
+        headers: c.req.raw.headers,
+        asResponse: true,
+      });
+    } catch (error) {
+      // Conta suspensa no meio do login (corrida): o gatilho do banco recusou a sessão. Mesma
+      // resposta de link inválido: não revela que a conta existe nem que está suspensa.
+      if (isRestrictViolation(error)) {
+        return c.json({ error: { code: 'invalid_or_expired_link' } }, 400);
+      }
+      throw error;
+    }
     // Em falha o plugin responde com redirect para uma página de erro; a API devolve JSON.
     if (verified.status >= 300) {
       return c.json({ error: { code: 'invalid_or_expired_link' } }, 400);

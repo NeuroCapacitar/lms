@@ -316,13 +316,17 @@ export async function revokeCapability(
 
 /**
  * Suspende a conta (reversível). Suspender o último Admin ativo é recusado. A pessoa perde as
- * sessões e toda capability na requisição seguinte.
+ * sessões e toda capability na requisição seguinte. A linha do usuário é travada (FOR UPDATE) antes
+ * de tudo: um login em andamento (o gatilho `session_refuse_suspended` pega FOR KEY SHARE na mesma
+ * linha) ou termina antes e a sessão é apagada aqui, ou espera e é recusado. Nenhuma sessão
+ * sobrevive à suspensão.
  */
 export async function suspendUser(
   db: Database,
   change: Change & { reason?: string },
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
+    await tx.select({ id: user.id }).from(user).where(eq(user.id, change.targetId)).for('update');
     const admins = await lockActiveAdmins(tx);
     if (
       admins.includes(change.targetId) &&

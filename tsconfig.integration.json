@@ -30,6 +30,7 @@
     "scripts/admin-bootstrap.ts",
     "scripts/db/guards.ts",
     "test/pg/staff-invitation.pg.test.ts",
-    "test/pg/bootstrap.pg.test.ts"
+    "test/pg/bootstrap.pg.test.ts",
+    "test/pg/suspension.pg.test.ts"
   ]
 }
