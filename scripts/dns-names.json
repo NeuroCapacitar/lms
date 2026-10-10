@@ -1,0 +1,31 @@
+{
+  "zone": "neurocapacitar.com.br",
+  "labels": [
+    "@",
+    "www",
+    "app",
+    "mail",
+    "lark",
+    "autodiscover",
+    "landing",
+    "lp",
+    "blog",
+    "staging",
+    "hub-staging",
+    "api",
+    "cdn",
+    "media",
+    "video",
+    "status",
+    "admin",
+    "send",
+    "mg",
+    "email",
+    "_dmarc",
+    "resend._domainkey",
+    "default._domainkey",
+    "google._domainkey",
+    "s1._domainkey",
+    "lark._domainkey"
+  ]
+}
