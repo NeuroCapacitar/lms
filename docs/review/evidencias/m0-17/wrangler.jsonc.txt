@@ -1,0 +1,13 @@
+{
+  "name": "m0-17-spike",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  "vars": { "CANONICAL_BASE": "https://m0-17-spike.neurocapacitar-projetos.workers.dev" },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/cursos/*", "/api/*"]
+  }
+}

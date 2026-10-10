@@ -3,7 +3,7 @@
 **Atualização:** 2026-10-10  
 **Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12, M0-15 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-17 (HTMLRewriter), M0-16 (imagens, parte que não exige zona) e o M1-01 (identidade); M0-13 (player JMVStream) e M0-14 (webhook Asaas) dependem de contas do cliente; o M0-09 (DNS) está adiado para antes do M10 (não autorizadas)  
+**Próxima tarefa recomendada:** registrar o resultado dos validadores do M0-17 (precisa do login do responsável); depois, M0-16 (imagens, parte que não exige zona) e o M1-01 (identidade); M0-13 e M0-14 dependem de contas do cliente; o M0-09 está adiado para antes do M10 (não autorizadas)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-08 (2026-10-10, no CI e em Staging)
 
@@ -28,6 +28,13 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-17 — passou tecnicamente (2026-10-10); validadores pendentes do responsável
+
+- **Entrega:** [ADR 0031](../adr/0031-spike-m0-17-htmlrewriter-meta-tags.md) e [evidências](../review/evidencias/m0-17/README.md). Spike **fora do repositório**; nenhum código de produção mudou. **Recurso ainda no ar:** Worker `m0-17-spike` (workers.dev, perfil `neurocapacitar`), mantido para os validadores; **apagar após o registro**. URLs de teste: `https://m0-17-spike.neurocapacitar-projetos.workers.dev/cursos/neuro-basico` e `…/cursos/curso-simples`.
+- **Executado e passou (curl com User-Agent de crawler, Worker real):** tags reescritas por HTMLRewriter a partir de placeholders; título, descrição e URLs com aspas, `<`, `>`, `&` e entidades literais saem corretos; 404 byte a byte idêntico para inexistente, rascunho e arquivado; `__proto__` e `constructor` dão 404; `Host` forjado não altera a canônica; cabeçalhos da resposta montados do zero.
+- **Achados:** o HTMLRewriter escapa só as aspas em atributos (precisa-se escapar `&` antes); copiar cabeçalhos do asset vazava `CF-Cache-Status`; a resposta dinâmica não passa pelo cache.
+- **Não verificado (pendente):** Post Inspector do LinkedIn e Sharing Debugger do Meta (login do responsável). O resultado entra aqui; sem ele a M2-06 não começa.
 
 ### M0-15 — spike passou (2026-10-10)
 

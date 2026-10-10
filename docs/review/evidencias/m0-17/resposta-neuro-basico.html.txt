@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neurociência &amp; Reabilitação — "Módulo 1" &lt;básico&gt;</title>
+    <meta name="description" content="Curso introdutório: &quot;avaliação&quot; e condutas. Inclui <b>negrito</b> &amp; aspas ' e &quot;." />
+    <link rel="canonical" href="https://m0-17-spike.neurocapacitar-projetos.workers.dev/cursos/neuro-basico" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NeuroCapacitar" />
+    <meta property="og:title" content="Neurociência &amp; Reabilitação — &quot;Módulo 1&quot; <básico>" />
+    <meta property="og:description" content="Curso introdutório: &quot;avaliação&quot; e condutas. Inclui <b>negrito</b> &amp; aspas ' e &quot;." />
+    <meta property="og:url" content="https://m0-17-spike.neurocapacitar-projetos.workers.dev/cursos/neuro-basico" />
+    <meta property="og:image" content="https://m0-17-spike.neurocapacitar-projetos.workers.dev/og-padrao.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Neurociência &amp; Reabilitação — &quot;Módulo 1&quot; <básico>" />
+    <meta name="twitter:description" content="Curso introdutório: &quot;avaliação&quot; e condutas. Inclui <b>negrito</b> &amp; aspas ' e &quot;." />
+    <meta name="twitter:image" content="https://m0-17-spike.neurocapacitar-projetos.workers.dev/og-padrao.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>

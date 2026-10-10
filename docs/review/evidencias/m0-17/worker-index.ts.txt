@@ -1,0 +1,79 @@
+interface Env {
+  ASSETS: Fetcher;
+  CANONICAL_BASE: string;
+}
+
+interface PublicCourse {
+  slug: string;
+  title: string;
+  description: string;
+}
+
+// Catálogo fictício. "rascunho" e "arquivado" não existem aqui: o servidor só conhece o PUBLICADO.
+const PUBLISHED: Record<string, PublicCourse> = {
+  'neuro-basico': {
+    slug: 'neuro-basico',
+    title: 'Neurociência & Reabilitação — "Módulo 1" <básico>',
+    description: 'Curso introdutório: "avaliação" e condutas. Inclui <b>negrito</b> & aspas \' e ".',
+  },
+  entidades: { slug: 'entidades', title: 'Tom &amp; Jerry &copy; 2026 &lt;x&gt; AT&T', description: 'a &amp; b' },
+  'curso-simples': {
+    slug: 'curso-simples',
+    title: 'Curso simples',
+    description: 'Descrição simples do curso.',
+  },
+};
+
+const NOT_FOUND_HTML = '<!doctype html><meta charset="utf-8"><title>Não encontrado</title><h1>Não encontrado</h1>';
+const notFound = () =>
+  new Response(NOT_FOUND_HTML, { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' } });
+
+/** Regra do servidor: pega o `content`/`href` de um elemento existente e troca por valor seguro. */
+const attr = (name: string, value: string) => ({
+  element(el: Element) {
+    // O HTMLRewriter escapa só as aspas em atributos; `&` precisa ser escapado aqui, senão "&amp;" vira "&".
+    el.setAttribute(name, value.replaceAll('&', '&amp;'));
+  },
+});
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    const match = /^\/cursos\/([^/]+)\/?$/.exec(url.pathname);
+    if (!match) return env.ASSETS.fetch(request);
+
+    const slug = decodeURIComponent(match[1] ?? '');
+    const course = Object.hasOwn(PUBLISHED, slug) ? PUBLISHED[slug] : undefined;
+    if (!course) return notFound();
+
+    // A URL canônica vem de CONFIGURAÇÃO, nunca do cabeçalho Host ou da URL da requisição.
+    const canonical = `${env.CANONICAL_BASE}/cursos/${encodeURIComponent(course.slug)}`;
+    const image = `${env.CANONICAL_BASE}/og-padrao.png`;
+
+    const shell = await env.ASSETS.fetch(new Request(new URL('/index.html', env.CANONICAL_BASE), { headers: { accept: 'text/html' } }));
+    if (!shell.ok) return new Response('shell indisponível', { status: 502 });
+
+    const rewritten = new HTMLRewriter()
+      .on('title', { element: (el) => void el.setInnerContent(course.title) }) // texto: escapado pelo HTMLRewriter
+      .on('meta[name="description"]', attr('content', course.description))
+      .on('link[rel="canonical"]', attr('href', canonical))
+      .on('meta[property="og:title"]', attr('content', course.title))
+      .on('meta[property="og:description"]', attr('content', course.description))
+      .on('meta[property="og:url"]', attr('content', canonical))
+      .on('meta[property="og:image"]', attr('content', image))
+      .on('meta[name="twitter:title"]', attr('content', course.title))
+      .on('meta[name="twitter:description"]', attr('content', course.description))
+      .on('meta[name="twitter:image"]', attr('content', image))
+      .transform(shell);
+
+    // Cabeçalhos montados do zero: copiar os do asset vazaria etag, last-modified e cf-cache-status.
+    return new Response(rewritten.body, {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'public, max-age=0, must-revalidate',
+        'x-content-type-options': 'nosniff',
+      },
+    });
+  },
+} satisfies ExportedHandler<Env>;
