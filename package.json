@@ -7,7 +7,13 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "build:staging": "bun scripts/build-env.ts staging",
+    "build:production": "bun scripts/build-env.ts production",
+    "preflight": "bun scripts/preflight.ts",
     "preview": "vite preview",
+    "types": "wrangler types",
+    "types:check": "wrangler types --check",
+    "test": "node --test \"scripts/**/*.test.ts\"",
     "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json && tsc -p tsconfig.worker.json",
     "lint": "oxlint --deny-warnings",
     "format:check": "oxfmt --check",

@@ -1,11 +1,11 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 e M0-02 `verified` localmente; spikes M0-11 e M0-12 passaram; ainda sem CI)  
+**Estado:** M0 em andamento (M0-01, M0-02 e M0-03 `verified` localmente; spikes M0-11 e M0-12 passaram; ainda sem CI)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-03 (Wrangler, tipos e ambientes) e M0-04 (banco); o perfil `neurocapacitar` está autenticado na Neon e no Wrangler (não autorizadas)  
+**Próxima tarefa recomendada:** M0-04 (Neon ×3, Drizzle e Hyperdrive); depois M0-05 e M0-06 (não autorizadas)  
 **Task em execução:** nenhuma  
-**Última tarefa comprovadamente verificada:** M0-12 (spike, 2026-10-10)
+**Última tarefa comprovadamente verificada:** M0-03 (2026-10-10, local)
 
 > Nunca marcar tarefa ou marco como concluído com base em decisão, texto de plano, instrução para IA ou intenção. Só evidências reais de arquivos, comandos, testes, SHA e homologação justificam o status.
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 e M0-02 `verified` localmente; spikes M0-11 e M0-12 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01, M0-02 e M0-03 `verified` localmente; spikes M0-11 e M0-12 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,20 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-03 — verified localmente (2026-10-10; o CI só chega no M0-05)
+
+- **Entrega:** PR de `feat/m0-03-ambientes` (o SHA do próprio commit não pode constar aqui).
+- **Arquivos:** `wrangler.jsonc` (`env.staging` = `hub-staging`, `env.production` = `hub-production`; Worker de desenvolvimento `hub`), `scripts/environments.ts` (tabela de recursos e variáveis permitidos por ambiente), `scripts/preflight-core.ts`, `scripts/preflight.ts`, `scripts/build-env.ts`, `scripts/preflight.test.ts`, `tsconfig.node.json`, `worker-configuration.d.ts` (regenerado), `package.json` (`build:staging`, `build:production`, `preflight`, `types`, `types:check`, `test`), catálogo de variáveis e segredos em `docs/operations/environment-and-release-safety.md`.
+- **Executado e passou:**
+  - Em cópia limpa (sem `node_modules`): `bun install --frozen-lockfile`, `bun run verify:quick`, `bun run types:check`, `bun run test` (9 testes, `node --test`), `bun run build:staging` e `bun run build:production`.
+  - `wrangler types --check` passa em sincronia e **falha** quando o `wrangler.jsonc` muda sem regenerar os tipos.
+  - `CLOUDFLARE_ENV=prod vite build` (ambiente inexistente) **falha** (exit 1); `build-env.ts` também recusa `prod`, `dev` e vazio.
+  - Artefato de Staging adulterado com um Hyperdrive fictício de Production: o preflight **rejeita** (`recurso não permitido em "staging": hyperdrive ...`); artefato de Staging verificado como Production: rejeitado (ambiente e nome do Worker); artefato sem ambiente verificado como Staging: rejeitado; artefatos corretos de dev, Staging e Production: aprovados.
+- **Achado:** o Vite Plugin grava sempre em `dist/hub/`, mas o `wrangler.json` gerado traz o `name` do ambiente (`hub-staging`, `hub-production`) e `targetEnvironment`; o preflight confere esses campos e cada referência a recurso. A primeira versão do preflight acusou falso positivo em listas de texto (`compatibility_flags`, `definedEnvironments`); o teste contra o artefato real o expôs e foi corrigido.
+- **Desvios do plano:** (1) o preflight é TypeScript executado por Bun e testado com o runner nativo do Node (`node --test`), sem dependência nova; o M0-06 define o `test` definitivo (Vitest) e pode absorvê-lo. (2) A tabela de recursos está vazia: Hyperdrive, filas e R2 entram quando forem criados (M0-04 em diante). (3) O catálogo de variáveis traz **nomes propostos**, ainda não criados.
+- **Cloudflare:** nenhum recurso remoto foi criado nem alterado (nenhum Worker, deploy ou segredo); o primeiro deploy de Staging é o M0-08. Nenhum comando remoto foi usado nesta tarefa.
+- **Não verificado:** `CLOUDFLARE_ENV` com Workers Builds; o bloqueio de `deploy` automático (só `versions upload`) não existe ainda e depende do CI (M0-05).
 
 ### M0-12 (spike 3) — passou (2026-10-10)
 

@@ -8,9 +8,12 @@
     "strict": true,
     "allowJs": true,
     "checkJs": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
     "noEmit": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["scripts/**/*.mjs", "vite.config.ts"]
+  "include": ["scripts/**/*.mjs", "scripts/**/*.ts", "vite.config.ts"]
 }
