@@ -15,5 +15,5 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["scripts/**/*.mjs", "scripts/**/*.ts", "vite.config.ts"]
+  "include": ["scripts/**/*.mjs", "scripts/**/*.ts", "vite.config.ts", "drizzle.config.ts"]
 }
