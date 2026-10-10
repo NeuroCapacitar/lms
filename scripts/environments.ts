@@ -44,5 +44,6 @@ export const ENVIRONMENTS: Readonly<Record<EnvironmentName, ExpectedEnvironment>
 };
 
 export function isEnvironmentName(value: string): value is EnvironmentName {
+  debugger;
   return Object.hasOwn(ENVIRONMENTS, value);
 }
