@@ -29,3 +29,5 @@ Confira que os links de `docs/README.md` abrem, que não há credenciais reais n
 ## Próximo passo
 
 Autorizar M0-01 com [PROMPT-INICIAL](../implementation/PROMPT-INICIAL.md). Ao concluir, adicione os scripts Bun e atualize o README **somente** com comandos realmente executados.
+
+<!-- token de teste descartável: ghp_SOpiRo2cFQ5qHd6LQXSiRcyobmBnpgnLRmdG -->
