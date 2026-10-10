@@ -1,9 +1,8 @@
 import { eq } from 'drizzle-orm';
-import { Hono } from 'hono';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import * as schema from '../../src/db/schema.ts';
-import { authRoutes } from '../../src/server/auth/routes.ts';
+import { apiApp } from '../helpers/api-app.ts';
 import { createTestAuth } from '../helpers/auth.ts';
 import { createTestSchema, type TestSchema } from '../helpers/pg-schema.ts';
 
@@ -46,7 +45,7 @@ async function signedInUser() {
 }
 
 // Monta as rotas em /api, como no Worker (o Better Auth confere o caminho base /api/auth).
-const app = new Hono<{ Bindings: Env }>().route('/api', authRoutes());
+const app = apiApp();
 const call = (path: string, init: RequestInit = {}) => app.request(`/api${path}`, init, env());
 const sessionOf = (userId: string) =>
   tools.db.select().from(schema.session).where(eq(schema.session.userId, userId));
@@ -136,7 +135,8 @@ describe('logout e origem confiável', () => {
     const { user, headers } = await signedInUser();
     const withOrigin = new Headers(headers);
     withOrigin.set('origin', BASE_URL);
-    const out = await call('/auth/sign-out', { method: 'POST', headers: withOrigin });
+    withOrigin.set('content-type', 'application/json');
+    const out = await call('/auth/sign-out', { method: 'POST', headers: withOrigin, body: '{}' });
     expect(out.status).toBe(200);
     expect(await sessionOf(user.id)).toHaveLength(0);
     expect((await call('/me', { headers })).status).toBe(401);

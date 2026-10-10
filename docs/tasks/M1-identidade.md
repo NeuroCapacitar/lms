@@ -64,7 +64,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** não executar em Production; sem plugin admin; a equipe prevista é 1 Admin + 3 Suportes, sem multi-organização.
 
 ### M1-05 — CSRF próprio, headers de segurança e reautenticação recente
-**Dependências:** M1-01, M1-03, M1-06 · **Estado:** `not_started`
+**Dependências:** M1-01, M1-03, M1-06 · **Estado:** `implemented` (verificação local; ver STATUS). O passo 4 (aplicar o guard) segue em M1-04 e M1-08.
 **Objetivo:** mutações HTTP resistem a CSRF, as respostas levam headers de segurança e ações sensíveis exigem prova recente de posse do e-mail.
 **Passos:**
 1. Middleware CSRF próprio para JSON (o `hono/csrf` só cobre formulários): mutação exige `Content-Type: application/json` e `Origin` (ou `Sec-Fetch-Site: same-origin`) válido; ausência de ambos é recusada; GET jamais altera estado. Webhooks (token próprio) ficam fora, explicitamente.

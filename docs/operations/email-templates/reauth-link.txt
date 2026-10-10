@@ -1,0 +1,9 @@
+Confirme sua identidade no NeuroCapacitar
+
+Você pediu para confirmar a sua identidade antes de uma ação sensível. Abra o endereço abaixo no mesmo navegador em que você está usando o sistema. O link vale por 15 minutos e só funciona uma vez.
+
+{{{LINK_URL}}}
+
+Se você não pediu esta confirmação, ignore este e-mail e, se estranhar, avise o suporte: o link só funciona na sessão que o pediu.
+
+NeuroCapacitar

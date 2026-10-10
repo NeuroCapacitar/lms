@@ -4,6 +4,7 @@
  */
 export type RequestLinkResult = 'sent' | 'captcha_failed' | 'invalid_email' | 'unavailable';
 export type ConfirmLinkResult = 'ok' | 'invalid_or_expired' | 'unavailable';
+export type ConfirmReauthResult = ConfirmLinkResult | 'unauthenticated';
 
 async function postJson(path: string, body: unknown): Promise<Response | null> {
   try {
@@ -25,6 +26,15 @@ export async function requestLink(email: string, captchaToken: string): Promise<
   if (response.ok) return 'sent';
   if (response.status === 403) return 'captcha_failed';
   if (response.status === 400) return 'invalid_email';
+  return 'unavailable';
+}
+
+export async function confirmReauth(token: string): Promise<ConfirmReauthResult> {
+  const response = await postJson('/api/auth/reauth/confirm', { token });
+  if (!response) return 'unavailable';
+  if (response.ok) return 'ok';
+  if (response.status === 401) return 'unauthenticated';
+  if (response.status === 400) return 'invalid_or_expired';
   return 'unavailable';
 }
 

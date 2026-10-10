@@ -138,3 +138,47 @@ test.describe('confirmação (/entrar/confirmar)', () => {
     });
   }
 });
+
+test.describe('reautenticação (/entrar/confirmar#…&purpose=reauth)', () => {
+  const URL = `/entrar/confirmar#token=${TOKEN}&purpose=reauth`;
+
+  test('confirma a identidade pela rota de reautenticação, não pela de login, e não navega', async ({
+    page,
+  }) => {
+    const calls: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/auth/'))
+        calls.push(new globalThis.URL(request.url()).pathname);
+    });
+    await page.route('**/api/auth/reauth/confirm', (route) =>
+      route.fulfill({ status: 200, json: { status: 'ok' } }),
+    );
+    await page.goto(URL);
+    await expect(page.getByRole('heading', { name: 'Confirmar identidade' })).toBeVisible();
+    expect(page.url(), 'o token e a finalidade saem da URL').not.toMatch(/token|purpose/);
+    expect(calls, 'nada é enviado antes do clique').toHaveLength(0);
+
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(page.getByRole('status')).toContainText('Identidade confirmada');
+    expect(calls).toEqual(['/api/auth/reauth/confirm']);
+  });
+
+  test('sem sessão (401) explica que o link só vale na sessão que o pediu', async ({ page }) => {
+    await page.route('**/api/auth/reauth/confirm', (route) =>
+      route.fulfill({ status: 401, json: { error: { code: 'unauthenticated' } } }),
+    );
+    await page.goto(URL);
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(page.getByRole('alert')).toContainText('mesma sessão');
+    await expect(page.getByRole('link', { name: 'Pedir um novo link' })).toBeVisible();
+  });
+
+  test('link expirado ou de outra sessão mostra o aviso padrão', async ({ page }) => {
+    await page.route('**/api/auth/reauth/confirm', (route) =>
+      route.fulfill({ status: 400, json: { error: { code: 'invalid_or_expired_link' } } }),
+    );
+    await page.goto(URL);
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(page.getByRole('alert')).toContainText('expirou ou já foi usado');
+  });
+});

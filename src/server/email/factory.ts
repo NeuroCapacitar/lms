@@ -11,11 +11,12 @@ export function createEmailSender(env: Env): EmailSender {
   if (env.RESEND_API_KEY) {
     // As variáveis do `wrangler types` têm tipo literal (por ambiente); aqui são só texto.
     const allowlist = env.EMAIL_ALLOWLIST ?? '';
-    const templateId: string = env.RESEND_TEMPLATE_MAGIC_LINK;
+    const magicLinkTemplate: string = env.RESEND_TEMPLATE_MAGIC_LINK;
+    const reauthTemplate: string = env.RESEND_TEMPLATE_REAUTH_LINK;
     return createResendSender({
       apiKey: env.RESEND_API_KEY,
       from: env.EMAIL_FROM,
-      templates: { 'magic-link': templateId },
+      templates: { 'magic-link': magicLinkTemplate, 'reauth-link': reauthTemplate },
       allowlist: allowlist
         .split(',')
         .map((item) => item.trim().toLowerCase())

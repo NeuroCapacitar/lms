@@ -5,6 +5,8 @@ import { withDatabase } from '../db/client';
 import { authRoutes } from './auth/routes';
 import { loggingMiddleware, type LogVariables } from './logging';
 import { RELEASE_ID } from './release';
+import { csrfProtection } from './security/csrf';
+import { securityHeaders } from './security/headers';
 import { sentryMiddleware } from './sentry';
 
 /**
@@ -16,6 +18,8 @@ export function createApp() {
 
   app.use(sentryMiddleware(app));
   app.use(loggingMiddleware());
+  app.use('/api/*', securityHeaders());
+  app.use('/api/*', csrfProtection());
 
   app.get('/api/health/live', (c) => c.json({ status: 'ok', releaseId: RELEASE_ID }));
 

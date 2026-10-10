@@ -54,3 +54,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `test/pg/link.pg.test.ts` monta `authRoutes({ emailSender, isStaffEmail, turnstileFetch, limits })` com substitutos (e-mail falso, Staff simulada, Turnstile simulado, limites pequenos) sobre Postgres 18 real. Nunca chama a rede nem envia e-mail.
 - `e2e/login.spec.ts` simula o widget do Turnstile (rota do script) e as respostas da API; o build do Playwright usa a chave de **teste** da Cloudflare (`playwright.config.ts`).
 - Para ver o link no desenvolvimento local, rode `bun run dev` sem `RESEND_API_KEY`: o link aparece no terminal (`[dev] e-mail para …`). Em Staging e Production a falta da chave é erro.
+
+## CSRF, cabeçalhos e reautenticação (M1-05)
+
+- `test/helpers/api-app.ts` monta `/api` como no Worker (cabeçalhos de segurança, CSRF, rotas de identidade): os testes de rota usam `apiApp()`, e toda mutação deles envia `Origin` e `Content-Type: application/json`.
+- `test/pg/reauth.pg.test.ts` cobre o desafio ligado à sessão, o guard `requireRecentAuth` e a diferença entre `forbidden` e `reauth_required`.
+- `e2e/security.spec.ts` confere os cabeçalhos de `public/_headers` e **zero violações de CSP** (`securitypolicyviolation`) em cada tela; tela nova entra na lista. O Turnstile e o Sentry são simulados.
+- Os testes negativos de CSRF no navegador não enviam corpo: o proxy do `vite preview` falha de forma intermitente quando a resposta chega antes de o corpo ser lido (só local).
+- Resposta `no-store` cujo corpo a interface não lê deixa a requisição aberta no Chromium e trava `waitForLoadState('networkidle')`: leia ou cancele o corpo.

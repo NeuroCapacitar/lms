@@ -11,6 +11,9 @@ export const linkRequestSchema = z.object({
   captchaToken: z.string().min(1).max(2048),
 });
 
+/** Corpo de `POST /api/auth/reauth/request`: vazio. O e-mail vem da sessão, nunca do corpo. */
+export const reauthRequestSchema = z.strictObject({});
+
 /** Corpo de `POST /api/auth/link/confirm`: o token do link, em texto, vindo do fragmento da URL. */
 export const linkConfirmSchema = z.object({
   token: z.string().min(16).max(256),

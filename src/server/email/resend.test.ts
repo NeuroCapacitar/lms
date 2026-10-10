@@ -27,7 +27,7 @@ describe('Resend', () => {
     const sender = createResendSender({
       apiKey: 're_chave_de_teste',
       from: 'NeuroCapacitar <acesso@example.test>',
-      templates: { 'magic-link': 'tpl-123' },
+      templates: { 'magic-link': 'tpl-123', 'reauth-link': 'tpl-reauth' },
       fetchImpl,
     });
     await sender.send(message);
@@ -49,7 +49,7 @@ describe('Resend', () => {
     const sender = createResendSender({
       apiKey: 'k',
       from: 'a@example.test',
-      templates: { 'magic-link': 'tpl' },
+      templates: { 'magic-link': 'tpl', 'reauth-link': 'tpl-reauth' },
       allowlist: ['so-esta@example.test'],
       fetchImpl,
     });
@@ -63,7 +63,7 @@ describe('Resend', () => {
     const sender = createResendSender({
       apiKey: 'k',
       from: 'a@example.test',
-      templates: { 'magic-link': 'tpl' },
+      templates: { 'magic-link': 'tpl', 'reauth-link': 'tpl-reauth' },
       fetchImpl: recordingFetch(422).fetchImpl,
     });
     const failure = sender.send(message);
@@ -76,7 +76,7 @@ describe('Resend', () => {
     const sender = createResendSender({
       apiKey: 'k',
       from: 'a@example.test',
-      templates: { 'magic-link': '' },
+      templates: { 'magic-link': '', 'reauth-link': 'tpl-reauth' },
       fetchImpl,
     });
     await expect(sender.send(message)).rejects.toThrow(/não configurado/);
