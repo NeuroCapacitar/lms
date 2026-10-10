@@ -13,9 +13,11 @@ import {
   type EmailSender,
   type LinkLimits,
 } from '../../features/identity/link-policy';
+import { profilePatchSchema } from '../../features/identity/profile';
 import { sha256Hex } from '../crypto';
 import { createEmailSender } from '../email/factory';
 import { createAuth, type Auth } from './create-auth';
+import { getProfile, updateProfile } from './profile-store';
 import { isStaffEmail as defaultIsStaffEmail } from './staff';
 import { verifyTurnstile } from './turnstile';
 
@@ -207,6 +209,24 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     }
     const me: MeDto = { id: session.user.id, email: session.user.email, name: session.user.name };
     return c.json(me);
+  });
+
+  // Perfil e preferências da PRÓPRIA pessoa: o usuário vem sempre da sessão, nunca do corpo nem do
+  // caminho, então não existe forma de apontar para o perfil de outra pessoa.
+  routes.get('/me/profile', withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const found = await getProfile(c.var.db, session.user.id);
+    return found ? c.json(found) : c.json({ error: { code: 'profile_not_found' } }, 404);
+  });
+
+  routes.patch('/me/profile', sameOrigin, withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const parsed = profilePatchSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    const updated = await updateProfile(c.var.db, session.user.id, parsed.data);
+    return updated ? c.json(updated) : c.json({ error: { code: 'profile_not_found' } }, 404);
   });
 
   return routes;

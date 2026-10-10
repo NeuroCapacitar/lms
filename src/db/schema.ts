@@ -1,4 +1,14 @@
-import { bigint, boolean, index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  boolean,
+  check,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * Tabela mínima de verificação do M0-04 (conectividade e prova de cache desligado).
@@ -96,3 +106,24 @@ export const authThrottle = pgTable('auth_throttle', {
   windowStart: timestamp({ withTimezone: true }).notNull().defaultNow(),
   count: integer().notNull().default(0),
 });
+
+/**
+ * Perfil 1:1 com o usuário (M1-02). Criado JUNTO do usuário, na mesma transação, por um gatilho do
+ * Postgres (migration 0003), então nenhum usuário existe sem perfil. Não guarda e-mail nem dado de
+ * autenticação. `certificate_name` fica nulo até a confirmação da M7; alterá-lo zera a confirmação.
+ */
+export const profile = pgTable(
+  'profile',
+  {
+    userId: text()
+      .primaryKey()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    displayName: text().notNull(),
+    certificateName: text(),
+    certificateNameConfirmedAt: timestamp({ withTimezone: true }),
+    theme: text().notNull().default('system'),
+    autoAdvance: boolean().notNull().default(false),
+    ...stamps,
+  },
+  (table) => [check('profile_theme_check', sql`${table.theme} in ('system', 'light', 'dark')`)],
+);

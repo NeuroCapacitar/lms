@@ -61,6 +61,19 @@ describe('Worker no workerd', () => {
     expect(native.status).toBe(404);
   });
 
+  it('GET /api/me/profile sem sessão responde 401; PATCH de origem errada responde 403 sem consultar o banco', async () => {
+    const anonymous = await exports.default.fetch(new Request('http://example.com/api/me/profile'));
+    expect(anonymous.status).toBe(401);
+    const evil = await exports.default.fetch(
+      new Request('http://example.com/api/me/profile', {
+        method: 'PATCH',
+        headers: { origin: 'https://evil.example', 'content-type': 'application/json' },
+        body: '{"theme":"dark"}',
+      }),
+    );
+    expect(evil.status).toBe(403);
+  });
+
   it('GET /api/nada devolve 404 JSON, nunca o HTML da SPA', async () => {
     const response = await exports.default.fetch(new Request('http://example.com/api/nada'));
     expect(response.status).toBe(404);
