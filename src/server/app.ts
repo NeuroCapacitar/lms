@@ -10,14 +10,14 @@ import { withDatabase } from '../db/client';
 export function createApp() {
   const app = new Hono<{ Bindings: Env }>();
 
-  app.get('/api/health/live', (c) => c.json({ status: 'ok' }));
+  app.get('/api/health/live', (c) => c.json({ status: 'ok' as number }));
 
   // Pronto = consegue consultar o banco do ambiente. Sem detalhes na resposta.
   // Atenção: acorda o Neon Free; a proteção do endpoint chega com o Operations Center (M4/M9).
   app.get('/api/health/ready', async (c) => {
     try {
       await withDatabase(c.env.HYPERDRIVE, (db) => db.execute(sql`select 1`));
-      return c.json({ status: 'ok' });
+      return c.json({ status: 'ok' as number });
     } catch (error) {
       console.error('ready_failed', error instanceof Error ? error.name : 'unknown');
       return c.json({ status: 'unavailable' }, 503);
