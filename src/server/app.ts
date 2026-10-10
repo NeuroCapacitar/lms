@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { withDatabase } from '../db/client';
+import { authRoutes } from './auth/routes';
 import { loggingMiddleware, type LogVariables } from './logging';
 import { RELEASE_ID } from './release';
 import { sentryMiddleware } from './sentry';
@@ -31,6 +32,8 @@ export function createApp() {
       return c.json({ status: 'unavailable', releaseId: RELEASE_ID }, 503);
     }
   });
+
+  app.route('/api', authRoutes());
 
   // Qualquer /api desconhecida devolve JSON, nunca o HTML da SPA.
   app.notFound((c) => c.json({ error: { code: 'not_found' } }, 404));

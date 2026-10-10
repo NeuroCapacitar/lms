@@ -34,6 +34,20 @@ describe('health/ready com o banco indisponível', () => {
   });
 });
 
+describe('rotas de identidade', () => {
+  it('um caminho /api desconhecido responde 404 sem abrir o banco (não acorda o Neon)', async () => {
+    const response = await createApp().request('/api/nada-por-aqui', {}, env);
+    expect(response.status).toBe(404);
+    expect(output.join('\n')).not.toMatch(/ECONNREFUSED/);
+  });
+
+  it('/api/me e /api/auth abrem o banco (e falham de forma controlada se ele cai)', async () => {
+    const response = await createApp().request('/api/me', {}, env);
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: { code: 'internal_error' } });
+  });
+});
+
 describe('pelo ponto de entrada do Worker (index.ts)', () => {
   it('não grava e-mail, token, cookie nem Authorization que chegam na requisição', async () => {
     const request = new Request(

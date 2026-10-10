@@ -22,6 +22,19 @@ describe('Worker no workerd', () => {
     expect(id).not.toBe('forjado');
   });
 
+  it('GET /api/me sem sessão e com cookie forjado responde 401 em JSON, sem cache', async () => {
+    const anonymous = await exports.default.fetch(new Request('http://example.com/api/me'));
+    expect(anonymous.status).toBe(401);
+    expect(anonymous.headers.get('cache-control')).toBe('no-store');
+    expect(await anonymous.json()).toEqual({ error: { code: 'unauthenticated' } });
+    const forged = await exports.default.fetch(
+      new Request('http://example.com/api/me', {
+        headers: { cookie: 'better-auth.session_token=falso.falso' },
+      }),
+    );
+    expect(forged.status).toBe(401);
+  });
+
   it('GET /api/nada devolve 404 JSON, nunca o HTML da SPA', async () => {
     const response = await exports.default.fetch(new Request('http://example.com/api/nada'));
     expect(response.status).toBe(404);

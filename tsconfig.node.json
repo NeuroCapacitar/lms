@@ -21,8 +21,10 @@
     "vite.config.ts",
     "drizzle.config.ts",
     "vitest.config.ts",
-    "test/helpers/**/*.ts",
+    "test/helpers/color.ts",
+    "test/helpers/pg-schema.ts",
     "test/unit/**/*.ts",
-    "test/pg/**/*.ts"
+    "test/pg/schema.pg.test.ts",
+    "test/pg/race.pg.test.ts"
   ]
 }

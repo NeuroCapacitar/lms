@@ -37,6 +37,16 @@ const HANDLED_KEYS = new Set([
   'vars',
 ]);
 
+const EXACT_HTTPS_ORIGIN = /^https:\/\/[^/*\s]+$/;
+
+function isTrustedOrigin(value: unknown): boolean {
+  return (
+    typeof value === 'string' &&
+    EXACT_HTTPS_ORIGIN.test(value) &&
+    !/localhost|127\.0\.0\.1/.test(value)
+  );
+}
+
 function isRecord(value: unknown): value is Json {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -113,6 +123,14 @@ export function checkArtifact(
     for (const name of Object.keys(vars)) {
       if (!allowedVars.has(name))
         problems.push(`variável não permitida em "${requestedEnvironment}": ${name}`);
+    }
+    // A origem do app é a única origem confiável do Better Auth: em Staging e Production só https,
+    // host exato e sem localhost (ADR 0007, M1-01).
+    const baseUrl = vars.APP_BASE_URL;
+    if (expected.cloudflareEnv !== null && baseUrl !== undefined && !isTrustedOrigin(baseUrl)) {
+      problems.push(
+        `APP_BASE_URL inválida em "${requestedEnvironment}": exige https, host exato e sem localhost`,
+      );
     }
   }
 

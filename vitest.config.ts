@@ -22,7 +22,15 @@ export default defineConfig({
       {
         // Testa o Worker CONSTRUÍDO (`bun run build` gera dist/hub): o que vai para produção, com `pg` já
         // empacotado (no workerd, `pg-protocol` resolve para um arquivo ESM dentro de pacote CommonJS).
-        plugins: [cloudflareTest({ wrangler: { configPath: './dist/hub/wrangler.json' } })],
+        plugins: [
+          cloudflareTest({
+            wrangler: { configPath: './dist/hub/wrangler.json' },
+            // Segredo só de teste: o `.env` de desenvolvimento não existe no CI.
+            miniflare: {
+              bindings: { BETTER_AUTH_SECRET: 'segredo-de-teste-do-worker-0123456789abcdef' },
+            },
+          }),
+        ],
         test: {
           name: 'workers',
           include: ['test/workers/**/*.test.ts'],

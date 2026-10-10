@@ -41,3 +41,10 @@ Com `TEST_DATABASE_URL` inválida, o teste `health/ready` do projeto `workers` *
 ## Regras
 
 Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem Neon de Production nem provedores reais nos PRs; sem teste sobre prosa de documentação ou YAML.
+
+## Identidade (M1-01)
+
+- `test/pg/auth.pg.test.ts` usa a **mesma** `authOptions` de produção com o plugin `testUtils` do Better Auth (`test/helpers/auth.ts`), sobre um schema isolado do Postgres 18, e chama as rotas reais por `authRoutes()` montadas em `/api`. Sessão criada sem passar por método de login.
+- **Armadilha:** com `NODE_ENV=test` (que o Vitest define) ou a variável `TEST`, o Better Auth **desliga a checagem de origem**; por isso `authOptions` fixa `disableOriginCheck: false`. Nunca defina `TEST` ou `NODE_ENV=test` no Worker.
+- `src/server/auth/schema.test.ts` confere o schema Drizzle contra `getAuthTables()` (com `validateSchema: false` nada o confere em execução). Ao atualizar o Better Auth, rode-o primeiro.
+- `tsconfig.integration.json` tipa os testes que importam `src/` com resolução `bundler` e tipos do Node.

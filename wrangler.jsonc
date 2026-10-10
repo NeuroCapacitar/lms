@@ -5,6 +5,7 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  "vars": { "APP_BASE_URL": "http://localhost:5173" },
   "assets": {
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"],
@@ -13,10 +14,12 @@
   "env": {
     "staging": {
       "name": "hub-staging",
+      "vars": { "APP_BASE_URL": "https://hub-staging.neurocapacitar-projetos.workers.dev" },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea4be9d4370457b93f1feb7469d2ceb" }],
     },
     "production": {
       "name": "hub-production",
+      "vars": { "APP_BASE_URL": "https://hub-production.neurocapacitar-projetos.workers.dev" },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "f31b83e0d8044d00a9651c81d121bc91" }],
     },
   },
