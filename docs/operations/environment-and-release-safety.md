@@ -24,6 +24,12 @@
 
 Cloudflare (`cf`, `wrangler`) e Neon (`neon`) só podem ser usados com o perfil **`neurocapacitar`** (`neurocapacitar.projetos@gmail.com`), sempre com `--profile neurocapacitar` explícito e identidade verificada antes do primeiro comando da sessão. Nenhum outro perfil da máquina (`DEFAULT`, `default`, `junior-pessoal`) pertence ao projeto. Regra completa, verificação e estado atual: [cli-profiles.md](cli-profiles.md) ([ADR 0025](../adr/0025-clis-cloudflare-neon-so-perfil-neurocapacitar.md)).
 
+## Staging: publicação (M0-08)
+
+- **Comando local:** `bun run deploy:staging` (com `VITE_SENTRY_DSN` no ambiente). Recusa árvore suja e commit que não esteja no GitHub, constrói com o preflight, publica com `--profile neurocapacitar` e imprime o SHA. Depois, `bun run smoke <url> <sha>` confere `live` e `ready` (consulta o Neon Staging) e que o `releaseId` é o SHA esperado.
+- **Segredo do Worker:** `wrangler secret put SENTRY_DSN --name hub-staging --profile neurocapacitar` (o valor sai de `sentry dsn list neurocapacitar/hub-vnext-worker`).
+- **CI (manual):** `.github/workflows/deploy-staging.yml` (`workflow_dispatch`, só em `main`/`staging`). **Ainda sem os segredos no GitHub.** Para ativar, o responsável cria: (1) no painel da Cloudflare, *My Profile > API Tokens > Create Token* na conta do projeto (`neurocapacitar.projetos@gmail.com`), com a permissão **Workers Scripts: Edit** (e **Workers Observability: Read**, se quiser consultar logs) e recurso limitado à conta do projeto; (2) no GitHub, *Settings > Secrets and variables > Actions*: secrets `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`, variables `VITE_SENTRY_DSN` e `STAGING_URL`. **Limitação:** a permissão de editar Workers vale para a conta inteira, então o token de Staging **também poderia publicar** o Worker de Production; por isso nenhum token vai ao GitHub antes de existir Production, e o Production continua só manual (decisão a rever no M10).
+
 ## Catálogo de variáveis e segredos (somente nomes e responsável)
 
 **Nomes propostos, ainda não criados.** Cada um nasce na tarefa que o usa, que confirma o nome. Valores nunca entram no repositório, em logs, em artefatos nem no CI comum. `vars` do `wrangler.jsonc` só para valores públicos e não sensíveis; o preflight (`bun run preflight <ambiente>`) rejeita `vars` fora da lista de `scripts/environments.ts`.
@@ -36,7 +42,8 @@ Cloudflare (`cf`, `wrangler`) e Neon (`neon`) só podem ser usados com o perfil 
 | `RESEND_WEBHOOK_SECRET` | Worker Secret, por ambiente | responsável | M4-07 |
 | `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN` | Worker Secret; sandbox em Staging, conta real só em Production | cliente (conta Asaas) | M6-02, M6-03 |
 | `VIDEO_SECRETS_MASTER_KEY` | Worker Secret, por ambiente (chave de cifra AES-GCM das credenciais de vídeo) | responsável | M5-01 |
-| `SENTRY_DSN` | `vars` (não é segredo) | responsável | M0-18 |
+| `SENTRY_DSN` (Worker) | **Worker Secret** por ambiente (criado no Staging em 2026-10-10 com `wrangler secret put`); ausente = Sentry desligado | responsável | M0-08 |
+| `VITE_SENTRY_DSN` (SPA) | variável de build (público por desenho do Sentry); no CI, variável do GitHub Actions; nunca no repositório | responsável | M0-08 |
 | `DATABASE_URL_MIGRATION` (conexão direta, role de migração) | **fora do Worker**: máquina do responsável ou CI de Staging; Production só manual | responsável | M0-04 |
 | Binding Hyperdrive (`HYPERDRIVE`), R2, filas | `wrangler.jsonc` por ambiente (IDs e nomes não são segredos) | responsável | M0-04, M4, M5 |
 | `CLOUDFLARE_API_TOKEN` (CI de Staging) | segredo do GitHub, escopo mínimo, **só conta do projeto**; nunca de Production | responsável | M0-05 |

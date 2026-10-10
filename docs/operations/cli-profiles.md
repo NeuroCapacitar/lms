@@ -37,6 +37,10 @@ Na primeira sessão, antes de a regra existir, rodei `wrangler whoami` **sem** `
 
 `wrangler whoami` não serve (não aceita `--profile`). Use `wrangler auth list` (deve listar `neurocapacitar`) e compare o ID da conta usada com o de `cf auth whoami --profile neurocapacitar`: rode um comando somente leitura, por exemplo `WRANGLER_LOG=debug wrangler hyperdrive list --profile neurocapacitar`, e confira `accounts/<id>` nas linhas de depuração. Se o Wrangler pedir `CLOUDFLARE_API_TOKEN` ou oferecer `--temporary`, o perfil não está autenticado: pare. Não contornar com `--temporary`, token de outra conta ou o login padrão.
 
+## Sentry CLI
+
+O `sentry` (instalado em `~/.bun/bin`) está autenticado como `neurocapacitar.projetos@gmail.com` (`sentry auth whoami`), na organização `neurocapacitar` (papel owner). Mesma regra: verificar a identidade antes do primeiro comando da sessão; nunca outra conta. O projeto **`hub-web`** (Next.js, legado) **não pertence à vNext e não deve ser alterado**. Projetos da vNext: `hub-vnext-worker` (`node-cloudflare-workers`) e `hub-vnext-web` (`javascript-react`), criados em 2026-10-10; neles ficaram ligados o descarte de IP (`scrubIPAddresses`) e o limpador de dados. No Git Bash, use `MSYS_NO_PATHCONV=1` com `sentry api /api/...`.
+
 ## Relacionado
 
 [Ambientes e release](environment-and-release-safety.md) · [AGENTS.md](../../AGENTS.md) · [tarefas M0](../tasks/M0-fundacao.md)
