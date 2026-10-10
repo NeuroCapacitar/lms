@@ -38,7 +38,9 @@ Cloudflare (`cf`, `wrangler`) e Neon (`neon`) só podem ser usados com o perfil 
 |---|---|---|---|
 | `BETTER_AUTH_SECRET` | Worker Secret, por ambiente (Development: `.env` local, ignorado pelo Git; Staging e Production: ainda não criado) | responsável | M1-01 |
 | `APP_BASE_URL` | `vars` do `wrangler.jsonc` por ambiente (valor público; única origem confiável do Better Auth; Staging e Production só https sem localhost, conferido pelo preflight) | responsável | M1-01 |
-| `TURNSTILE_SECRET_KEY` | Worker Secret, por ambiente | responsável (conta Cloudflare do projeto) | M1-06 |
+| `TURNSTILE_SECRET_KEY` | Worker Secret, por ambiente (Development: `.env`, com a chave de teste da Cloudflare) | responsável (conta Cloudflare do projeto) | M1-06 |
+| `VITE_TURNSTILE_SITE_KEY` | variável de build (chave pública do widget); ausente em build de produção = captcha indisponível | responsável | M1-06 |
+| `EMAIL_FROM`, `RESEND_TEMPLATE_MAGIC_LINK`, `EMAIL_ALLOWLIST` | `vars` do `wrangler.jsonc` por ambiente (públicas; hoje com remetente de teste do Resend e o ID do modelo **vazio**; a lista de permitidos filtra destinatários no Staging) | responsável | M1-06 |
 | `RESEND_API_KEY` | Worker Secret, por ambiente (Production fora do CI comum) | responsável | M4-04 |
 | `RESEND_WEBHOOK_SECRET` | Worker Secret, por ambiente | responsável | M4-07 |
 | `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN` | Worker Secret; sandbox em Staging, conta real só em Production | cliente (conta Asaas) | M6-02, M6-03 |

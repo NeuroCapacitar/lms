@@ -1,0 +1,7 @@
+/entrar
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store
+
+/entrar/*
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store

@@ -22,6 +22,7 @@
     "scripts/environments.ts",
     "test/helpers/auth.ts",
     "test/helpers/pg-schema.ts",
-    "test/pg/auth.pg.test.ts"
+    "test/pg/auth.pg.test.ts",
+    "test/pg/link.pg.test.ts"
   ]
 }

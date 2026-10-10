@@ -3,6 +3,7 @@ import { getTableColumns, getTableName } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 
 import * as schema from '../../db/schema';
+import { createFakeEmailSender } from '../email/fake';
 import { authOptions } from './create-auth';
 
 /**
@@ -11,7 +12,10 @@ import { authOptions } from './create-auth';
  * existência, obrigatoriedade e unicidade. Falha ao atualizar a biblioteca se o schema mudar.
  */
 const expected = getAuthTables(
-  authOptions({ baseUrl: 'https://app.example', secret: 'x'.repeat(32) }),
+  authOptions(
+    { baseUrl: 'https://app.example', secret: 'x'.repeat(32) },
+    { emailSender: createFakeEmailSender(), isStaffEmail: async () => false },
+  ),
 );
 
 describe('schema do Better Auth × tabelas Drizzle', () => {

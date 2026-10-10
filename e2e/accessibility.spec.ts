@@ -55,7 +55,7 @@ test('fluxo só com teclado: pular conteúdo, tema, formulário com erro e suces
   await expect(skip).toBeVisible();
 
   // Navegação e alternância de tema, na ordem visual.
-  for (const name of ['Início', 'Sobre', 'Base visual']) {
+  for (const name of ['Início', 'Sobre', 'Base visual', 'Entrar']) {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name, exact: true })).toBeFocused();
   }

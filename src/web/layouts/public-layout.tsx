@@ -19,6 +19,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <Link to="/">Início</Link>
             <Link to="/sobre">Sobre</Link>
             <Link to="/base-visual">Base visual</Link>
+            <Link to="/entrar">Entrar</Link>
           </nav>
           <ThemeToggle />
         </div>

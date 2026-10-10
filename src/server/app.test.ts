@@ -41,6 +41,28 @@ describe('rotas de identidade', () => {
     expect(output.join('\n')).not.toMatch(/ECONNREFUSED/);
   });
 
+  it('pedido de link inválido ou de origem errada responde 400/403 sem abrir o banco', async () => {
+    const app = createApp();
+    const send = (body: unknown, origin?: string) =>
+      app.request(
+        '/api/auth/link/request',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', ...(origin ? { origin } : {}) },
+          body: JSON.stringify(body),
+        },
+        { ...env, APP_BASE_URL: 'https://app.example.test' } as unknown as Env,
+      );
+    expect(
+      (await send({ email: 'sem-arroba', captchaToken: 'x' }, 'https://app.example.test')).status,
+    ).toBe(400);
+    expect((await send({ email: 'a@b.co', captchaToken: 'x' })).status).toBe(403);
+    expect(
+      (await send({ email: 'a@b.co', captchaToken: 'x' }, 'https://evil.example')).status,
+    ).toBe(403);
+    expect(output.join('\n')).not.toMatch(/ECONNREFUSED/);
+  });
+
   it('/api/me e /api/auth abrem o banco (e falham de forma controlada se ele cai)', async () => {
     const response = await createApp().request('/api/me', {}, env);
     expect(response.status).toBe(500);

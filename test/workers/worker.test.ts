@@ -35,6 +35,32 @@ describe('Worker no workerd', () => {
     expect(forged.status).toBe(401);
   });
 
+  it('POST /api/auth/link/request: origem errada 403 e corpo inválido 400, sem consultar o banco', async () => {
+    const send = (body: string, origin?: string) =>
+      exports.default.fetch(
+        new Request('http://example.com/api/auth/link/request', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', ...(origin ? { origin } : {}) },
+          body,
+        }),
+      );
+    expect((await send('{}', 'https://evil.example')).status).toBe(403);
+    expect((await send('{}')).status).toBe(403);
+    // A origem do build de desenvolvimento é http://localhost:5173.
+    expect((await send('{"email":"x"}', 'http://localhost:5173')).status).toBe(400);
+  });
+
+  it('os endpoints nativos de magic link não existem (GET criaria sessão)', async () => {
+    const get = await exports.default.fetch(
+      new Request('http://example.com/api/auth/magic-link/verify?token=abc'),
+    );
+    expect(get.status).toBe(404);
+    const native = await exports.default.fetch(
+      new Request('http://example.com/api/auth/sign-in/magic-link', { method: 'POST' }),
+    );
+    expect(native.status).toBe(404);
+  });
+
   it('GET /api/nada devolve 404 JSON, nunca o HTML da SPA', async () => {
     const response = await exports.default.fetch(new Request('http://example.com/api/nada'));
     expect(response.status).toBe(404);

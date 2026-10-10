@@ -15,6 +15,13 @@
       "when": 1791635740783,
       "tag": "0001_better_auth_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791652606380,
+      "tag": "0002_auth_throttle",
+      "breakpoints": true
     }
   ]
 }
