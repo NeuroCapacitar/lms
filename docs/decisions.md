@@ -32,6 +32,7 @@
 | [0026](adr/0026-spike-m0-11-bun-vitest-dependency-cruiser.md) | Spike M0-11 passou: Bun, plugin de testes, dependency-cruiser sob TS 7 | confirma Q51 |
 | [0027](adr/0027-spike-m0-12-regiao-neon-e-orcamento-de-compute.md) | Spike M0-12 passou: Neon em São Paulo, cron de 30 min, orçamento de CU-h | confirma Q43 |
 | [0028](adr/0028-spike-m0-18-evlog-e-sentry.md) | Spike M0-18 passou: evlog e Sentry 11 com redaction e scrubbing obrigatórios; Web Analytics condicional | refina 0023 |
+| [0029](adr/0029-spike-m0-10-better-auth-magic-link.md) | Spike M0-10 passou: Better Auth 1.7.7, link com token no fragmento e confirmação por POST, Workers Paid indispensável | valida 0007 |
 
 ## Convenção
 

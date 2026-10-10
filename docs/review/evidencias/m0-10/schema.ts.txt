@@ -1,0 +1,72 @@
+import { bigint, boolean, integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+
+const stamps = {
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+};
+
+export const user = pgTable('user', {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  email: text().notNull().unique(),
+  emailVerified: boolean().notNull().default(false),
+  image: text(),
+  ...stamps,
+});
+
+export const session = pgTable('session', {
+  id: text().primaryKey(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  token: text().notNull().unique(),
+  ipAddress: text(),
+  userAgent: text(),
+  userId: text()
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  ...stamps,
+});
+
+export const account = pgTable('account', {
+  id: text().primaryKey(),
+  accountId: text().notNull(),
+  providerId: text().notNull(),
+  userId: text()
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  accessToken: text(),
+  refreshToken: text(),
+  idToken: text(),
+  accessTokenExpiresAt: timestamp({ withTimezone: true }),
+  refreshTokenExpiresAt: timestamp({ withTimezone: true }),
+  scope: text(),
+  password: text(),
+  ...stamps,
+});
+
+export const verification = pgTable('verification', {
+  id: text().primaryKey(),
+  identifier: text().notNull(),
+  value: text().notNull(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  ...stamps,
+});
+
+export const rateLimit = pgTable('rate_limit', {
+  id: text().primaryKey(),
+  key: text().notNull().unique(),
+  count: integer().notNull(),
+  lastRequest: bigint({ mode: 'number' }).notNull(),
+});
+
+/** Sender falso: o e-mail "enviado" vira uma linha aqui (modelo da outbox transacional). */
+export const spikeOutbox = pgTable('spike_outbox', {
+  id: serial().primaryKey(),
+  toEmail: text().notNull(),
+  url: text().notNull(),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Modelo de StaffInvitation: e-mails que não podem nascer por cadastro livre. */
+export const staffEmails = pgTable('staff_email', {
+  email: text().primaryKey(),
+});

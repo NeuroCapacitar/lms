@@ -1,6 +1,6 @@
 # ADR-0007 — Identidade: magic link como método base; Staff somente por link
 
-- **Estado:** accepted-conditional (spike M0-10 e riscos aceitos abaixo)
+- **Estado:** accepted — spike M0-10 passou ([ADR 0029](0029-spike-m0-10-better-auth-magic-link.md)); riscos aceitos abaixo
 - **Data:** 2026-10-10
 - **Origem:** Q26, Q40, Q52, Q61.1; B3
 - **Substitui:** de B3, "Google+senha como base" e "passkeys opcionais"; também as decisões intermediárias Q26 (Staff com Google) e Q40 (Staff com senha + TOTP)

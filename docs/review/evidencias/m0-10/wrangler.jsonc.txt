@@ -1,0 +1,9 @@
+{
+  "name": "m0-10-spike",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  "vars": { "RATE_MAX": "5", "BASE_URL": "https://m0-10-spike.neurocapacitar-projetos.workers.dev" },
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "5f92edc11fad4729b9342b4e88fa12e9" }]
+}

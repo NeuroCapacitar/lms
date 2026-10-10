@@ -1,0 +1,156 @@
+import { readFileSync } from 'node:fs';
+import pg from 'pg';
+
+const base = process.argv[2] ?? 'http://127.0.0.1:8798';
+const edge = base.startsWith('https');
+const MODE = process.env.MODE ?? 'all';
+const want = (m) => MODE === 'all' || MODE === m;
+const key = { 'x-spike-key': process.env.SPIKE_KEY ?? 'spike-key' };
+const origin = { origin: base };
+const results = [];
+const check = (name, ok, extra = '') => {
+  results.push({ name, ok });
+  console.log(`${ok ? 'OK   ' : 'FALHA'} ${name} ${extra}`);
+};
+const dbUrl = /DB_URL=(.*)/.exec(readFileSync('.env.local-spike', 'utf8'))[1];
+const sql = async (q, params) => {
+  const c = new pg.Client({ connectionString: dbUrl });
+  await c.connect();
+  try {
+    return await c.query(q, params);
+  } finally {
+    await c.end();
+  }
+};
+const json = async (path, init = {}) => {
+  const r = await fetch(base + path, init);
+  const t = await r.text();
+  let b;
+  try {
+    b = JSON.parse(t);
+  } catch {
+    b = t;
+  }
+  return { status: r.status, body: b, headers: r.headers };
+};
+const post = (path, body, headers = {}) =>
+  json(path, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...origin, ...(edge ? {} : { 'cf-connecting-ip': '203.0.113.9' }), ...headers },
+    body: JSON.stringify(body),
+  });
+const cookieOf = (r) => (r.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ');
+const lastLink = async () => (await json('/_spike/outbox', { headers: key })).body;
+const tokenOf = (url) => new URL(url).hash.replace('#token=', '');
+const requestLink = (email, ip = '203.0.113.9') =>
+  post('/api/auth/sign-in/magic-link', { email }, edge ? {} : { 'cf-connecting-ip': ip });
+
+if (MODE === 'seq') await sql('truncate rate_limit');
+if (MODE !== 'seq') await sql('truncate session, verification, account, "user", spike_outbox, rate_limit, staff_email cascade');
+if (want('basic')) {
+
+// 1. pedido de link
+let r = await requestLink('aluno1@example.com');
+check('pedir link responde 200', r.status === 200, JSON.stringify(r.body));
+let link = await lastLink();
+check(
+  'e-mail falso registrado; link aponta para a página de confirmação com token no fragmento',
+  link?.url?.startsWith(base + '/entrar/confirmar#token='),
+);
+const token = tokenOf(link.url);
+const stored = (await sql('select identifier, value from verification')).rows[0];
+check('token guardado com hash (o valor no banco não contém o token enviado)', stored && !JSON.stringify(stored).includes(token));
+
+// 2. scanner: GET e HEAD não criam sessão
+const g1 = await json('/api/auth/magic-link/verify?token=' + token);
+const g2 = await fetch(base + '/api/auth/magic-link/verify?token=' + token, { method: 'HEAD' });
+const g3 = await json('/entrar/confirmar');
+const sessCount = async () => (await sql('select count(*)::int n from session')).rows[0].n;
+check('GET/HEAD no verify nativo: 404 e sem sessão', g1.status === 404 && g2.status === 404 && (await sessCount()) === 0, `${g1.status}/${g2.status}`);
+check('GET na página de confirmação: 200 e sem sessão', g3.status === 200 && (await sessCount()) === 0);
+
+// 3. confirmação por POST
+const bad = await post('/api/entrar/confirmar', { token }, { origin: 'https://evil.example' });
+check('POST de outra origem é recusado', bad.status === 403, String(bad.status));
+const ok = await post('/api/entrar/confirmar', { token });
+const cookie = cookieOf(ok);
+check('POST de confirmação cria a sessão (cookie)', ok.status === 200 && cookie.includes('session_token'), `${ok.status} ${cookie.split('=')[0]}`);
+const sess1 = await json('/api/auth/get-session', { headers: { cookie } });
+check('get-session devolve o usuário', sess1.body?.user?.email === 'aluno1@example.com');
+console.log('     set-cookie:', ok.headers.getSetCookie().join(' | ').replace(/=[^;]+/, '=<valor>').slice(0, 200));
+
+// 4. reuso
+const reuse = await post('/api/entrar/confirmar', { token });
+check('link usado duas vezes falha', reuse.status >= 400, `${reuse.status} ${JSON.stringify(reuse.body).slice(0, 80)}`);
+check('reuso não criou segunda sessão', (await sessCount()) === 1);
+
+// 5. expirado
+await requestLink('aluno2@example.com', '203.0.113.10');
+const l2 = await lastLink();
+await sql("update verification set expires_at = now() - interval '1 minute'");
+const exp = await post('/api/entrar/confirmar', { token: tokenOf(l2.url) });
+check('link expirado falha', exp.status >= 400, `${exp.status} ${JSON.stringify(exp.body).slice(0, 80)}`);
+
+// 6. revogação imediata
+const before = await json('/api/auth/get-session', { headers: { cookie } });
+await sql('delete from session');
+const after = await json('/api/auth/get-session', { headers: { cookie } });
+check('revogar a sessão no banco vale na hora (sem cache)', Boolean(before.body?.user) && !after.body?.user);
+
+// 7. sessão rolling 7 dias
+await requestLink('aluno3@example.com', '203.0.113.11');
+const l3 = await lastLink();
+const c3 = cookieOf(await post('/api/entrar/confirmar', { token: tokenOf(l3.url) }));
+const s0 = (await sql('select expires_at from session')).rows[0];
+const days = (new Date(s0.expires_at) - Date.now()) / 86400000;
+check('sessão nasce com ~7 dias', days > 6.9 && days < 7.1, days.toFixed(2));
+await sql("update session set updated_at = now() - interval '2 days', expires_at = now() + interval '5 days'");
+await json('/api/auth/get-session', { headers: { cookie: c3 } });
+const s1 = (await sql('select expires_at from session')).rows[0];
+const days2 = (new Date(s1.expires_at) - Date.now()) / 86400000;
+check('uso após updateAge (1 dia) renova para ~7 dias (rolling)', days2 > 6.9, days2.toFixed(2));
+
+}
+if (want('rate')) {
+// 8. rate limit no banco
+await sql('truncate rate_limit');
+const codes = [];
+for (let i = 0; i < 7; i++) codes.push((await requestLink(`rl${i}@example.com`, '198.51.100.7')).status);
+check('rate limit do pedido de link (5/min por IP) devolve 429', codes.includes(429), codes.join(','));
+const rl = (await sql('select key, count from rate_limit')).rows;
+check('contador no banco (storage: database), chaveado pelo IP de cf-connecting-ip', (edge ? rl.some((x) => x.key.endsWith('|/sign-in/magic-link') && x.key.split('|')[0].length >= 7) : rl.some((x) => x.key.includes('198.51.100.7'))), JSON.stringify(rl).slice(0, 150));
+if (!edge) {
+  const other = await requestLink('rl-outro@example.com', '198.51.100.8');
+  check('outro IP não é afetado', other.status === 200, String(other.status));
+}
+
+}
+if (want('basic')) {
+// 9. e-mail de Staff não nasce por cadastro livre
+await post('/_spike/staff', { email: 'staff@example.com' }, key);
+await requestLink('staff@example.com', '203.0.113.20');
+const ls = await lastLink();
+const sc = await post('/api/entrar/confirmar', { token: tokenOf(ls.url) });
+const staffUser = (await sql('select count(*)::int n from "user" where email = $1', ['staff@example.com'])).rows[0].n;
+check('e-mail de Staff via link de cadastro livre é bloqueado (sem usuário criado)', sc.status >= 400 && staffUser === 0, `${sc.status} ${JSON.stringify(sc.body).slice(0, 100)}`);
+
+}
+if (want('seq')) {
+// 10. 20 fluxos em sequência: conexões
+const t0 = Date.now();
+let fails = 0;
+for (let i = 0; i < 20; i++) {
+  const ip = `192.0.2.${i + 1}`;
+  await requestLink(`seq${i}@example.com`, ip);
+  const l = await lastLink();
+  const rr = await post('/api/entrar/confirmar', { token: tokenOf(l.url) }, edge ? {} : { 'cf-connecting-ip': ip });
+  if (rr.status !== 200) fails++;
+}
+check('20 fluxos completos em sequência, todos com sucesso', fails === 0, `falhas=${fails} em ${Date.now() - t0}ms`);
+const idle = (await sql('select count(*)::int n from pg_stat_activity where datname = current_database() and pid <> pg_backend_pid()')).rows[0].n;
+const stuck = (await sql("select count(*)::int n from pg_stat_activity where datname = current_database() and pid <> pg_backend_pid() and state <> 'idle'")).rows[0].n;
+check(edge ? 'sem vazamento: nenhuma conexão presa (só o pool ocioso do Hyperdrive)' : 'sem vazamento: conexões abertas ao final ≤ 3', edge ? stuck === 0 : idle <= 3, `idle=${idle} presas=${stuck}`);
+}
+
+console.log(`\n${results.filter((x) => x.ok).length}/${results.length} verificações passaram`);
+process.exit(results.every((x) => x.ok) ? 0 : 1);
