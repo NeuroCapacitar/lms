@@ -1,0 +1,415 @@
+{
+  "generated_at": "2026-10-10",
+  "scope": "documentation rewrite after decision reopening; no app implementation",
+  "note": "docs/review/evidencias and docs/_historico excluded",
+  "files": [
+    {
+      "path": ".editorconfig",
+      "kind": "file",
+      "sha256": "5985ff23de53d12f7d404cd1350a296e4ab03a5d91a1fa15dbe2ee8244d7f6da",
+      "bytes": 285
+    },
+    {
+      "path": ".gitattributes",
+      "kind": "file",
+      "sha256": "2bb8b69a8439526b00ec376d6459ccd9031b328d7c2d3076f2a75cc458b5326c",
+      "bytes": 177
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "kind": "file",
+      "sha256": "11f68f832407950f7b031ed2b9afd0a576f588d9f01e8c0a5203d45f9d87a8e8",
+      "bytes": 1168
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "kind": "file",
+      "sha256": "7bd473721c821d4a46a658640165ff2d2f50ec6526c7a6b4dc6e9e0243f50a94",
+      "bytes": 452
+    },
+    {
+      "path": ".gitignore",
+      "kind": "file",
+      "sha256": "d925cc64e5f7f21b9d010d854901c24ae2db221fe3274dc0d2cc152f8c990da8",
+      "bytes": 641
+    },
+    {
+      "path": "AGENTS.md",
+      "kind": "file",
+      "sha256": "0824b518b894cdc39bbe39104fe4fbfb797d1d1e6511c1ba47d2bcae21480e24",
+      "bytes": 10123
+    },
+    {
+      "path": "CLAUDE.md",
+      "kind": "file",
+      "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
+      "bytes": 11
+    },
+    {
+      "path": "CONTEXT.md",
+      "kind": "file",
+      "sha256": "16f6f0a718bf88bea0d8f255d311d4bc4b642ba7872ba75597b1d27490e7dfa8",
+      "bytes": 1688
+    },
+    {
+      "path": "DESIGN.md",
+      "kind": "file",
+      "sha256": "b16fe7e8511844d0dcbdd781f9c9d3831465ab632b025c9e4eab36f71ff53e89",
+      "bytes": 2652
+    },
+    {
+      "path": "PRODUCT.md",
+      "kind": "file",
+      "sha256": "b9b9e435f34c93816696be56100169567940c6c511898ca3b5726741446448e1",
+      "bytes": 2020
+    },
+    {
+      "path": "README.md",
+      "kind": "file",
+      "sha256": "7de1f3bd65bb2ce8462e6f44e15277456ab60ef1cd7fd03521b35fbde93572b6",
+      "bytes": 2409
+    },
+    {
+      "path": "docs/README.md",
+      "kind": "file",
+      "sha256": "8b7666ed32e5791cd4ae3c28146bc6239cbf3459aae76c80b60baacb20f62e80",
+      "bytes": 2024
+    },
+    {
+      "path": "docs/adr/0001-reescrita-sem-ponte-opennext.md",
+      "kind": "file",
+      "sha256": "c84550eedfcceaf74906da30cc9114ab789d5a98342f6fbca69b71957fa2b904",
+      "bytes": 2114
+    },
+    {
+      "path": "docs/adr/0002-lancamento-bigbang-etl-final-legado-congelado.md",
+      "kind": "file",
+      "sha256": "e78355fbb7da9ac489c9eef8c5791e203af048e4c10f9f9837954754117b0e51",
+      "bytes": 2187
+    },
+    {
+      "path": "docs/adr/0003-teto-de-custo-free-tier-first.md",
+      "kind": "file",
+      "sha256": "0090d04c3786ee7d637b981f6b8a8e52d7f9f3a35320aa3ecef459ba5f0b2bf7",
+      "bytes": 1875
+    },
+    {
+      "path": "docs/adr/0004-spa-vite-hono-worker-sem-ssr.md",
+      "kind": "file",
+      "sha256": "f07da9c36671aeacf5e8c8139df4a951a4f150bcaa67f68682214160d9f375ae",
+      "bytes": 1920
+    },
+    {
+      "path": "docs/adr/0005-banco-neon-free-hyperdrive-drizzle.md",
+      "kind": "file",
+      "sha256": "cf05c1e15f018414a14e817faead8f42ea55d574f858971e8b2edcd8c808add4",
+      "bytes": 2208
+    },
+    {
+      "path": "docs/adr/0006-assincrono-outbox-duas-filas.md",
+      "kind": "file",
+      "sha256": "e5c03749808d5e89da0b7aea12e6edc90ad339abd2d9951dc40b8f75f915660a",
+      "bytes": 2037
+    },
+    {
+      "path": "docs/adr/0007-identidade-magic-link.md",
+      "kind": "file",
+      "sha256": "d6899b1263fbfb7f637dc02a89b4c33a9b90c832a070237ee3985eec72d98ca8",
+      "bytes": 2210
+    },
+    {
+      "path": "docs/adr/0008-autorizacao-papeis-e-grants.md",
+      "kind": "file",
+      "sha256": "064ca487b7a17b78057f5c0472aa324f4a37593ff48a3134a2613c69844673b1",
+      "bytes": 2282
+    },
+    {
+      "path": "docs/adr/0009-curriculo-vivo-rascunho-publicacao.md",
+      "kind": "file",
+      "sha256": "90ce4a50a8d57260c79cc1f5b3bfe0df451331cbbeeb44d7f3073cc9dd9df28d",
+      "bytes": 2277
+    },
+    {
+      "path": "docs/adr/0010-catalogo-course-offer-interesse.md",
+      "kind": "file",
+      "sha256": "b468e8f7f8e3867453f1d8b863a918ec858cfd542c443db14876345f76b96b27",
+      "bytes": 1980
+    },
+    {
+      "path": "docs/adr/0011-acesso-entitlement-prazo-ancora-drip.md",
+      "kind": "file",
+      "sha256": "bf1dc85c8469a7e82335760b3d482dc0288d1beb2a4836e7f5bea4663e7661c9",
+      "bytes": 2048
+    },
+    {
+      "path": "docs/adr/0012-progresso-conclusao-quiz-discussoes.md",
+      "kind": "file",
+      "sha256": "df2e56774f30aaa1aba4d85b13063d40ebd4c9df6667e7cd5be01ec40870e3f6",
+      "bytes": 2081
+    },
+    {
+      "path": "docs/adr/0013-comercio-asaas-checkout-autenticado.md",
+      "kind": "file",
+      "sha256": "8c189d1d04fa10124d33d453201bdb01441b6a79ba47bd69b5f41ecb951e90fb",
+      "bytes": 2539
+    },
+    {
+      "path": "docs/adr/0014-fiscal-juridico-e-pedidos-por-email.md",
+      "kind": "file",
+      "sha256": "a52d3abc102627b99b2c79ca379c903d78b28db3d9d7e1aa39f8a318ead33302",
+      "bytes": 2047
+    },
+    {
+      "path": "docs/adr/0015-video-seis-adapters-por-capabilities.md",
+      "kind": "file",
+      "sha256": "cb4cbd991511481b0035f60ecfe64dd274148eaf2b6e6b5568d97b8580377a76",
+      "bytes": 2408
+    },
+    {
+      "path": "docs/adr/0016-midia-r2-canonico.md",
+      "kind": "file",
+      "sha256": "9e982246bc8b2ef529e1ac3be672e63dda5048c8ead3da5439ab8a1c5102875b",
+      "bytes": 2019
+    },
+    {
+      "path": "docs/adr/0017-certificados-snapshot-browser-run-editor-visual.md",
+      "kind": "file",
+      "sha256": "6710fc9e7b2947564c87229b01c4c1dad1977f72372be2539b10d62d6ce7c1dc",
+      "bytes": 2078
+    },
+    {
+      "path": "docs/adr/0018-email-resend-free-templates-marketing.md",
+      "kind": "file",
+      "sha256": "b819fc8c5f5684077d98a0d4b090489fbdaabf06f90d4c89ee7f0ba451e65e8c",
+      "bytes": 1999
+    },
+    {
+      "path": "docs/adr/0019-pwa-offline-student.md",
+      "kind": "file",
+      "sha256": "995dd9b5099441af9d0a3db77b10ce0d50d970b525279523a54ef47b294b0d97",
+      "bytes": 1813
+    },
+    {
+      "path": "docs/adr/0020-marca-ui-tokens-experiencia-unica.md",
+      "kind": "file",
+      "sha256": "d9c725c18c80618186f3ce8fcdd7470fee130238125033d12235e8986ea595be",
+      "bytes": 2206
+    },
+    {
+      "path": "docs/adr/0021-repositorio-github-free-ci-duas-camadas.md",
+      "kind": "file",
+      "sha256": "4ad637963651257f895b1c90dff264d70f2b9c05b71dfb19fe371a298568e39b",
+      "bytes": 2146
+    },
+    {
+      "path": "docs/adr/0022-toolchain-bun-ts-estavel.md",
+      "kind": "file",
+      "sha256": "59ef138c5cd504e89320d785df0f213b73a4c3e90e7257f6840216e7f03587bf",
+      "bytes": 2007
+    },
+    {
+      "path": "docs/adr/0023-observabilidade-backup-operacao.md",
+      "kind": "file",
+      "sha256": "fac290beb4ccd2e41c8b475bb892681c4ff69457b27c6eb010e4954ffedc4bd5",
+      "bytes": 1866
+    },
+    {
+      "path": "docs/adr/0024-processo-enxuto-um-dev-mais-ia.md",
+      "kind": "file",
+      "sha256": "4531b0c8c9881b56b8790a929501cbe903a454523613f58eef7ae8afd6329d8c",
+      "bytes": 2433
+    },
+    {
+      "path": "docs/adr/README.md",
+      "kind": "file",
+      "sha256": "a3aaf173196d18e6a82a7d2f1a0e6b332b601b92e5e43d51055c06f1dcb46bda",
+      "bytes": 1775
+    },
+    {
+      "path": "docs/adr/TEMPLATE.md",
+      "kind": "file",
+      "sha256": "05be353ac009eeb186379a472df63889c698266a46974f95b60f31f4022c537c",
+      "bytes": 631
+    },
+    {
+      "path": "docs/architecture.md",
+      "kind": "file",
+      "sha256": "ea32d06bb06319625dd6be2540f62ee615f97911f329d562611c87feb1e2ac80",
+      "bytes": 2830
+    },
+    {
+      "path": "docs/decisions.md",
+      "kind": "file",
+      "sha256": "87b7aa332d9f577a62f94e2c7be0116e8ac925256a5394ffbdf85eb7175904a8",
+      "bytes": 3558
+    },
+    {
+      "path": "docs/implementation/M0-01.md",
+      "kind": "file",
+      "sha256": "8e30ed5e8bb8d309babb5cd9309be4ed2d6f38ceb74b1e07d22ff4da428af1a8",
+      "bytes": 2630
+    },
+    {
+      "path": "docs/implementation/PROMPT-INICIAL.md",
+      "kind": "file",
+      "sha256": "2aa022fd404864b7476033208d5c2f7d3b956c1a8dd973c12ebecba28e437dba",
+      "bytes": 1463
+    },
+    {
+      "path": "docs/implementation/STATUS.md",
+      "kind": "file",
+      "sha256": "e4ab51da0593fc25a120960f02f3059c30ba869a49f3f4fdfc632bcc85517cce",
+      "bytes": 2333
+    },
+    {
+      "path": "docs/implementation/TEMPLATE-TAREFA.md",
+      "kind": "file",
+      "sha256": "2605c269b443fdac1e169b6f6925819d0e2b7f8b675092923f88bd35ab59f574",
+      "bytes": 1693
+    },
+    {
+      "path": "docs/operations/agent-instructions.md",
+      "kind": "file",
+      "sha256": "f975c45bf441cb5e0eb9c6e79a6774c7f7ba2a103b41adf00f275bc644c6fe4f",
+      "bytes": 5458
+    },
+    {
+      "path": "docs/operations/ai-development-workflow.md",
+      "kind": "file",
+      "sha256": "f21879198f58fd02502a8902fa3d56bdf264a99a8de8697d3b2c9c86b94a0cda",
+      "bytes": 3148
+    },
+    {
+      "path": "docs/operations/environment-and-release-safety.md",
+      "kind": "file",
+      "sha256": "06cea779ab2f1a5b06ede8e4d48ded607d6c26be423745711accee3213686baa",
+      "bytes": 2585
+    },
+    {
+      "path": "docs/operations/onboarding.md",
+      "kind": "file",
+      "sha256": "771c3ea70053f1243f7ca534ba8d359f4245500d1b67fe683a549aa15c0298e7",
+      "bytes": 2014
+    },
+    {
+      "path": "docs/review/brief-reescrita.md",
+      "kind": "file",
+      "sha256": "4c66de3052e604e27dc680b99c23be2e252a8bd2f59a9848f12f03fff6ce52ea",
+      "bytes": 12641
+    },
+    {
+      "path": "docs/review/registro-do-debate.md",
+      "kind": "file",
+      "sha256": "827fe513c18c6e2292be3d2a8f8df59f5aa49ab5d476cffd2e65c862cea2351f",
+      "bytes": 22394
+    },
+    {
+      "path": "docs/review/relatorio-final.md",
+      "kind": "file",
+      "sha256": "cc79e5b931ea85c14001e023ca446d6404db656dd798a9e9de5e384e14b471b4",
+      "bytes": 21956
+    },
+    {
+      "path": "docs/roadmap.md",
+      "kind": "file",
+      "sha256": "c010a420b5b4af193d16e0b229fd8032c3c2eafbde4459c7b70367cb5ab670ee",
+      "bytes": 4193
+    },
+    {
+      "path": "docs/spec/contracts.md",
+      "kind": "file",
+      "sha256": "ae42581f4b1ac4ed7b050b063fc2e8e28cdfb3657cef4c5b1c4b8b75368d76ca",
+      "bytes": 21122
+    },
+    {
+      "path": "docs/spec/domain.md",
+      "kind": "file",
+      "sha256": "fb92bcc6aebe30ca290d80e010c9c58ed9a3526434957412a88f7be5240248b8",
+      "bytes": 23667
+    },
+    {
+      "path": "docs/spec/security-operations.md",
+      "kind": "file",
+      "sha256": "44fe918eb3793e34fee3247540516fd3660c3c2a1a0d17b73c8c3007dcdd51e9",
+      "bytes": 22044
+    },
+    {
+      "path": "docs/tasks/M0-fundacao.md",
+      "kind": "file",
+      "sha256": "606f95a8373f21a44ea04280b346ca0c53e3c02efaa4248422052af7cc33ad44",
+      "bytes": 27355
+    },
+    {
+      "path": "docs/tasks/M1-identidade.md",
+      "kind": "file",
+      "sha256": "a85a684c5d622430d0f36d75ba55f7fd3ebea6890aba9e6530a7079cfc9ee1a0",
+      "bytes": 16398
+    },
+    {
+      "path": "docs/tasks/M10-migracao-lancamento.md",
+      "kind": "file",
+      "sha256": "878e1b2f3ed249ca1b26150e0f2b2e0323f3dd3ef733c3d5c54dd2a0820e3070",
+      "bytes": 22546
+    },
+    {
+      "path": "docs/tasks/M2-catalogo-autoria.md",
+      "kind": "file",
+      "sha256": "41cef89d393cf772ae496683574529599642635a09579a9e2549ff25c89f82f3",
+      "bytes": 12023
+    },
+    {
+      "path": "docs/tasks/M3-jornada-gratuita.md",
+      "kind": "file",
+      "sha256": "88661f9b6a900928b1c5a95fe4f941de7fb67491b5ba920c08c22e53eeb545d3",
+      "bytes": 13341
+    },
+    {
+      "path": "docs/tasks/M4-assincrono-email.md",
+      "kind": "file",
+      "sha256": "7f582d78d0f13fa069ddf65f6489cf7b74ec337f8ca5ba6d781c747c732ce6f6",
+      "bytes": 17383
+    },
+    {
+      "path": "docs/tasks/M5-aprendizagem-completa.md",
+      "kind": "file",
+      "sha256": "af41d978a40be85c6626619bc1db752da08764eff8c76502f4f04fffb96a8f00",
+      "bytes": 25516
+    },
+    {
+      "path": "docs/tasks/M6-financeiro.md",
+      "kind": "file",
+      "sha256": "db08483a0c57f9a6a96bf671c89a8b05a2040eb806a9665a061670c872d7f27e",
+      "bytes": 18535
+    },
+    {
+      "path": "docs/tasks/M7-certificados.md",
+      "kind": "file",
+      "sha256": "eca5e224dd0c0e4eb60bd462a1019baffe9f15882d3e4bd7a22009d01b1722f4",
+      "bytes": 18640
+    },
+    {
+      "path": "docs/tasks/M8-pwa.md",
+      "kind": "file",
+      "sha256": "02f5c9b6dda593961de9b6abee24a2cc9a3ccf7d6793f503c615f07a16e8a45a",
+      "bytes": 10763
+    },
+    {
+      "path": "docs/tasks/M9-operacao-refinamento.md",
+      "kind": "file",
+      "sha256": "4a30631bd5f63a319ca40c7a6e74637eef2ddfdd151b0b75b384fb76aa78547b",
+      "bytes": 20445
+    },
+    {
+      "path": "docs/tasks/README.md",
+      "kind": "file",
+      "sha256": "c5c2c76d2eb411fb68da1b3d19c48180b56265b9c0550cfae3dec94b26195acf",
+      "bytes": 3243
+    },
+    {
+      "path": "scripts/check-agent-instructions.mjs",
+      "kind": "file",
+      "sha256": "98e9a9caa553a5941a9ec15a7c0dafd551dc6f0259ee49f3ba806fe7f4ef8cb9",
+      "bytes": 2333
+    }
+  ]
+}

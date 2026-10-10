@@ -1,0 +1,53 @@
+# Secrets / ambientes locais
+.env
+.env.*
+!.env.example
+!.env.*.example
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+*.p12
+*.pfx
+age-identity*
+*secret*.local
+
+# Node/Bun e builds
+node_modules/
+dist/
+build/
+.output/
+.vite/
+.wrangler/
+.turbo/
+.cache/
+coverage/
+
+# Testes, relatórios e índices auxiliares
+playwright-report/
+test-results/
+blob-report/
+vitest-results/
+*.log
+.tmp/
+tmp/
+graphify-out/
+
+# Bancos/backup/dados reais
+*.dump
+*.backup
+*.sql.gz
+*.age
+backups/
+
+# Local IDE/OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Preferências pessoais de agentes (não versionar)
+CLAUDE.local.md
+AGENTS.local.md
