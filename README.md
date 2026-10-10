@@ -30,13 +30,16 @@ React 19 SPA + Vite/Cloudflare Vite Plugin e Hono no mesmo Worker; PostgreSQL 18
 
 `AGENTS.md` é a fonte única; `CLAUDE.md` importa `AGENTS.md`; o Copilot usa uma ponte. Ver [topologia](docs/operations/agent-instructions.md). Validar com `node scripts/check-agent-instructions.mjs`.
 
-## Comandos verificados (M0-01)
+## Comandos verificados (M0-01 e M0-02)
 
 Pré-requisitos: Bun 1.4.2 e Node 24.21.0 (`.node-version`).
 
 ```bash
 bun install --frozen-lockfile
-bun run verify:quick   # typecheck (TypeScript 7.0.2) + oxlint --deny-warnings + oxfmt --check
+bun run verify:quick   # typecheck (3 projetos TypeScript 7.0.2) + oxlint --deny-warnings + oxfmt --check
+bun run dev            # Vite + Worker local (workerd): SPA e /api/* na mesma origem (porta padrão do Vite)
+bun run build          # build do cliente e do Worker em dist/
+bun run preview        # serve o build em workerd local
 ```
 
-Verificados num checkout limpo em 2026-10-10 (ver [STATUS](docs/implementation/STATUS.md)). `dev`, `test` e `verify` ainda não existem.
+Verificados em 2026-10-10 (ver [STATUS](docs/implementation/STATUS.md)). `test` e `verify` ainda não existem. Nenhum desses comandos usa a conta Cloudflare: tudo roda localmente.

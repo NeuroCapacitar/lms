@@ -12,8 +12,8 @@
     {
       "path": ".gitattributes",
       "kind": "file",
-      "sha256": "2bb8b69a8439526b00ec376d6459ccd9031b328d7c2d3076f2a75cc458b5326c",
-      "bytes": 177
+      "sha256": "82f0d04816dc0fc3a3132efa6d1418856e39ee4742f95ebd903059caad1a0c6a",
+      "bytes": 421
     },
     {
       "path": ".github/PULL_REQUEST_TEMPLATE.md",
@@ -30,8 +30,8 @@
     {
       "path": ".gitignore",
       "kind": "file",
-      "sha256": "32f8f7813d6f5e9ca4c47fa42df8246128c2de7162324a0488c76c73a29bc1f6",
-      "bytes": 660
+      "sha256": "e8717aaa92eb70be65226c4282afc713b65eed1132f410eb5257c5897338fbd4",
+      "bytes": 714
     },
     {
       "path": ".node-version",
@@ -42,14 +42,20 @@
     {
       "path": ".oxfmtrc.json",
       "kind": "file",
-      "sha256": "53d5fbbf5aa710479315eb1bf2460166a3e3dfcbcf5cf5de9fceb25134806fcf",
-      "bytes": 197
+      "sha256": "aa16de86f1d6bb0f99fe8fbcdef965fcc5a3e08cf9a7febc57a3c215f66c659c",
+      "bytes": 301
+    },
+    {
+      "path": ".oxlintrc.json",
+      "kind": "file",
+      "sha256": "e62aeae2976e5f665f318ee5222fe3c0814c99d6c3b2ea9f3d72810bdf83159f",
+      "bytes": 157
     },
     {
       "path": "AGENTS.md",
       "kind": "file",
-      "sha256": "355c164c65d675e75c094867fb401d4afe5ec5547a3f01c597bc6015a9ae53d9",
-      "bytes": 10191
+      "sha256": "f55d2c2a5641344e69fc788ad0c7f4eb56c7ae90a374af694861702a8ea98004",
+      "bytes": 10217
     },
     {
       "path": "CLAUDE.md",
@@ -90,14 +96,14 @@
     {
       "path": "README.md",
       "kind": "file",
-      "sha256": "a8ae5734cd0e4f3995007c35d7cab9a4cda5d8cba61d20cc526b592b9e1ce5d1",
-      "bytes": 2780
+      "sha256": "7dc0733bf83405fa76af9a4167c23931b6d2b391dc71e9c3efe2bdc0ebfa49c2",
+      "bytes": 3070
     },
     {
       "path": "bun.lock",
       "kind": "file",
-      "sha256": "f9712786ffff5f1efc7e384a357a64a8041a20787f57d73eef56c610d7e508e2",
-      "bytes": 17212
+      "sha256": "4839efb583de75fbf690cb4d7ab0f708f3e4210c1819a0d0ee93d732845d60d5",
+      "bytes": 67774
     },
     {
       "path": "bunfig.toml",
@@ -294,8 +300,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "ca78c5783e4935eafc9b34c640b8418c9a42efc9a71145a90334fb907e9d4ece",
-      "bytes": 4557
+      "sha256": "0f5fffd94f7879554c72865593c528f311829ea0d0bb033cfa9f80cedc6922bf",
+      "bytes": 7559
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",
@@ -442,10 +448,16 @@
       "bytes": 3243
     },
     {
+      "path": "index.html",
+      "kind": "file",
+      "sha256": "35e0475b88a72917f07232b2b60877f833e237a2d9745ace4c8d5629c91a5662",
+      "bytes": 312
+    },
+    {
       "path": "package.json",
       "kind": "file",
-      "sha256": "341900d2788be623b3fc7840ec2ac1c98971f63bf90ab484024bbc58bbeeec69",
-      "bytes": 603
+      "sha256": "52d553690fbc7fc41901229eaa1e384abae4ee8869905133ae783fb9d7c1791c",
+      "bytes": 1168
     },
     {
       "path": "scripts/check-agent-instructions.mjs",
@@ -454,10 +466,94 @@
       "bytes": 2511
     },
     {
+      "path": "src/features/.gitkeep",
+      "kind": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "src/server/app.ts",
+      "kind": "file",
+      "sha256": "a5423d6264f78911a5b379287833a8392bcb7a0952e0902975ec9a7244217d49",
+      "bytes": 703
+    },
+    {
+      "path": "src/server/index.ts",
+      "kind": "file",
+      "sha256": "8db0b177f4219c238697173190c3e1854737d72b30887a42aa35439754a2d5e9",
+      "bytes": 64
+    },
+    {
+      "path": "src/web/main.tsx",
+      "kind": "file",
+      "sha256": "fa709f56ab57ce74c06be5081a7ff0b07e65c4e95fef29d4de2f38badd81948d",
+      "bytes": 763
+    },
+    {
+      "path": "src/web/routeTree.gen.ts",
+      "kind": "file",
+      "sha256": "040fc47acc7e74819cab25080e5d067353a43feae28646685b37f8eb022bdf97",
+      "bytes": 2048
+    },
+    {
+      "path": "src/web/routes/__root.tsx",
+      "kind": "file",
+      "sha256": "05dade6f797fb5b0c45967eb415cc4c2bd05795971629ed472f77fee396a79f6",
+      "bytes": 394
+    },
+    {
+      "path": "src/web/routes/index.tsx",
+      "kind": "file",
+      "sha256": "e31605d440e7c9c803c6a5a0a37ab7ed6a8fd18bd4dc170fc1d3aace280259e9",
+      "bytes": 733
+    },
+    {
+      "path": "src/web/routes/sobre.tsx",
+      "kind": "file",
+      "sha256": "eb3dd38c7418fbb472d7f9eb40300f603fea838ab5ecc308ddadfb15fbca8720",
+      "bytes": 296
+    },
+    {
       "path": "tsconfig.json",
       "kind": "file",
-      "sha256": "617e66010cef906cabc262c4fd417e476af509f0783fb0af7b4eed80fd3e8e56",
-      "bytes": 352
+      "sha256": "f08059bdd1a707dbf15e18cd1019ab1a0bce73cdce354a59acd996f6dac27f3f",
+      "bytes": 161
+    },
+    {
+      "path": "tsconfig.node.json",
+      "kind": "file",
+      "sha256": "c097bcbe7f5302388ce789871952377b03dd6503d0dcf12047deaa9122ab4366",
+      "bytes": 369
+    },
+    {
+      "path": "tsconfig.web.json",
+      "kind": "file",
+      "sha256": "42dfa75c045c86fb02213e6de9e1cb160a0b6ddcfbbdcfc27dbc5fceda6ebe01",
+      "bytes": 480
+    },
+    {
+      "path": "tsconfig.worker.json",
+      "kind": "file",
+      "sha256": "4f35c65d037a08e431eb543f5fcf21886130ffdb4b30f59b15e6cdd98f3239a3",
+      "bytes": 456
+    },
+    {
+      "path": "vite.config.ts",
+      "kind": "file",
+      "sha256": "18f5dc512e9e57957dea1865806559f7e0563f56a47533c87101c3bb7f9418bd",
+      "bytes": 458
+    },
+    {
+      "path": "worker-configuration.d.ts",
+      "kind": "file",
+      "sha256": "9e6938b45dc61179a686c584d30798ef211a16a7194fed3501ec08a5c51929fe",
+      "bytes": 624248
+    },
+    {
+      "path": "wrangler.jsonc",
+      "kind": "file",
+      "sha256": "5cf6ddc504ddecf814a5a56347e057528b9706c9a739468e56105e4c2a8334ef",
+      "bytes": 303
     }
   ]
 }
