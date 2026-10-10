@@ -14,7 +14,7 @@
 - Decisões fechadas em 2026-10-10 após reabertura completa ([relatório final](docs/review/relatorio-final.md)); 24 [ADRs](docs/adr/README.md).
 - Código da vNext: **não implementado**. M0–M10: **planejados** em [docs/roadmap.md](docs/roadmap.md) e [docs/tasks/](docs/tasks/README.md).
 - Legado Next/Vercel (`NeuroCapacitar/hub`): **referência de casos**; não copiar nem modificar.
-- `package.json`, `bun.lock`, `wrangler.jsonc`, projetos Neon e Cloudflare **ainda não existem**; a criação segura é parte do M0.
+- `package.json`, `bun.lock` e `wrangler.jsonc` existem (M0-01 a M0-03); projetos Neon e recursos Cloudflare de ambiente **ainda não existem** (M0-04 e M0-08).
 
 ## Mapa técnico resumido
 
@@ -42,4 +42,4 @@ bun run build          # build do cliente e do Worker em dist/
 bun run preview        # serve o build em workerd local
 ```
 
-Verificados em 2026-10-10 (ver [STATUS](docs/implementation/STATUS.md)). `test` e `verify` ainda não existem. Nenhum desses comandos usa a conta Cloudflare: tudo roda localmente.
+Verificados em 2026-10-10 (ver [STATUS](docs/implementation/STATUS.md)). Também existem `bun run build:staging` e `build:production` (definem `CLOUDFLARE_ENV` antes do build e rodam o preflight de ambiente), `bun run types:check` (confere `wrangler types`) e `bun run test` (testes dos scripts). `verify` ainda não existe. Nenhum desses comandos usa a conta Cloudflare: tudo roda localmente.

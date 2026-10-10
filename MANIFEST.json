@@ -54,8 +54,8 @@
     {
       "path": "AGENTS.md",
       "kind": "file",
-      "sha256": "4e0329f206ce5874af97ecd319d01dd427cd2f6cee7c36f6a038e0b560208619",
-      "bytes": 10697
+      "sha256": "3d8802ff3e83ecb25c775797fac247e7247de386bb27004bc35433e280a3bed4",
+      "bytes": 10768
     },
     {
       "path": "CLAUDE.md",
@@ -96,8 +96,8 @@
     {
       "path": "README.md",
       "kind": "file",
-      "sha256": "7dc0733bf83405fa76af9a4167c23931b6d2b391dc71e9c3efe2bdc0ebfa49c2",
-      "bytes": 3070
+      "sha256": "f0ffb02c765677e0f3c6ee234db3e8d4bf61b5bd39094674e002d63b57b8ab52",
+      "bytes": 3311
     },
     {
       "path": "bun.lock",
@@ -318,8 +318,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "ed3e9ce5a748c6a02aa463b2e673478c3054c6f45f5a7ed199f192a31bf63df6",
-      "bytes": 10509
+      "sha256": "3b01c5cd82ed8b3f2477a70b00d4e70a213f95d60364745430f9dc02e2e0a1d4",
+      "bytes": 13228
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",
@@ -348,8 +348,8 @@
     {
       "path": "docs/operations/environment-and-release-safety.md",
       "kind": "file",
-      "sha256": "d235bfc6a84be0173e1412be9bdcaa756d72b9f42ebedc26663a6cce3c5f6024",
-      "bytes": 3137
+      "sha256": "30c43a8d0b64ff72a0c3dbf6ab4a64905b63c4e2e028952f48042684ee52a5ee",
+      "bytes": 5204
     },
     {
       "path": "docs/operations/onboarding.md",
@@ -480,14 +480,44 @@
     {
       "path": "package.json",
       "kind": "file",
-      "sha256": "52d553690fbc7fc41901229eaa1e384abae4ee8869905133ae783fb9d7c1791c",
-      "bytes": 1168
+      "sha256": "858cb77dfceac92dba9049d46bd9814ba14765eeb16356f499563863fdb9b9b5",
+      "bytes": 1461
+    },
+    {
+      "path": "scripts/build-env.ts",
+      "kind": "file",
+      "sha256": "ca0c9b335ecddfc8187f9326acfdd9dbc401925dd48b89173859d41283fcd1f3",
+      "bytes": 1165
     },
     {
       "path": "scripts/check-agent-instructions.mjs",
       "kind": "file",
       "sha256": "5c30fdbc4583e45b427f40f203853eed84ec8ce9d0b0a6d3cd45be8eb4ff86f8",
       "bytes": 2511
+    },
+    {
+      "path": "scripts/environments.ts",
+      "kind": "file",
+      "sha256": "62ca769f403142e986c6b92a8a265a286d019f1347ea72d6ffa6aacecdd6ca9f",
+      "bytes": 1395
+    },
+    {
+      "path": "scripts/preflight-core.ts",
+      "kind": "file",
+      "sha256": "89ea7d8414901c7abde033124074ca1c70a2b29f4ea094cc662c6f58feb0eeb4",
+      "bytes": 4029
+    },
+    {
+      "path": "scripts/preflight.test.ts",
+      "kind": "file",
+      "sha256": "6298e84c3f168e8e3e5adaedbec2d6fa194c44fef2ebaf0d770aaf572ac2c1a4",
+      "bytes": 4706
+    },
+    {
+      "path": "scripts/preflight.ts",
+      "kind": "file",
+      "sha256": "848fc8123484cb43aa957698eb49edc03070384c964591d059353d282aaa9757",
+      "bytes": 1800
     },
     {
       "path": "src/features/.gitkeep",
@@ -546,8 +576,8 @@
     {
       "path": "tsconfig.node.json",
       "kind": "file",
-      "sha256": "c097bcbe7f5302388ce789871952377b03dd6503d0dcf12047deaa9122ab4366",
-      "bytes": 369
+      "sha256": "c25bd17e22d7ebdabbc2223fda5d2d88b76e7241f40eb6589b003f55c4654356",
+      "bytes": 494
     },
     {
       "path": "tsconfig.web.json",
@@ -570,14 +600,14 @@
     {
       "path": "worker-configuration.d.ts",
       "kind": "file",
-      "sha256": "9e6938b45dc61179a686c584d30798ef211a16a7194fed3501ec08a5c51929fe",
-      "bytes": 624248
+      "sha256": "7aefa27f9683d1553fc230069449a482c06dbb589199193192ce3481899bc188",
+      "bytes": 624302
     },
     {
       "path": "wrangler.jsonc",
       "kind": "file",
-      "sha256": "5cf6ddc504ddecf814a5a56347e057528b9706c9a739468e56105e4c2a8334ef",
-      "bytes": 303
+      "sha256": "a3531cce4a2a1119aed7938fe1dc017b3329dab0d3f52ad425e8b1b6fd0ffaf5",
+      "bytes": 431
     }
   ]
 }

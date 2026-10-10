@@ -23,3 +23,23 @@
 ## Contas e CLIs: só o perfil `neurocapacitar`
 
 Cloudflare (`cf`, `wrangler`) e Neon (`neon`) só podem ser usados com o perfil **`neurocapacitar`** (`neurocapacitar.projetos@gmail.com`), sempre com `--profile neurocapacitar` explícito e identidade verificada antes do primeiro comando da sessão. Nenhum outro perfil da máquina (`DEFAULT`, `default`, `junior-pessoal`) pertence ao projeto. Regra completa, verificação e estado atual: [cli-profiles.md](cli-profiles.md) ([ADR 0025](../adr/0025-clis-cloudflare-neon-so-perfil-neurocapacitar.md)).
+
+## Catálogo de variáveis e segredos (somente nomes e responsável)
+
+**Nomes propostos, ainda não criados.** Cada um nasce na tarefa que o usa, que confirma o nome. Valores nunca entram no repositório, em logs, em artefatos nem no CI comum. `vars` do `wrangler.jsonc` só para valores públicos e não sensíveis; o preflight (`bun run preflight <ambiente>`) rejeita `vars` fora da lista de `scripts/environments.ts`.
+
+| Nome (proposto) | Onde vive | Dono | Tarefa |
+|---|---|---|---|
+| `BETTER_AUTH_SECRET` | Worker Secret, por ambiente | responsável | M1-01 |
+| `TURNSTILE_SECRET_KEY` | Worker Secret, por ambiente | responsável (conta Cloudflare do projeto) | M1-06 |
+| `RESEND_API_KEY` | Worker Secret, por ambiente (Production fora do CI comum) | responsável | M4-04 |
+| `RESEND_WEBHOOK_SECRET` | Worker Secret, por ambiente | responsável | M4-07 |
+| `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN` | Worker Secret; sandbox em Staging, conta real só em Production | cliente (conta Asaas) | M6-02, M6-03 |
+| `VIDEO_SECRETS_MASTER_KEY` | Worker Secret, por ambiente (chave de cifra AES-GCM das credenciais de vídeo) | responsável | M5-01 |
+| `SENTRY_DSN` | `vars` (não é segredo) | responsável | M0-18 |
+| `DATABASE_URL_MIGRATION` (conexão direta, role de migração) | **fora do Worker**: máquina do responsável ou CI de Staging; Production só manual | responsável | M0-04 |
+| Binding Hyperdrive (`HYPERDRIVE`), R2, filas | `wrangler.jsonc` por ambiente (IDs e nomes não são segredos) | responsável | M0-04, M4, M5 |
+| `CLOUDFLARE_API_TOKEN` (CI de Staging) | segredo do GitHub, escopo mínimo, **só conta do projeto**; nunca de Production | responsável | M0-05 |
+| Chave privada `age` do backup | fora de GitHub, Worker e R2 | responsável | M9-05 |
+
+Regras de ambiente: um Worker por ambiente (`hub`, `hub-staging`, `hub-production`), cada um com seus próprios recursos; a tabela de recursos permitidos por ambiente fica em `scripts/environments.ts` e o build (`bun run build:staging` ou `build:production`) só termina se o preflight aprovar.
