@@ -12,8 +12,8 @@
     {
       "path": ".gitattributes",
       "kind": "file",
-      "sha256": "82f0d04816dc0fc3a3132efa6d1418856e39ee4742f95ebd903059caad1a0c6a",
-      "bytes": 421
+      "sha256": "1cbd8a5efcc4f65ab949e52b44fef73ad2ec69f24ddcebe1a7a90573baa49aca",
+      "bytes": 426
     },
     {
       "path": ".github/PULL_REQUEST_TEMPLATE.md",
@@ -300,8 +300,8 @@
     {
       "path": "docs/implementation/STATUS.md",
       "kind": "file",
-      "sha256": "0f5fffd94f7879554c72865593c528f311829ea0d0bb033cfa9f80cedc6922bf",
-      "bytes": 7559
+      "sha256": "9874ce418cbf0dfa6f164eb89c3af31a0190cde24e948cd7b94a431f530729a7",
+      "bytes": 7696
     },
     {
       "path": "docs/implementation/TEMPLATE-TAREFA.md",

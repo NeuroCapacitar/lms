@@ -31,7 +31,7 @@ Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, re
 
 ### M0-02 — verified localmente (2026-10-10; o CI só chega no M0-05)
 
-- **Entrega:** PR de `feat/m0-02-spa-hono` (o SHA do próprio commit não pode constar aqui). Base: M0-01 já mesclado (PR #1, merge `300b3ed`).
+- **SHA:** `f4edb18` (mesclado por PR #2, merge `9f83cb0`). Base: M0-01 (PR #1, merge `300b3ed`).
 - **Arquivos:** `index.html`, `vite.config.ts`, `wrangler.jsonc`, `src/server/{app,index}.ts` (Hono), `src/web/{main.tsx,routes/{__root,index,sobre}.tsx,routeTree.gen.ts}` (gerado), `src/features/.gitkeep`, `worker-configuration.d.ts` (gerado por `wrangler types`), `tsconfig.{json,node,web,worker}.json`, `.oxlintrc.json`, ajustes em `package.json`, `bun.lock`, `.oxfmtrc.json`, `.gitattributes`, `README.md`, `AGENTS.md`.
 - **Versões fixadas (exatas):** React 19.3.0, Hono 4.13.13, TanStack Router 1.170.41, Query 5.104.1, router-plugin 1.168.42, Vite 8.3.4, @vitejs/plugin-react 6.1.2, @cloudflare/vite-plugin 1.63.1, Wrangler 4.149.0, @types/react e react-dom 19.3.0. `compatibility_date` 2026-10-01 com `nodejs_compat`.
 - **Executado e passou:**
@@ -57,7 +57,7 @@ Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, re
 ## Bloqueios e pendências externas
 
 - Repositório vNext criado em 2026-10-10: `NeuroCapacitar/lms` (privado, organização, GitHub Free; opção B da Q49 realizada).
-- Conta Cloudflare: o responsável informou que a CLI da Cloudflare agora está logada com o perfil do projeto, mas **nada foi provisionado nem usado ainda**; o M0-03 em diante exige confirmar a conta e o escopo antes de criar recursos. Neon (Development, Staging, Production) não provisionado.
+- Conta Cloudflare: o responsável informou que a CLI agora está logada com o perfil do projeto. `wrangler whoami` (somente leitura, 2026-10-10) mostra OAuth da conta "Contato.juniordiniz@gmail.com's Account", com permissões amplas. **Nada foi provisionado nem usado.** Antes de criar qualquer recurso no M0-03, confirmar com o responsável que essa é a conta do projeto (Workers Paid, domínio) e o escopo permitido. Neon (Development, Staging, Production) não provisionado.
 - Spikes do M0 não executados: nenhuma compatibilidade foi testada (Better Auth + Hyperdrive, Bun/Windows, JMV, Asaas sandbox, Browser Run, Images, HTMLRewriter, evlog/Sentry).
 - Terceiros: contador (NFS-e), advogado do cliente (termos, retenções, transferência internacional), cliente (provedores de vídeo e contas de teste, manual de marca e logo positivo, destino da cópia off-cloud). Ver [relatório final](../review/relatorio-final.md#7-pendências-que-dependem-de-terceiros).
 
