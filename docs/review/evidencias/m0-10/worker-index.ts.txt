@@ -1,0 +1,152 @@
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { APIError } from 'better-auth/api';
+import { captcha } from 'better-auth/plugins';
+import { magicLink } from 'better-auth/plugins/magic-link';
+import { desc, eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Hono } from 'hono';
+import pg from 'pg';
+
+import * as schema from './schema';
+
+interface Bindings {
+  HYPERDRIVE: Hyperdrive;
+  BASE_URL: string;
+  AUTH_SECRET: string;
+  TURNSTILE_SECRET?: string;
+  SPIKE_KEY: string;
+  RATE_MAX?: string;
+}
+
+/** Uma instância do Better Auth e um cliente `pg` POR REQUISIÇÃO (ADR 0005). */
+function createAuth(env: Bindings) {
+  const client = new pg.Client({ connectionString: env.HYPERDRIVE.connectionString });
+  client.on('error', () => {});
+  const db = drizzle(client, { schema, casing: 'snake_case' });
+  const auth = betterAuth({
+    baseURL: env.BASE_URL,
+    secret: env.AUTH_SECRET,
+    database: drizzleAdapter(db, { provider: 'pg', schema }),
+    advanced: {
+      database: { validateSchema: false },
+      ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
+      useSecureCookies: env.BASE_URL.startsWith('https://'),
+    },
+    session: {
+      expiresIn: 60 * 60 * 24 * 7,
+      updateAge: 60 * 60 * 24,
+      cookieCache: { enabled: false },
+    },
+    rateLimit: {
+      enabled: true,
+      storage: 'database',
+      window: 60,
+      max: 100,
+      customRules: { '/sign-in/magic-link': { window: 60, max: Number(env.RATE_MAX ?? 5) } },
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          // Modelo de "e-mail de Staff não nasce por cadastro livre".
+          before: async (newUser) => {
+            const rows = await db.select().from(schema.staffEmails).where(eq(schema.staffEmails.email, newUser.email));
+            if (rows.length > 0) throw new APIError('FORBIDDEN', { message: 'staff_email_requires_invitation' });
+          },
+        },
+      },
+    },
+    plugins: [
+      magicLink({
+        expiresIn: 60 * 10,
+        storeToken: 'hashed',
+        rateLimit: { window: 60, max: Number(env.RATE_MAX ?? 5) },
+        sendMagicLink: async ({ email, token }) => {
+          // O link aponta para a PÁGINA DE CONFIRMAÇÃO; o token vai no fragmento (não chega ao servidor).
+          const url = `${env.BASE_URL}/entrar/confirmar#token=${token}`;
+          await db.insert(schema.spikeOutbox).values({ toEmail: email, url });
+        },
+      }),
+      ...(env.TURNSTILE_SECRET
+        ? [captcha({ provider: 'cloudflare-turnstile', secretKey: env.TURNSTILE_SECRET, endpoints: ['/sign-in/magic-link'] })]
+        : []),
+    ],
+  });
+  return { auth, client, db };
+}
+
+type Vars = { auth: ReturnType<typeof createAuth>['auth']; db: ReturnType<typeof createAuth>['db'] };
+const app = new Hono<{ Bindings: Bindings; Variables: Vars }>();
+
+app.get('/ping', (c) => c.text('pong'));
+
+app.use('*', async (c, next) => {
+  const { auth, client, db } = createAuth(c.env);
+  c.set('auth', auth);
+  c.set('db', db);
+  await client.connect();
+  try {
+    await next();
+  } finally {
+    await client.end();
+  }
+});
+
+// Scanners de e-mail seguem links com GET/HEAD: o endpoint GET nativo do plugin NÃO é exposto.
+app.on(['GET', 'HEAD'], '/api/auth/magic-link/verify', (c) => c.json({ error: 'not_found' }, 404));
+
+// Confirmação: só POST cria sessão. O corpo traz o token; a origem precisa ser a do app.
+app.post('/api/entrar/confirmar', async (c) => {
+  if (c.req.header('origin') !== c.env.BASE_URL) return c.json({ error: 'bad_origin' }, 403);
+  const body = (await c.req.json().catch(() => null)) as { token?: string } | null;
+  if (!body?.token) return c.json({ error: 'token_required' }, 400);
+  const response = await c.var.auth.api.magicLinkVerify({
+    query: { token: body.token },
+    headers: c.req.raw.headers,
+    asResponse: true,
+  });
+  // Em caso de falha o plugin responde com REDIRECT (3xx para a página de erro); a API devolve JSON.
+  if (response.status >= 300 && response.status < 400) {
+    return c.json({ error: "invalid_or_expired_token" }, 400);
+  }
+  return response;
+});
+
+// A página de confirmação em si (GET): não cria sessão, só mostra o botão.
+app.get('/entrar/confirmar', (c) =>
+  c.html('<!doctype html><title>Confirmar acesso</title><button id=ok>Confirmar acesso</button>'),
+);
+
+app.on(['GET', 'POST'], '/api/auth/*', (c) => c.var.auth.handler(c.req.raw));
+
+// ---- Só para o spike: observar o estado e medir. Protegido por chave. ----
+app.use('/_spike/*', async (c, next) => {
+  if (c.req.header('x-spike-key') !== c.env.SPIKE_KEY) return c.json({ error: 'forbidden' }, 403);
+  await next();
+});
+app.get('/_spike/outbox', async (c) => {
+  const rows = await c.var.db.select().from(schema.spikeOutbox).orderBy(desc(schema.spikeOutbox.id)).limit(1);
+  return c.json(rows[0] ?? null);
+});
+app.get('/_spike/sessions', async (c) => {
+  const rows = await c.var.db.select({ id: schema.session.id, expiresAt: schema.session.expiresAt, updatedAt: schema.session.updatedAt }).from(schema.session);
+  return c.json(rows);
+});
+app.post('/_spike/staff', async (c) => {
+  const { email } = (await c.req.json()) as { email: string };
+  await c.var.db.insert(schema.staffEmails).values({ email }).onConflictDoNothing();
+  return c.json({ ok: true });
+});
+app.get('/_spike/connections', async (c) => {
+  const r = await c.var.db.execute(`select count(*)::int as n from pg_stat_activity where datname = current_database() and pid <> pg_backend_pid()` as never);
+  return c.json(r.rows);
+});
+app.post('/_spike/password', async (c) => {
+  // Custo de CPU de uma criação de senha (scrypt do Better Auth), isolado de rede/banco.
+  const { hashPassword } = await import('better-auth/crypto');
+  const t = Date.now();
+  const hash = await hashPassword('senha-de-teste-123');
+  return c.json({ ms: Date.now() - t, len: hash.length });
+});
+
+export default app;

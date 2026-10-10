@@ -1,9 +1,9 @@
 # Estado de implementação — Hub vNext
 
 **Atualização:** 2026-10-10  
-**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-11, M0-12 e M0-18 passaram)  
+**Estado:** M0 em andamento (M0-01 a M0-06 `verified` no CI; M0-07 `verified` no CI; M0-08 `homologated` em Staging e `verified` no CI; spikes M0-10, M0-11, M0-12 e M0-18 passaram)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-09 (plano da zona DNS; depende do responsável e do registrador) ou os spikes M0-10 (Better Auth) e M0-14/M0-17, que já podem usar o Staging público (não autorizadas)  
+**Próxima tarefa recomendada:** M0-09 (plano da zona DNS; depende do responsável e do registrador); o M1-01 (identidade) já está desbloqueado pelo M0-10, mas depende do marco M0 completo (não autorizadas)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-08 (2026-10-10, no CI e em Staging)
 
@@ -13,7 +13,7 @@
 
 | Marco | Status | Evidência |
 |---|---|---|
-| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; M0-08 `homologated` em Staging; spikes M0-11, M0-12 e M0-18 passaram (registro abaixo) |
+| M0 Fundação e spikes | `in_progress` | M0-01 a M0-06 `verified`; M0-07 `verified`; M0-08 `homologated` em Staging; spikes M0-10, M0-11, M0-12 e M0-18 passaram (registro abaixo) |
 | M1 Identidade e Staff | `not_started` | — |
 | M2 Catálogo e autoria | `not_started` | — |
 | M3 Jornada gratuita | `not_started` | — |
@@ -28,6 +28,16 @@
 ## Registro de tarefas concluídas
 
 Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, resultados, evidências, pendências e responsável pela homologação.
+
+### M0-10 — spike passou (2026-10-10)
+
+- **Entrega:** [ADR 0029](../adr/0029-spike-m0-10-better-auth-magic-link.md) e [evidências](../review/evidencias/m0-10/README.md). Spike **fora do repositório**; nenhum código de produção mudou.
+- **Recursos criados e apagados (perfil `neurocapacitar`, identidade verificada, autorizados pelo responsável):** Hyperdrive `m0-10-spike` (cache desligado, apontando ao Neon de testes `hub-test`, sem dado real) e Worker `m0-10-spike` (workers.dev, plano Free). Ao final: Worker e Hyperdrive apagados, tabelas do spike removidas do `hub-test`, conferido que a lista de Hyperdrive voltou aos três do projeto. A primeira tentativa de criar o Hyperdrive foi bloqueada pelo classificador de permissões; segui só depois da autorização explícita no chat.
+- **Executado e passou:** roteiro de 20 verificações em workerd local contra o Neon (20/20) e no Worker real (basic 15/15, rate 2/2, seq 2/2): link usado duas vezes e expirado falham, GET/HEAD não criam sessão, POST exige origem, token com hash, sessão de 7 dias com renovação rolling, revogação imediata, rate limit em banco pelo IP real, e-mail de Staff bloqueado no cadastro livre, 20 fluxos em sequência sem conexão presa, Turnstile pelo plugin (400/403/200 com as chaves de teste da Cloudflare).
+- **Medidas no edge (Free):** CPU p50 9 ms no pedido de link e 12 ms na confirmação (máx 67 e 46 na primeira requisição do isolate); scrypt 82 ms p50 e 125 ms máx; inicialização 56 ms; bundle 437 KiB gzip. **O limite de 10 ms do Free não comporta o fluxo: o Workers Paid vira requisito prático do M1.**
+- **Achados:** falha de verificação responde com redirect 3xx (converter em JSON); três camadas de rate limit (padrão do plugin, `customRules`, opção do plugin; `customRules` vence); sem verificação de schema no CI com `validateSchema: false` (planejar teste contra `getAuthTables()`); o captcha só é exportado por `better-auth/plugins`.
+- **Não verificado:** envio real por Resend, Turnstile com chave real e widget, concorrência paralela, fluxo no navegador com a página de confirmação em JavaScript, Google e senha.
+- **Aviso operacional:** ao rodar spikes encontrei dezenas de processos `workerd` e `node` do `wrangler dev` de execuções anteriores ainda vivos (um driver antigo não matava a árvore de processos), ocupando a mesma porta e travando requisições; encerrei só os que eram dos spikes.
 
 ### M0-08 — homologated em Staging e verified no CI (2026-10-10)
 

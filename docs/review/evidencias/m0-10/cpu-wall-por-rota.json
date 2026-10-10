@@ -1,0 +1,607 @@
+{
+ "POST /api/auth/sign-in/magic-link": [
+  {
+   "cpuMs": 67,
+   "wallMs": 169,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 15,
+   "wallMs": 74,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 40,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 45,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 46,
+   "wallMs": 75,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 41,
+   "wallMs": 123,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 12,
+   "wallMs": 84,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 46,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 11,
+   "wallMs": 44,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 34,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 49,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 35,
+   "wallMs": 78,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 45,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 44,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 85,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 10,
+   "wallMs": 47,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 31,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 17,
+   "wallMs": 43,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 10,
+   "wallMs": 36,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 26,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 32,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 29,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 32,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 44,
+   "wallMs": 85,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 47,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 44,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 43,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 36,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 26,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 12,
+   "wallMs": 37,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 24,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 26,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 36,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 32,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 10,
+   "wallMs": 37,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 57,
+   "wallMs": 88,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 53,
+   "wallMs": 83,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 33,
+   "wallMs": 53,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 34,
+   "wallMs": 61,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 29,
+   "wallMs": 50,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 36,
+   "wallMs": 60,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 58,
+   "wallMs": 79,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 13,
+   "wallMs": 33,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 44,
+   "wallMs": 82,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 10,
+   "wallMs": 48,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 35,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 45,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 36,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 33,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 44,
+   "outcome": "ok"
+  }
+ ],
+ "GET /_spike/outbox": [
+  {
+   "cpuMs": 36,
+   "wallMs": 74,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 3,
+   "wallMs": 12,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 21,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 23,
+   "wallMs": 35,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 3,
+   "wallMs": 11,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 14,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 16,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 16,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 3,
+   "wallMs": 11,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 22,
+   "wallMs": 33,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 4,
+   "wallMs": 14,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 4,
+   "wallMs": 12,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 3,
+   "wallMs": 10,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 4,
+   "wallMs": 15,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 3,
+   "wallMs": 14,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 37,
+   "wallMs": 50,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 18,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 18,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 20,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 16,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 16,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 20,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 19,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 22,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 19,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 5,
+   "wallMs": 18,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 21,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 4,
+   "wallMs": 15,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 6,
+   "wallMs": 25,
+   "outcome": "ok"
+  }
+ ],
+ "GET /api/auth/magic-link/verify": [
+  {
+   "cpuMs": 6,
+   "wallMs": 10,
+   "outcome": "ok"
+  }
+ ],
+ "HEAD /api/auth/magic-link/verify": [
+  {
+   "cpuMs": 4,
+   "wallMs": 8,
+   "outcome": "ok"
+  }
+ ],
+ "GET /entrar/confirmar": [
+  {
+   "cpuMs": 5,
+   "wallMs": 9,
+   "outcome": "ok"
+  }
+ ],
+ "POST /api/entrar/confirmar": [
+  {
+   "cpuMs": 4,
+   "wallMs": 8,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 46,
+   "wallMs": 172,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 12,
+   "wallMs": 78,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 15,
+   "wallMs": 52,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 24,
+   "wallMs": 83,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 19,
+   "wallMs": 102,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 11,
+   "wallMs": 89,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 13,
+   "wallMs": 92,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 9,
+   "wallMs": 90,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 13,
+   "wallMs": 92,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 4,
+   "wallMs": 30,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 20,
+   "wallMs": 68,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 14,
+   "wallMs": 83,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 11,
+   "wallMs": 60,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 10,
+   "wallMs": 76,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 79,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 15,
+   "wallMs": 61,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 10,
+   "wallMs": 53,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 14,
+   "wallMs": 83,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 70,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 13,
+   "wallMs": 79,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 8,
+   "wallMs": 65,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 85,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 7,
+   "wallMs": 87,
+   "outcome": "ok"
+  }
+ ],
+ "GET /api/auth/get-session": [
+  {
+   "cpuMs": 19,
+   "wallMs": 59,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 14,
+   "wallMs": 50,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 20,
+   "wallMs": 50,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 16,
+   "wallMs": 61,
+   "outcome": "ok"
+  }
+ ],
+ "POST /_spike/staff": [
+  {
+   "cpuMs": 5,
+   "wallMs": 22,
+   "outcome": "ok"
+  }
+ ],
+ "GET /": [
+  {
+   "cpuMs": 18,
+   "wallMs": 20,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 42,
+   "wallMs": 48,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 39,
+   "wallMs": 43,
+   "outcome": "ok"
+  }
+ ],
+ "POST /_spike/password": [
+  {
+   "cpuMs": 125,
+   "wallMs": 130,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 81,
+   "wallMs": 84,
+   "outcome": "ok"
+  },
+  {
+   "cpuMs": 82,
+   "wallMs": 84,
+   "outcome": "ok"
+  }
+ ]
+}

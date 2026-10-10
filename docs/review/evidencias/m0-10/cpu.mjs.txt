@@ -1,0 +1,13 @@
+import { hashPassword, verifyPassword } from 'better-auth/crypto';
+const times = [];
+for (let i = 0; i < 6; i++) {
+  const t = performance.now();
+  const h = await hashPassword('senha-de-teste-123');
+  times.push(performance.now() - t);
+  if (i === 0) {
+    const t2 = performance.now();
+    await verifyPassword({ hash: h, password: 'senha-de-teste-123' });
+    console.log('verify ms', (performance.now() - t2).toFixed(0));
+  }
+}
+console.log('hash ms (Node/V8, referência):', times.map((x) => x.toFixed(0)).join(' '));

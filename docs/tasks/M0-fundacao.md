@@ -132,7 +132,7 @@ M0-01 → M0-02 → **M0-11** (Bun/Windows, antes de fixar CI e testes) → **M0
 **Fora do escopo / cuidados:** não é o cutover (M10). Não ligar proxy nem mudar MX/SPF/DKIM. Se o importador da Cloudflare omitir registros, vale o inventário manual. Erro aqui derruba e-mail e o legado: nada de mudança sem janela e rollback.
 
 ### M0-10 — Spike 1: Better Auth + magic link + Hono + Hyperdrive + `pg` + Drizzle no workerd
-**Dependências:** M0-03, M0-04 · **Estado:** `not_started` · **Timebox:** 2 dias · **Deve vir antes de:** M1-01
+**Dependências:** M0-03, M0-04 · **Estado:** `passou` ([ADR 0029](../adr/0029-spike-m0-10-better-auth-magic-link.md)) · **Timebox:** 2 dias · **Deve vir antes de:** M1-01
 **Objetivo:** provar que o fluxo magic link → sessão em Postgres funciona no Worker real (Staging ou `wrangler dev` remoto) com a versão exata do Better Auth.
 **Passos:**
 1. Fixar a versão exata do Better Auth; montar `/api/auth/*` no Hono com `nodejs_compat`; instância, cliente `pg` e Drizzle criados por requisição; `advanced.database.validateSchema: false`, com o schema verificado no CI.
