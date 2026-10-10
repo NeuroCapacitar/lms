@@ -19,3 +19,7 @@
 - **Backups:** `pg_dump` cifrado com `age` no R2 privado, diário e antes de cada release, mais cópia semanal fora da Cloudflare; ensaio de restauração semestral e antes do Go-Live. Nunca restaurar e liberar efeitos externos sem conciliar pagamentos, revogações e exclusões posteriores.
 - **Legado:** continua em `app.neurocapacitar.com.br` até o cutover; congelado (só segurança, legal e bloqueio de venda). O DNS só muda no M10; depois da primeira operação nova, voltar o DNS ao legado **não** é rollback seguro.
 - **Não publicar** a vNext incompleta a alunos reais. O Go/No-Go do M10 exige QA, segurança, auth, financeiro, certificados, PWA, backups e smoke tests.
+
+## Contas e CLIs: só o perfil `neurocapacitar`
+
+Cloudflare (`cf`, `wrangler`) e Neon (`neon`) só podem ser usados com o perfil **`neurocapacitar`** (`neurocapacitar.projetos@gmail.com`), sempre com `--profile neurocapacitar` explícito e identidade verificada antes do primeiro comando da sessão. Nenhum outro perfil da máquina (`DEFAULT`, `default`, `junior-pessoal`) pertence ao projeto. Regra completa, verificação e estado atual: [cli-profiles.md](cli-profiles.md) ([ADR 0025](../adr/0025-clis-cloudflare-neon-so-perfil-neurocapacitar.md)).

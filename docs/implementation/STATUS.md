@@ -3,7 +3,7 @@
 **Atualização:** 2026-10-10  
 **Estado:** M0 em andamento (M0-01 e M0-02 `verified` localmente; ainda sem CI)  
 **Próximo marco:** M0 — Fundação e spikes  
-**Próxima tarefa recomendada:** M0-11 (spike Bun/Windows) e depois M0-12 e M0-03 (não autorizadas)  
+**Próxima tarefa recomendada:** M0-11 (spike Bun/Windows, local); M0-12 e M0-03 só depois do `wrangler login --profile neurocapacitar` (não autorizadas)  
 **Task em execução:** nenhuma  
 **Última tarefa comprovadamente verificada:** M0-02 (2026-10-10, local)
 
@@ -57,7 +57,7 @@ Ao concluir uma tarefa, acrescente: `ID`, SHA, arquivos, comandos executados, re
 ## Bloqueios e pendências externas
 
 - Repositório vNext criado em 2026-10-10: `NeuroCapacitar/lms` (privado, organização, GitHub Free; opção B da Q49 realizada).
-- Conta Cloudflare: o responsável informou que a CLI agora está logada com o perfil do projeto. `wrangler whoami` (somente leitura, 2026-10-10) mostra OAuth da conta "Contato.juniordiniz@gmail.com's Account", com permissões amplas. **Nada foi provisionado nem usado.** Antes de criar qualquer recurso no M0-03, confirmar com o responsável que essa é a conta do projeto (Workers Paid, domínio) e o escopo permitido. Neon (Development, Staging, Production) não provisionado.
+- **CLIs: só o perfil `neurocapacitar`** (`neurocapacitar.projetos@gmail.com`) na Cloudflare e na Neon, sempre com `--profile neurocapacitar` ([cli-profiles](../operations/cli-profiles.md), ADR 0025). Verificado em 2026-10-10 (somente leitura): `neon me` e `cf auth whoami` com o perfil confirmam o e-mail; o perfil ativo da Neon é `DEFAULT` (outra conta); `wrangler whoami` sem `--profile` mostra outra conta; **o Wrangler ainda não está autenticado no perfil `neurocapacitar`** (precisa de `wrangler login --profile neurocapacitar`, feito pelo responsável, antes do M0-03). Na sessão anterior rodei `wrangler whoami` sem `--profile` (somente leitura, conta pessoal); nada foi criado nem alterado. Nada foi provisionado na Cloudflare nem na Neon.
 - Spikes do M0 não executados: nenhuma compatibilidade foi testada (Better Auth + Hyperdrive, Bun/Windows, JMV, Asaas sandbox, Browser Run, Images, HTMLRewriter, evlog/Sentry).
 - Terceiros: contador (NFS-e), advogado do cliente (termos, retenções, transferência internacional), cliente (provedores de vídeo e contas de teste, manual de marca e logo positivo, destino da cópia off-cloud). Ver [relatório final](../review/relatorio-final.md#7-pendências-que-dependem-de-terceiros).
 

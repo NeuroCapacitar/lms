@@ -19,7 +19,8 @@
 3. Estação de desenvolvimento segura (Windows/PowerShell é suportado). Verificar a versão atual de Bun, Node LTS e Git; **testar o Bun 1.4 no Windows** (spike do M0).
 4. Decidir apenas as versões técnicas comprovadas no M0; não copiar lockfile do legado.
 5. Nenhuma credencial em `.env.example`; exemplos só com nomes e placeholders falsos.
-6. Pendências externas que não bloqueiam o M0: contador (NFS-e), advogado do cliente, cliente (vídeo, marca, cópia off-cloud). Ver [STATUS](../implementation/STATUS.md).
+6. **CLIs Cloudflare e Neon só com o perfil `neurocapacitar`** (`neurocapacitar.projetos@gmail.com`), sempre com `--profile neurocapacitar`; ver [cli-profiles.md](cli-profiles.md). O Wrangler ainda precisa de `wrangler login --profile neurocapacitar` (feito pelo responsável) antes do M0-03.
+7. Pendências externas que não bloqueiam o M0: contador (NFS-e), advogado do cliente, cliente (vídeo, marca, cópia off-cloud). Ver [STATUS](../implementation/STATUS.md).
 
 ## Antes de começar
 
