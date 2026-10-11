@@ -88,7 +88,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** sem outbox/Queue (M4 pode migrar o envio); não enviar marketing por aqui.
 
 ### M1-07 — Google e senha opcionais para o aluno
-**Dependências:** M1-01, M1-06 · **Estado:** `implemented` (verificação local; ver STATUS). Google real pendente das credenciais do cliente.
+**Dependências:** M1-01, M1-06 · **Estado:** `verified` no CI (ver STATUS). Google real pendente das credenciais do cliente.
 **Objetivo:** o aluno pode, depois de entrar, adicionar login com Google e/ou senha; a Staff continua só por link.
 **Passos:**
 1. Provedor Google e `emailAndPassword` habilitados; linking apenas por e-mail **verificado**; `disableImplicitLinking` ou equivalente validado; sem `trustedProviders`/`allowDifferentEmails`.
@@ -111,7 +111,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** sem exclusão de conta nem anonimização (pedido por e-mail ao suporte, procedimento manual); suspensão de **acesso a curso** é do M3-06.
 
 ### M1-09 — Aceite versionado de termos e declaração 18+
-**Dependências:** M1-06 · **Estado:** `not_started`
+**Dependências:** M1-06 · **Estado:** `implemented` (verificação local; ver STATUS). Texto jurídico real PENDENTE do advogado.
 **Objetivo:** ninguém usa a área logada sem ter aceitado a versão vigente dos Termos e da Política de Privacidade e declarado ter 18 anos ou mais.
 **Passos:**
 1. Tabelas `legal_document_version` (tipo, versão, vigente a partir de) e `terms_acceptance` (usuário, versão, quando); sem armazenar IP, salvo orientação do advogado (**PENDENTE (advogado do cliente)**).

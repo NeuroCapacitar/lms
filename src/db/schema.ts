@@ -311,3 +311,47 @@ export const staffInvitationGrant = pgTable(
     ),
   ],
 );
+
+/**
+ * Versões dos documentos legais (M1-09): Termos de Uso e Política de Privacidade. Só o MECANISMO é
+ * do Hub; o texto é do advogado do cliente (PENDENTE). `body` é texto simples, em parágrafos.
+ * Vigente = a versão de cada tipo com a maior `effective_from` já alcançada. Publicar uma nova
+ * versão (nova linha) exige novo aceite no próximo acesso. Versões com aceite não se apagam.
+ */
+export const legalDocumentVersion = pgTable(
+  'legal_document_version',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    kind: text().notNull(),
+    version: text().notNull(),
+    body: text().notNull(),
+    effectiveFrom: timestamp({ withTimezone: true }).notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('legal_document_version_kind_check', sql`${table.kind} in ('terms', 'privacy')`),
+    uniqueIndex('legal_document_version_kind_version_idx').on(table.kind, table.version),
+  ],
+);
+
+/**
+ * Aceite de uma versão por uma pessoa, junto da declaração de ter 18 anos ou mais (obrigatória: o
+ * CHECK recusa `false`). Não guarda IP nem agente de usuário (salvo orientação do advogado).
+ */
+export const termsAcceptance = pgTable(
+  'terms_acceptance',
+  {
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    documentVersionId: uuid()
+      .notNull()
+      .references(() => legalDocumentVersion.id, { onDelete: 'restrict' }),
+    acceptedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    adultDeclared: boolean().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.documentVersionId] }),
+    check('terms_acceptance_adult_check', sql`${table.adultDeclared} = true`),
+  ],
+);

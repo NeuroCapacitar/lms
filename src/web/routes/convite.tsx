@@ -3,8 +3,15 @@ import { useEffect, useRef, useState } from 'react';
 
 import { acceptStaffInvitation, type AcceptInvitationResult } from '../api/auth';
 import { Button } from '../components/ui/button';
+import { RequireTerms } from '../components/require-terms';
 
-export const Route = createFileRoute('/convite')({ component: AcceptInvitation });
+export const Route = createFileRoute('/convite')({
+  component: () => (
+    <RequireTerms>
+      <AcceptInvitation />
+    </RequireTerms>
+  ),
+});
 
 type State =
   | { kind: 'reading' }

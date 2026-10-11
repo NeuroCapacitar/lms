@@ -81,3 +81,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Toda falha de login deve ter a MESMA resposta: compare o corpo/redirecionamento da falha de Staff e suspensa com o de senha errada.
 - Os testes que abrem sessão por `testUtils` usam `isStaffUser: async () => false` (não passam por método de login); o gancho "Staff só por link" é exercitado pelas rotas, que usam a consulta real.
 - `e2e/seguranca.spec.ts` simula a API e o Turnstile; o fluxo real do Google só roda com as credenciais do cliente.
+
+## Aceite de termos (M1-09)
+
+- A migration `0008` semeia duas versões PROVISÓRIAS (Termos e Política). `createTestSchema()` as **remove por padrão**: sem versão vigente o portão `requireAcceptedTerms` abre, então os testes dos outros marcos não precisam registrar aceite. Os testes do M1-09 usam `createTestSchema({ keepLegalSeeds: true })`.
+- Rota nova de área logada deve ficar sob `/me/*` ou `/staff/*` (o portão cobre os dois prefixos) ou receber `requireAcceptedTerms()`; acrescente a rota à matriz de `test/pg/legal.pg.test.ts`.
+- O portão é o primeiro `getSession` da requisição e repassa os cookies renovados; um teste de cookie rolling falha se isso for removido.
+- `e2e/termos.spec.ts` simula `/api/me/legal`; telas de área logada novas devem usar `<RequireTerms>`.
