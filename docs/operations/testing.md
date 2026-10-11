@@ -108,3 +108,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - **Falha injetada sem seam em produção:** crie, na conexão do schema de teste (`database.client()`), um gatilho `BEFORE INSERT` que estoure para um título marcado; ele derruba a publicação DEPOIS de módulos já aplicados. Remova gatilho e função no `finally`.
 - **Leitura com a publicação presa:** um gatilho `BEFORE UPDATE` pede `pg_advisory_xact_lock_shared(N)` e o teste segura `pg_advisory_lock(N)` em outra conexão (só em teste; o produto não usa advisory lock). Confirme que a publicação está presa (`done` falso após ~600 ms) antes de ler.
 - Cenários longos pela API ficam lentos contra o Neon remoto (cada chamada abre conexão): dê um timeout generoso ao teste; no CI (Postgres local) é rápido.
+
+## Texto rico (M2-05)
+
+- **Qualquer rota nova que grave conteúdo rico** valida com `richTextSchema` (a allowlist de `src/features/content/rich-text.ts`) e ganha casos maliciosos em `test/pg/rich-text.pg.test.ts` (400 e nada gravado). O componente de exibição valida de novo (`RichTextView`).
+- **CSP e editor:** o Tiptap NÃO pode injetar `<style>` (`injectCSS: false`; CSS mínimo em `app.css`). `e2e/texto-rico.spec.ts` falha se a CSP for violada: rode-o ao atualizar o Tiptap.
+- **Testes do editor:** depois de clicar num botão da barra, espere o foco voltar ao editor (`toBeFocused`) antes de digitar (o `focus()` do Tiptap é assíncrono) e espere a pré-visualização refletir antes de ler o JSON.
+- Atualizar o Tiptap pode mudar os atributos que o `getJSON()` emite (ex.: o Link v3 grava `title: null`): o esquema é estrito de propósito; ajuste-o e o teste de ida e volta.
+- Os testes de XSS em Playwright assertam que **nenhum diálogo** (`alert`) abre e que nenhum `script`, `img`, `svg` ou `iframe` é criado na pré-visualização.
