@@ -101,3 +101,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `test/pg/catalog.pg.test.ts` prova duas camadas: **invariantes no banco** (CHECK e gatilhos, escritos direto com o Drizzle, que embrulha o erro do `pg`: a mensagem fica em `cause`) e **comandos pela API** (capability por rota). Toda regra comercial nova entra nas duas.
 - O `audit_log` é append-only: filtre pelo `targetId` do curso ou da oferta.
 - A mensagem de um gatilho (`slug_locked`, `offer_archived`...) é o contrato entre o banco e `catalog-store.ts`; mude os dois juntos.
+
+## Currículo vivo (M2-02)
+
+- `test/pg/curriculum.pg.test.ts` limpa com `TRUNCATE … CASCADE`: os gatilhos do publicado recusam `DELETE` (e a role de runtime não tem `TRUNCATE`). Não use `db.delete(lesson)` nem `db.delete(module)` em teste.
+- **Falha injetada sem seam em produção:** crie, na conexão do schema de teste (`database.client()`), um gatilho `BEFORE INSERT` que estoure para um título marcado; ele derruba a publicação DEPOIS de módulos já aplicados. Remova gatilho e função no `finally`.
+- **Leitura com a publicação presa:** um gatilho `BEFORE UPDATE` pede `pg_advisory_xact_lock_shared(N)` e o teste segura `pg_advisory_lock(N)` em outra conexão (só em teste; o produto não usa advisory lock). Confirme que a publicação está presa (`done` falso após ~600 ms) antes de ler.
+- Cenários longos pela API ficam lentos contra o Neon remoto (cada chamada abre conexão): dê um timeout generoso ao teste; no CI (Postgres local) é rápido.

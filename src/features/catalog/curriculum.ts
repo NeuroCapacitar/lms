@@ -5,9 +5,9 @@ import { z } from 'zod';
  * um currículo PUBLICADO (o que o aluno vê); os ids de módulo e aula nascem no rascunho e são os
  * MESMOS no publicado, para sempre. Não há histórico de versões: o publicado anterior não é retido.
  */
-export const MAX_MODULES = 100;
-export const MAX_LESSONS_PER_MODULE = 200;
-export const MAX_DRIP_DAYS = 3650;
+const MAX_MODULES = 100;
+const MAX_LESSONS_PER_MODULE = 200;
+const MAX_DRIP_DAYS = 3650;
 const MAX_BODY_BYTES = 200_000;
 
 /** Corpo de aula como objeto JSON. A validação do Tiptap por allowlist é do M2-05 e substitui esta. */
@@ -54,7 +54,7 @@ export const saveDraftSchema = z.strictObject({
     .max(MAX_MODULES),
 });
 
-export interface CurriculumDetails {
+interface CurriculumDetails {
   displayTitle: string;
   description: string;
   workloadHours: number | null;
@@ -144,7 +144,7 @@ export function validateCurriculum(tree: CurriculumTree): CurriculumProblem[] {
 }
 
 /** JSON com as chaves em ordem estável (o `jsonb` do Postgres reordena as chaves). */
-export function canonicalJson(value: unknown): string {
+function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
   if (value !== null && typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>)
