@@ -30,6 +30,7 @@ import {
   isSuspended,
   loadAccess,
 } from './access-store';
+import { catalogRoutes } from '../catalog/routes';
 import { methodRoutes } from './method-routes';
 import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
 import { staffRoutes } from './staff-routes';
@@ -353,6 +354,9 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       globalPerDay: limits.globalPerDay,
     }),
   );
+
+  // Catálogo da Staff (M2-01): /api/staff/courses/*.
+  routes.route('/staff', catalogRoutes({ withDatabase }));
 
   // Senha e Google (M1-07): login, retorno do Google e "Segurança da conta".
   routes.route(
