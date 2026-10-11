@@ -123,3 +123,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Cada permissão tem seu cenário (Admin, só `course.edit`, só leitura): a tela esconde, mas **o servidor é quem decide**; teste a recusa pela API nos testes PG, não pelo botão ausente.
 - Reordenar e mover são testados pelos botões e pelo `aria-live`; confirme que **nada vai ao servidor antes de "Salvar rascunho"** e que o `expectedRev` enviado é o lido.
 - O resumo de publicação é calculado no servidor (`publish-preview`) sobre o rascunho salvo; mude `curriculum-diff.ts` com o teste puro e o caso "pré-publicação" do PG.
+
+## Curso demonstrativo (M2-07)
+
+- Teste que precisa de curso publicado com módulos em D+0, D+7 e D+14 usa `createDemoCourse(db)` (`test/helpers/demo-course.ts`) em vez de montar dados à mão: é o mesmo conteúdo do seed de Dev e Staging.
+- `bun run seed:demo <dev|staging>` é ensaio; `--apply` grava. Exige `DATABASE_URL_MIGRATION` direta do ambiente e as migrations já aplicadas. Production é recusada (teste em `scripts/seed-demo-core.test.ts`).
+- Conteúdo só sintético: não coloque texto, nome ou e-mail reais no curso demonstrativo.

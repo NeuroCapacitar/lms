@@ -332,7 +332,7 @@ export type PublishResult = { status: 'published' | 'unchanged'; version: number
  */
 export async function publishCurriculum(
   db: Database,
-  input: { actorId: string; courseId: string },
+  input: { actorId: string | null; courseId: string },
 ): Promise<PublishResult> {
   return db.transaction(async (tx) => {
     const [locked] = await tx

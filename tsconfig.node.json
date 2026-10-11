@@ -27,5 +27,5 @@
     "test/pg/schema.pg.test.ts",
     "test/pg/race.pg.test.ts"
   ],
-  "exclude": ["scripts/admin-bootstrap.ts"]
+  "exclude": ["scripts/admin-bootstrap.ts", "scripts/seed-demo.ts"]
 }

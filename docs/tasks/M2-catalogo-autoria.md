@@ -55,7 +55,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** sem imagens, embeds, iframes, HTML livre nem editor estilo Notion; mídia só no M5.
 
 ### M2-03 — Course Builder mínimo (Staff)
-**Dependências:** M2-02, M2-05, M1-10 · **Estado:** `implemented` (verificação local; ver STATUS). Telas em `/staff/cursos`.
+**Dependências:** M2-02, M2-05, M1-10 · **Estado:** `verified` (CI, PR #56; ver STATUS). Telas em `/staff/cursos`.
 **Objetivo:** o Admin cria cursos e ofertas; o Suporte com grant edita o currículo e publica, tudo pela interface e com autorização no servidor.
 **Passos:**
 1. Telas: lista de cursos (somente leitura para quem não tem grant); criar curso e Offer (Admin); editor com abas Detalhes, Currículo e Oferta (aba visível só ao Admin); publicar com resumo do que muda (adicionadas, alteradas, aposentadas) e **pré-visualização do rascunho** com o mesmo renderizador.
@@ -67,7 +67,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** sem arrastar-e-soltar obrigatório, sem editor visual, sem importação em lote; preço e disponibilidade só Admin; sem confiar em campo escondido na UI.
 
 ### M2-07 — Curso demonstrativo (seed e fixtures)
-**Dependências:** M2-02 · **Estado:** `not_started`
+**Dependências:** M2-02 · **Estado:** `implemented` (verificação local; ver STATUS; falta aplicar em Dev e Staging). Comando: `bun run seed:demo`.
 **Objetivo:** um comando cria, de forma repetível, um curso gratuito sintético usado nos testes e na jornada do M3.
 **Passos:**
 1. `scripts/seed-demo.ts` cria o curso "Curso Demonstrativo" (guiado), Offer gratuita de 3 meses e 3 módulos (D+0, D+7, D+14) com aulas de texto, uma opcional; publica pelas funções de domínio.
