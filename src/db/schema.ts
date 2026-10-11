@@ -425,6 +425,7 @@ export const offer = pgTable(
       sql`${table.maxInstallments} between 1 and 12 and (${table.kind} = 'paid' or ${table.maxInstallments} = 1)`,
     ),
     check('offer_status_check', sql`${table.status} in ('draft', 'active', 'paused', 'archived')`),
+    unique('offer_id_course_unique').on(table.id, table.courseId),
   ],
 );
 
@@ -595,6 +596,92 @@ export const lesson = pgTable(
     check(
       'lesson_body_size_check',
       sql`${table.body} is null or octet_length(${table.body}::text) <= 100000`,
+    ),
+  ],
+);
+
+/**
+ * Matrícula (M3-01): UMA linha por (pessoa, curso), criada uma vez. É a PROJEÇÃO efetiva dos direitos
+ * (`entitlement`): `anchor_at` é a âncora do drip, definida na criação e IMUTÁVEL (gatilho); nova
+ * compra ou inscrição depois de expirar continua nesta mesma linha (nada de episódio). A linha é
+ * também o que serializa concessões concorrentes (`SELECT ... FOR UPDATE`). `effective_expires_at` é a
+ * maior expiração entre os direitos não revogados, recalculada na mesma transação de toda mudança.
+ */
+export const enrollment = pgTable(
+  'enrollment',
+  {
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    courseId: uuid()
+      .notNull()
+      .references(() => course.id, { onDelete: 'restrict' }),
+    anchorAt: timestamp({ withTimezone: true }).notNull(),
+    effectiveExpiresAt: timestamp({ withTimezone: true }),
+    suspendedAt: timestamp({ withTimezone: true }),
+    suspendedReason: text(),
+    suspendedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    ...stamps,
+  },
+  (table) => [
+    primaryKey({ name: 'enrollment_pk', columns: [table.userId, table.courseId] }),
+    index('enrollment_course_idx').on(table.courseId),
+    check(
+      'enrollment_suspension_check',
+      sql`${table.suspendedAt} is not null or (${table.suspendedReason} is null and ${table.suspendedBy} is null)`,
+    ),
+  ],
+);
+
+/**
+ * Direito de acesso (M3-01): a FONTE do acesso. Um direito por concessão, com janela própria
+ * (`starts_at` a `expires_at`, sempre com prazo, sem vitalício). Nunca é apagado nem reescrito: só
+ * pode ser REVOGADO (definitivo), por gatilho. `source_ref` é único por `source` e serve de
+ * idempotência (ex.: o id do pedido numa compra; uma chave por pessoa e curso na inscrição gratuita).
+ */
+export const entitlement = pgTable(
+  'entitlement',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text().notNull(),
+    courseId: uuid().notNull(),
+    offerId: uuid(),
+    source: text().notNull(),
+    sourceRef: text().notNull(),
+    startsAt: timestamp({ withTimezone: true }).notNull(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    revokedAt: timestamp({ withTimezone: true }),
+    revokedReason: text(),
+    revokedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    grantedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'entitlement_enrollment_fk',
+      columns: [table.userId, table.courseId],
+      foreignColumns: [enrollment.userId, enrollment.courseId],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'entitlement_offer_fk',
+      columns: [table.offerId, table.courseId],
+      foreignColumns: [offer.id, offer.courseId],
+    }).onDelete('restrict'),
+    uniqueIndex('entitlement_source_ref_idx').on(table.source, table.sourceRef),
+    index('entitlement_person_course_idx').on(table.userId, table.courseId),
+    check(
+      'entitlement_source_check',
+      sql`${table.source} in ('free_offer', 'purchase', 'admin_grant')`,
+    ),
+    check('entitlement_source_ref_check', sql`char_length(${table.sourceRef}) between 1 and 200`),
+    check('entitlement_window_check', sql`${table.expiresAt} > ${table.startsAt}`),
+    check(
+      'entitlement_offer_required_check',
+      sql`${table.source} = 'admin_grant' or ${table.offerId} is not null`,
+    ),
+    check(
+      'entitlement_revocation_check',
+      sql`(${table.revokedAt} is null and ${table.revokedReason} is null and ${table.revokedBy} is null) or (${table.revokedAt} is not null and ${table.revokedReason} is not null)`,
     ),
   ],
 );

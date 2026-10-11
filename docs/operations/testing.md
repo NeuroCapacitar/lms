@@ -142,3 +142,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - **Não faça o teste do workerd nem o e2e consultarem o banco em volume**: as conexões seguidas ao Neon de teste, pelo Hyperdrive local do miniflare, podem derrubar o processo com `ECONNRESET` não tratado. Nos testes de tela use o documento da raiz (`route.fetch` da `/`), e mantenha poucas requisições reais a `/cursos/:slug`.
 - A resposta 404 de curso inexistente, rascunho, arquivado e sem currículo tem de ser **byte a byte a mesma**: ao mudar a página, atualize o teste de igualdade.
 - **Manual, após o deploy em Staging:** abrir a URL de um curso publicado nos validadores do LinkedIn (Post Inspector) e do Meta (Sharing Debugger), conferir título, descrição e imagem e anotar o resultado no `STATUS.md`. O cache deles guarda a prévia: use "Scrape Again"/"Inspect" ao mudar.
+
+## Entitlement e Enrollment (M3-01)
+
+- Concorrência de concessão se prova com **conexões separadas** (`openDatabase` por tentativa), não com uma conexão só: uma conexão serializa tudo e não prova a corrida. Os testes confirmam UMA matrícula, UMA âncora e a idempotência por `source_ref`.
+- Toda decisão de acesso nos testes passa por `resolveAccess(db, pessoa, curso, agora)` com `agora` EXPLÍCITO; não use `Date.now()` nem tarefa agendada para "fazer expirar".
+- Para testar uma violação de gatilho, use SQL direto (`tools.db.execute`) e confira a mensagem em `cause` (`anchor_locked`, `entitlement_immutable`, `revoked_is_final`...). A limpeza dos testes deve truncar `entitlement, enrollment` ANTES de `user` e `course` (as FKs são `restrict`).

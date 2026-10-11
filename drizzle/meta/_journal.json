@@ -85,6 +85,13 @@
       "when": 1791725886209,
       "tag": "0011_rich_text",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791756171737,
+      "tag": "0012_entitlement_enrollment",
+      "breakpoints": true
     }
   ]
 }
