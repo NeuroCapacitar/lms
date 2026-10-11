@@ -22,6 +22,7 @@ import {
   type PublishedCurriculumDto,
 } from '../../features/catalog/curriculum';
 import type { RichText } from '../../features/content/rich-text';
+import { diffCurriculum, type PublishPreview } from '../../features/catalog/curriculum-diff';
 import { auditEvent } from '../auth/access-store';
 
 export class CurriculumCourseNotFoundError extends Error {
@@ -497,4 +498,35 @@ export async function coursesWithPublishedCurriculum(
     .from(curriculumState)
     .where(inArray(curriculumState.courseId, courseIds));
   return new Set(rows.filter((row) => row.version > 0).map((row) => row.id));
+}
+
+/**
+ * O que publicar mudaria, sem mudar nada: problemas de validação e o resumo de adicionadas,
+ * alteradas e a aposentar. Lê num único instantâneo. `null` se o curso não existe.
+ */
+export async function previewPublish(
+  db: Database,
+  courseId: string,
+): Promise<PublishPreview | null> {
+  return db.transaction(
+    async (tx) => {
+      const [row] = await tx.select({ id: course.id }).from(course).where(eq(course.id, courseId));
+      if (!row) return null;
+      const [state] = await tx
+        .select()
+        .from(curriculumState)
+        .where(eq(curriculumState.courseId, courseId));
+      const publishedVersion = state?.publishedVersion ?? 0;
+      const draft = await readDraftTree(tx, courseId);
+      const published = publishedVersion > 0 ? await readPublishedTree(tx, courseId) : null;
+      return {
+        rev: state?.draftRev ?? 0,
+        publishedVersion,
+        hasChanges: published === null || !curriculumEquals(draft, published),
+        problems: validateCurriculum(draft),
+        diff: diffCurriculum(draft, published),
+      };
+    },
+    { isolationLevel: 'repeatable read', accessMode: 'read only' },
+  );
 }

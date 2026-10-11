@@ -49,7 +49,7 @@ export const saveDraftSchema = z.strictObject({
     .max(MAX_MODULES),
 });
 
-interface CurriculumDetails {
+export interface CurriculumDetails {
   displayTitle: string;
   description: RichText | null;
   workloadHours: number | null;
@@ -139,7 +139,7 @@ export function validateCurriculum(tree: CurriculumTree): CurriculumProblem[] {
 }
 
 /** JSON com as chaves em ordem estável (o `jsonb` do Postgres reordena as chaves). */
-function canonicalJson(value: unknown): string {
+export function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
   if (value !== null && typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>)
@@ -154,3 +154,6 @@ function canonicalJson(value: unknown): string {
 export function curriculumEquals(a: CurriculumTree, b: CurriculumTree): boolean {
   return canonicalJson(a) === canonicalJson(b);
 }
+
+/** O corpo de `PUT /api/staff/courses/:id/draft` já validado. */
+export type SaveDraftBody = z.infer<typeof saveDraftSchema>;

@@ -14,14 +14,27 @@ export type ActionResult =
   | 'rate_limited'
   | 'unavailable';
 
-export async function postAction<T = Record<string, never>>(
+export type ActionOutcome<T> = {
+  result: ActionResult;
+  data?: T;
+  code?: string;
+  /** Corpo da resposta de erro (o servidor lista `fields` inválidos, `currentRev`, `problems`...). */
+  error?: { code?: string; fields?: string[]; currentRev?: number; problems?: unknown[] };
+};
+
+export const postAction = <T = Record<string, never>>(path: string, body: unknown) =>
+  sendAction<T>('POST', path, body);
+
+/** Como `postAction`, com o método escolhido (`PUT` do rascunho, `PATCH` de oferta e curso). */
+export async function sendAction<T = Record<string, never>>(
+  method: 'POST' | 'PUT' | 'PATCH',
   path: string,
   body: unknown,
-): Promise<{ result: ActionResult; data?: T; code?: string }> {
+): Promise<ActionOutcome<T>> {
   let response: Response;
   try {
     response = await fetch(path, {
-      method: 'POST',
+      method,
       headers: { 'content-type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify(body),
@@ -30,20 +43,23 @@ export async function postAction<T = Record<string, never>>(
     return { result: 'unavailable' };
   }
   const data = (await response.json().catch(() => null)) as
-    | (T & { error?: { code?: string } })
+    | (T & { error?: ActionOutcome<T>['error'] })
     | null;
-  const code = data?.error?.code;
+  const error = data?.error;
+  const code = error?.code;
   if (response.ok) return data ? { result: 'ok', data } : { result: 'ok' };
-  if (response.status === 401) return { result: 'unauthenticated', ...(code ? { code } : {}) };
-  if (response.status === 400) return { result: 'invalid', ...(code ? { code } : {}) };
-  if (response.status === 404) return { result: 'not_found', ...(code ? { code } : {}) };
-  if (response.status === 409) return { result: 'conflict', ...(code ? { code } : {}) };
-  if (response.status === 429) return { result: 'rate_limited', ...(code ? { code } : {}) };
+  const failure = (result: ActionResult): ActionOutcome<T> => ({
+    result,
+    ...(code ? { code } : {}),
+    ...(error ? { error } : {}),
+  });
+  if (response.status === 401) return failure('unauthenticated');
+  if (response.status === 400 || response.status === 422) return failure('invalid');
+  if (response.status === 404) return failure('not_found');
+  if (response.status === 409) return failure('conflict');
+  if (response.status === 429) return failure('rate_limited');
   if (response.status === 403) {
-    return {
-      result: code === 'reauth_required' ? 'reauth_required' : 'forbidden',
-      ...(code ? { code } : {}),
-    };
+    return failure(code === 'reauth_required' ? 'reauth_required' : 'forbidden');
   }
   return { result: 'unavailable' };
 }

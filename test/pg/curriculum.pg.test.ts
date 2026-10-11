@@ -722,3 +722,60 @@ describe('atomicidade e concorrência da publicação', () => {
     expect(shape(after.modules)).toEqual(['A nova(0)[A1 nova]']);
   });
 });
+
+describe('pré-publicação (resumo do que muda)', () => {
+  it('mostra problemas e o resumo sem mudar nada; ler só exige staff.read', async () => {
+    const admin = await actor('admin');
+    const reader = await actor('support');
+    const courseId = await newCourse();
+    const preview = async () =>
+      json(await call('GET', `/courses/${courseId}/publish-preview`, reader.headers));
+    expect((await call('GET', `/courses/${courseId}/publish-preview`, undefined)).status).toBe(401);
+    expect(
+      (
+        await call(
+          'GET',
+          '/courses/00000000-0000-4000-8000-000000000000/publish-preview',
+          reader.headers,
+        )
+      ).status,
+    ).toBe(404);
+
+    const empty = await preview();
+    expect(empty).toMatchObject({ rev: 0, publishedVersion: 0, hasChanges: true });
+    expect(empty.problems.map((p: { code: string }) => p.code)).toEqual(['no_modules']);
+
+    const { body: v1 } = await save(admin, courseId, 0, BASIC);
+    const ready = await preview();
+    expect(ready.problems).toEqual([]);
+    expect(ready.diff.added).toHaveLength(5);
+    expect(ready.diff.retired).toEqual([]);
+    expect(await getPublishedCurriculum(tools.db, courseId)).toBeNull();
+
+    await publish(admin, courseId);
+    expect(await preview()).toMatchObject({
+      publishedVersion: 1,
+      hasChanges: false,
+      diff: { details: false, added: [], changed: [], retired: [] },
+    });
+
+    // renomeia uma aula, remove outra e acrescenta uma nova
+    const [a, b] = v1.modules;
+    await save(admin, courseId, 1, [
+      {
+        id: a.id,
+        title: 'Módulo A',
+        lessons: [{ id: a.lessons[0].id, title: 'A1 renomeada' }, { title: 'A3 nova' }],
+      },
+      { id: b.id, title: 'Módulo B', dripDays: 7, lessons: [] },
+    ]);
+    const after = await preview();
+    expect(after.hasChanges).toBe(true);
+    expect(after.diff.added.map((i: { title: string }) => i.title)).toEqual(['A3 nova']);
+    expect(after.diff.retired.map((i: { title: string }) => i.title).sort()).toEqual(['A2', 'B1']);
+    expect(after.diff.changed.map((i: { title: string }) => i.title)).toEqual(['A1 renomeada']);
+    expect(after.problems.map((p: { code: string }) => p.code)).toContain('module_no_lessons');
+    // pré-visualizar nunca altera o publicado
+    expect((await getPublishedCurriculum(tools.db, courseId))!.version).toBe(1);
+  });
+});
