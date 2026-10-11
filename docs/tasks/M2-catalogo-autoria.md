@@ -18,7 +18,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 ---
 
 ### M2-01 — Course, Offer e disponibilidade
-**Dependências:** M1-03, M0-04 · **Estado:** `not_started`
+**Dependências:** M1-03, M0-04 · **Estado:** `implemented` (verificação local; ver STATUS). Estados da Offer: `draft|active|paused|archived` (spec de domínio).
 **Objetivo:** existe o cadastro de cursos e ofertas com regras comerciais corretas, e a visibilidade do curso é separada da disponibilidade de inscrição.
 **Passos:**
 1. Tabela `course`: id, `slug` único, título interno, `sequence_mode` (`guided|free`, escolha obrigatória, sem default), estado (`draft|published|archived`), criado por. Textos exibidos ao público ficam no conteúdo do M2-02.
