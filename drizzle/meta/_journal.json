@@ -71,6 +71,13 @@
       "when": 1791723224278,
       "tag": "0009_course_offer",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791724234184,
+      "tag": "0010_curriculum",
+      "breakpoints": true
     }
   ]
 }

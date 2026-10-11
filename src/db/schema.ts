@@ -2,6 +2,7 @@ import {
   bigint,
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   pgTable,
@@ -9,6 +10,7 @@ import {
   jsonb,
   primaryKey,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -423,5 +425,158 @@ export const offer = pgTable(
       sql`${table.maxInstallments} between 1 and 12 and (${table.kind} = 'paid' or ${table.maxInstallments} = 1)`,
     ),
     check('offer_status_check', sql`${table.status} in ('draft', 'active', 'paused', 'archived')`),
+  ],
+);
+
+/**
+ * Estado do currículo vivo de um curso (M2-02): o contador do RASCUNHO (`draft_rev`, concorrência
+ * otimista: não é histórico) e o da PUBLICAÇÃO (`published_version`, simples contador). Não existe
+ * CourseRelease nem revisão imutável: o publicado anterior não é retido.
+ */
+export const curriculumState = pgTable('curriculum_state', {
+  courseId: uuid()
+    .primaryKey()
+    .references(() => course.id, { onDelete: 'restrict' }),
+  draftRev: integer().notNull().default(0),
+  publishedVersion: integer().notNull().default(0),
+  publishedAt: timestamp({ withTimezone: true }),
+  ...stamps,
+});
+
+/** Detalhes do curso exibidos ao público (rascunho). O título interno fica em `course`. */
+export const courseDraft = pgTable(
+  'course_draft',
+  {
+    courseId: uuid()
+      .primaryKey()
+      .references(() => course.id, { onDelete: 'cascade' }),
+    displayTitle: text().notNull(),
+    description: text().notNull().default(''),
+    workloadHours: integer(),
+    ...stamps,
+  },
+  (table) => [
+    check(
+      'course_draft_workload_check',
+      sql`${table.workloadHours} is null or ${table.workloadHours} between 1 and 10000`,
+    ),
+  ],
+);
+
+/** Os mesmos detalhes, PUBLICADOS (o que quem estuda e o público veem). */
+export const courseContent = pgTable(
+  'course_content',
+  {
+    courseId: uuid()
+      .primaryKey()
+      .references(() => course.id, { onDelete: 'restrict' }),
+    displayTitle: text().notNull(),
+    description: text().notNull().default(''),
+    workloadHours: integer(),
+    ...stamps,
+  },
+  (table) => [
+    check(
+      'course_content_workload_check',
+      sql`${table.workloadHours} is null or ${table.workloadHours} between 1 and 10000`,
+    ),
+  ],
+);
+
+/** Módulo do RASCUNHO. O id nasce aqui e é o MESMO id do módulo publicado (estável para sempre). */
+export const moduleDraft = pgTable(
+  'module_draft',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    courseId: uuid()
+      .notNull()
+      .references(() => course.id, { onDelete: 'cascade' }),
+    title: text().notNull(),
+    position: integer().notNull(),
+    /** D+N: dias depois do primeiro acesso em que o módulo libera (0 = imediato). */
+    dripDays: integer().notNull().default(0),
+    ...stamps,
+  },
+  (table) => [
+    unique('module_draft_id_course_unique').on(table.id, table.courseId),
+    index('module_draft_course_idx').on(table.courseId, table.position),
+    check('module_draft_drip_check', sql`${table.dripDays} between 0 and 3650`),
+    check('module_draft_position_check', sql`${table.position} >= 0`),
+  ],
+);
+
+/** Aula do RASCUNHO (só `text` neste marco). Pode mudar de módulo mantendo o id. */
+export const lessonDraft = pgTable(
+  'lesson_draft',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    courseId: uuid().notNull(),
+    moduleId: uuid().notNull(),
+    title: text().notNull(),
+    position: integer().notNull(),
+    kind: text().notNull().default('text'),
+    isOptional: boolean().notNull().default(false),
+    body: jsonb(),
+    ...stamps,
+  },
+  (table) => [
+    foreignKey({
+      name: 'lesson_draft_module_fk',
+      columns: [table.moduleId, table.courseId],
+      foreignColumns: [moduleDraft.id, moduleDraft.courseId],
+    }).onDelete('cascade'),
+    index('lesson_draft_module_idx').on(table.moduleId, table.position),
+    check('lesson_draft_kind_check', sql`${table.kind} = 'text'`),
+    check('lesson_draft_position_check', sql`${table.position} >= 0`),
+  ],
+);
+
+/**
+ * Módulo PUBLICADO. Nunca é apagado: o que sai do rascunho é APOSENTADO (`retired_at`) e some do
+ * aluno e da elegibilidade, mas o id continua existindo para progresso, conclusão e discussão.
+ */
+export const courseModule = pgTable(
+  'module',
+  {
+    id: uuid().primaryKey(),
+    courseId: uuid()
+      .notNull()
+      .references(() => course.id, { onDelete: 'restrict' }),
+    title: text().notNull(),
+    position: integer().notNull(),
+    dripDays: integer().notNull().default(0),
+    retiredAt: timestamp({ withTimezone: true }),
+    ...stamps,
+  },
+  (table) => [
+    unique('module_id_course_unique').on(table.id, table.courseId),
+    index('module_course_idx').on(table.courseId, table.position),
+    check('module_drip_check', sql`${table.dripDays} between 0 and 3650`),
+  ],
+);
+
+/** Aula PUBLICADA (mesmas regras do módulo: aposentada, nunca apagada). */
+export const lesson = pgTable(
+  'lesson',
+  {
+    id: uuid().primaryKey(),
+    courseId: uuid().notNull(),
+    moduleId: uuid().notNull(),
+    title: text().notNull(),
+    position: integer().notNull(),
+    kind: text().notNull().default('text'),
+    isOptional: boolean().notNull().default(false),
+    body: jsonb(),
+    retiredAt: timestamp({ withTimezone: true }),
+    ...stamps,
+  },
+  (table) => [
+    foreignKey({
+      name: 'lesson_module_fk',
+      columns: [table.moduleId, table.courseId],
+      foreignColumns: [courseModule.id, courseModule.courseId],
+    }).onDelete('restrict'),
+    index('lesson_module_idx').on(table.moduleId, table.position),
+    check('lesson_kind_check', sql`${table.kind} = 'text'`),
   ],
 );

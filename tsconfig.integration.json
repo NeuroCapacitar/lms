@@ -35,6 +35,7 @@
     "test/pg/methods.pg.test.ts",
     "test/pg/legal.pg.test.ts",
     "test/pg/team.pg.test.ts",
-    "test/pg/catalog.pg.test.ts"
+    "test/pg/catalog.pg.test.ts",
+    "test/pg/curriculum.pg.test.ts"
   ]
 }
