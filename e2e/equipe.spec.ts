@@ -120,7 +120,7 @@ test.describe('casca da Staff (/staff)', () => {
     await expect(page.getByRole('link', { name: 'Gerir a equipe' })).toBeVisible();
     await nav.getByRole('link', { name: 'Equipe' }).click();
     await expect(page).toHaveURL(/\/staff\/equipe$/);
-    await expect(page.getByRole('heading', { name: 'Equipe' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Equipe', exact: true })).toBeVisible();
     // a casca da Staff não carrega a navegação pública do aluno
     await expect(page.getByRole('navigation', { name: 'Principal' })).toHaveCount(0);
   });
