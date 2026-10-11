@@ -24,7 +24,13 @@ import { sha256Hex } from '../crypto';
 import { createEmailSender } from '../email/factory';
 import { createAuth, type Auth } from './create-auth';
 import { getProfile, updateProfile } from './profile-store';
-import { isStaffEmail as lookupStaffEmail, isSuspended, loadAccess } from './access-store';
+import {
+  hasStaffRole,
+  isStaffEmail as lookupStaffEmail,
+  isSuspended,
+  loadAccess,
+} from './access-store';
+import { methodRoutes } from './method-routes';
 import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
 import { staffRoutes } from './staff-routes';
 import { acceptCurrent, currentVersions, pendingVersions } from './legal-store';
@@ -47,6 +53,9 @@ export interface AuthRouteOverrides {
   emailSender?: EmailSender;
   isStaffEmail?: (email: string) => Promise<boolean>;
   isSuspended?: (userId: string) => Promise<boolean>;
+  isStaffUser?: (userId: string) => Promise<boolean>;
+  /** Credenciais do Google nos testes; `null` desliga. Em produção vêm do ambiente. */
+  google?: { clientId: string; clientSecret: string } | null;
   turnstileFetch?: typeof fetch;
   limits?: LinkLimits;
 }
@@ -83,6 +92,13 @@ function waitUntil(c: AuthContext, work: Promise<unknown>): boolean {
 export function authRoutes(overrides: AuthRouteOverrides = {}) {
   const routes = new Hono<{ Bindings: Env; Variables: Vars }>();
   const limits = overrides.limits ?? LINK_LIMITS;
+  /** O Google só existe quando as duas credenciais estão no ambiente (ou injetadas nos testes). */
+  const googleOf = (env: Env) => {
+    if (overrides.google !== undefined) return overrides.google;
+    return env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
+      : null;
+  };
 
   /**
    * Abre o banco (um cliente `pg` por requisição), monta o Better Auth e roda o trabalho. O envio
@@ -103,6 +119,8 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
         emailSender: overrides.emailSender ?? createEmailSender(c.env),
         isStaffEmail: overrides.isStaffEmail ?? ((email) => lookupStaffEmail(opened.db, email)),
         isSuspended: overrides.isSuspended ?? ((userId) => isSuspended(opened.db, userId)),
+        isStaffUser: overrides.isStaffUser ?? ((userId) => hasStaffRole(opened.db, userId)),
+        ...(googleOf(c.env) ? { google: googleOf(c.env)! } : {}),
       },
     );
     let result: T;
@@ -267,7 +285,6 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     return new Response(JSON.stringify({ status: 'ok' }), { status: 200, headers });
   });
 
-  routes.use('/auth/*', withDatabase);
   // Reautenticação recente: pedir o link (sempre para o e-mail da PRÓPRIA sessão) e confirmar nesta
   // mesma sessão. O desafio é de uso único e ligado à sessão que o pediu.
   routes.post('/auth/reauth/request', withDatabase, async (c) => {
@@ -337,13 +354,37 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     }),
   );
 
-  routes.on(['GET', 'POST'], '/auth/*', (c) => c.var.auth.handler(c.req.raw));
+  // Senha e Google (M1-07): login, retorno do Google e "Segurança da conta".
+  routes.route(
+    '/',
+    methodRoutes({
+      withDatabase,
+      runWithDatabase: (c, work) => runWithDatabase(c, work),
+      googleEnabled: (c) => googleOf(c.env) !== null,
+      ...(overrides.turnstileFetch ? { turnstileFetch: overrides.turnstileFetch } : {}),
+    }),
+  );
+
+  // Do Better Auth só o encerramento de sessão fica exposto. Os demais endpoints nativos (login
+  // por senha, login social, troca de senha, ligação de conta, `get-session`...) pulariam o Turnstile,
+  // os limites e a reautenticação, ou devolveriam o token da sessão no corpo: tudo passa pelas rotas
+  // acima. Lista de permitidos de UM caminho; o resto é 404.
+  routes.post('/auth/sign-out', withDatabase, (c) => c.var.auth.handler(c.req.raw));
+  routes.all('/auth/*', notFound);
 
   routes.get('/me', async (c) => {
-    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    // `returnHeaders`: a sessão é rolling e o Better Auth reenvia o cookie renovado; sem repassar,
+    // o navegador o descartaria 7 dias depois do login mesmo com a sessão viva no banco.
+    const result = await c.var.auth.api.getSession({
+      headers: c.req.raw.headers,
+      returnHeaders: true,
+    });
+    const session = result.response;
     if (!session) {
       return c.json({ error: { code: 'unauthenticated' } }, 401);
     }
+    for (const cookie of result.headers.getSetCookie())
+      c.header('set-cookie', cookie, { append: true });
     const me: MeDto = { id: session.user.id, email: session.user.email, name: session.user.name };
     return c.json(me);
   });

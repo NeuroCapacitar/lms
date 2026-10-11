@@ -116,6 +116,7 @@ function guardedApp() {
             {
               emailSender: createFakeEmailSender(),
               isStaffEmail: async () => false,
+              isStaffUser: async () => false,
               isSuspended: async () => false,
             },
           ),

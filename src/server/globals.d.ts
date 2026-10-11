@@ -12,6 +12,9 @@ interface Env {
   TURNSTILE_SECRET_KEY: string;
   /** Chave da API do Resend. Ausente só é aceito em Development (e-mail falso). */
   RESEND_API_KEY?: string;
+  /** Credenciais OAuth do Google (Worker Secrets, por ambiente). Ausentes = login com Google desligado. */
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
   /**
    * Lista de destinatários permitidos, separados por vírgula (Staging). Worker Secret, não variável:
    * são e-mails de pessoas e não entram no repositório. Ausente = sem filtro.

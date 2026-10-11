@@ -12,6 +12,13 @@ export type AcceptInvitationResult =
   | 'unverified'
   | 'rate_limited'
   | 'unavailable';
+export type PasswordSignInResult =
+  | 'ok'
+  | 'invalid_credentials'
+  | 'captcha_failed'
+  | 'rate_limited'
+  | 'unavailable';
+export type RequestReauthResult = 'sent' | 'unauthenticated' | 'rate_limited' | 'unavailable';
 export type ConfirmReauthResult = ConfirmLinkResult | 'unauthenticated';
 
 async function postJson(path: string, body: unknown): Promise<Response | null> {
@@ -66,5 +73,50 @@ export async function acceptStaffInvitation(token: string): Promise<AcceptInvita
     const body = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
     return body?.error?.code === 'email_not_verified' ? 'unverified' : 'suspended';
   }
+  return 'unavailable';
+}
+
+/** Login por senha. Toda falha de credencial é a mesma (não diz se o e-mail existe nem se é de Staff). */
+export async function signInWithPassword(
+  email: string,
+  password: string,
+  captchaToken: string,
+): Promise<PasswordSignInResult> {
+  const response = await postJson('/api/auth/password/sign-in', { email, password, captchaToken });
+  if (!response) return 'unavailable';
+  if (response.ok) return 'ok';
+  if (response.status === 401) return 'invalid_credentials';
+  if (response.status === 403) return 'captcha_failed';
+  if (response.status === 429) return 'rate_limited';
+  return 'unavailable';
+}
+
+/** O Google está configurado neste ambiente? Falha de rede = não mostra o botão. */
+export async function fetchAuthOptions(): Promise<{ google: boolean }> {
+  try {
+    const response = await fetch('/api/auth/options', { credentials: 'same-origin' });
+    if (!response.ok) return { google: false };
+    const body = (await response.json()) as { google?: boolean };
+    return { google: body.google === true };
+  } catch {
+    return { google: false };
+  }
+}
+
+/** Pede o endereço do Google para entrar. O navegador então vai até ele. */
+export async function startGoogleSignIn(): Promise<string | null> {
+  const response = await postJson('/api/auth/google/start', {});
+  if (!response?.ok) return null;
+  const body = (await response.json().catch(() => null)) as { url?: string } | null;
+  return body?.url ?? null;
+}
+
+/** Pede o link de reautenticação para o e-mail da própria sessão (o corpo é vazio de propósito). */
+export async function requestReauth(): Promise<RequestReauthResult> {
+  const response = await postJson('/api/auth/reauth/request', {});
+  if (!response) return 'unavailable';
+  if (response.ok) return 'sent';
+  if (response.status === 401) return 'unauthenticated';
+  if (response.status === 429) return 'rate_limited';
   return 'unavailable';
 }
