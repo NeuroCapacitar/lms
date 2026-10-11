@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { RichText } from '../content/rich-text';
+
 /**
  * Regras do catálogo (M2-01): Course e Offer. Puro: sem rede nem banco. Os mesmos invariantes estão
  * em CHECK e gatilhos no banco; aqui ficam as mensagens de entrada, as transições e a regra única de
@@ -179,7 +181,7 @@ export interface PublicCourseDto {
   slug: string;
   sequenceMode: SequenceMode;
   acquirable: boolean;
-  content: { title: string; description: string; workloadHours: number | null } | null;
+  content: { title: string; description: RichText | null; workloadHours: number | null } | null;
   offers: PublicOfferDto[];
 }
 

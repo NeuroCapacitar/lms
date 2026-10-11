@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { parseRichText, richTextSchema, type RichText } from '../content/rich-text';
+
 /**
  * Currículo vivo (M2-02). Puro: sem rede nem banco. O curso tem um RASCUNHO (o que a Staff edita) e
  * um currículo PUBLICADO (o que o aluno vê); os ids de módulo e aula nascem no rascunho e são os
@@ -8,15 +10,8 @@ import { z } from 'zod';
 const MAX_MODULES = 100;
 const MAX_LESSONS_PER_MODULE = 200;
 const MAX_DRIP_DAYS = 3650;
-const MAX_BODY_BYTES = 200_000;
-
-/** Corpo de aula como objeto JSON. A validação do Tiptap por allowlist é do M2-05 e substitui esta. */
-const bodySchema = z
-  .record(z.string(), z.unknown())
-  .nullable()
-  .refine((value) => value === null || JSON.stringify(value).length <= MAX_BODY_BYTES, {
-    message: 'body_too_large',
-  });
+/** O corpo da aula e a descrição do curso são texto rico validado por allowlist (M2-05) ou nulos. */
+const richOrNull = richTextSchema.nullable();
 
 const uuid = z.uuid();
 
@@ -30,7 +25,7 @@ export const saveDraftSchema = z.strictObject({
   expectedRev: z.number().int().min(0),
   details: z.strictObject({
     displayTitle: z.string().max(200),
-    description: z.string().max(5_000),
+    description: richOrNull,
     workloadHours: z.number().int().min(1).max(10_000).nullable(),
   }),
   modules: z
@@ -45,7 +40,7 @@ export const saveDraftSchema = z.strictObject({
               id: uuid.optional(),
               title: z.string().max(200),
               isOptional: z.boolean(),
-              body: bodySchema,
+              body: richOrNull,
             }),
           )
           .max(MAX_LESSONS_PER_MODULE),
@@ -56,7 +51,7 @@ export const saveDraftSchema = z.strictObject({
 
 interface CurriculumDetails {
   displayTitle: string;
-  description: string;
+  description: RichText | null;
   workloadHours: number | null;
 }
 
@@ -64,7 +59,7 @@ export interface LessonNode {
   id: string;
   title: string;
   isOptional: boolean;
-  body: Record<string, unknown> | null;
+  body: RichText | null;
 }
 
 export interface ModuleNode {
@@ -131,7 +126,7 @@ export function validateCurriculum(tree: CurriculumTree): CurriculumProblem[] {
       if (lesson.title.trim() === '') {
         problems.push({ code: 'lesson_title_empty', path: `${lessonAt}.title` });
       }
-      if (lesson.body !== null && (typeof lesson.body !== 'object' || Array.isArray(lesson.body))) {
+      if (lesson.body !== null && parseRichText(lesson.body) === null) {
         problems.push({ code: 'body_invalid', path: `${lessonAt}.body` });
       }
       if (!lesson.isOptional) required += 1;

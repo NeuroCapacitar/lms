@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as schema from '../../src/db/schema.ts';
+import { richTextFromParagraph } from '../../src/features/content/rich-text.ts';
 import { grantCapability, grantRole } from '../../src/server/auth/access-store.ts';
 import { getPublicCourse, listPublicCourses } from '../../src/server/catalog/catalog-store.ts';
 import { createFakeEmailSender } from '../../src/server/email/fake.ts';
@@ -116,7 +117,7 @@ async function withCurriculum(admin: { headers: Headers }, courseId: string) {
     expectedRev: draft.rev,
     details: {
       displayTitle: 'Título público',
-      description: 'Descrição pública',
+      description: richTextFromParagraph('Descrição pública'),
       workloadHours: 10,
     },
     modules: [
@@ -634,7 +635,7 @@ describe('disponibilidade x visibilidade e DTOs', () => {
     ]);
     expect(list[0]!.content).toEqual({
       title: 'Título público',
-      description: 'Descrição pública',
+      description: richTextFromParagraph('Descrição pública'),
       workloadHours: 10,
     });
     expect(list[1]).toMatchObject({ acquirable: false, offers: [], content: null });
