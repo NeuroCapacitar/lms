@@ -106,6 +106,7 @@ test.describe('a CSP não é violada nas telas existentes', () => {
     '/entrar',
     `/entrar/confirmar#token=${TOKEN}`,
     '/conta',
+    '/cursos',
   ];
   for (const path of pages) {
     test(`${path.split('#')[0]}: nenhuma violação de CSP, com o widget e o Sentry simulados`, async ({
