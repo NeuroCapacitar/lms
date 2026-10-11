@@ -36,6 +36,7 @@ import {
   DraftConflictError,
   UnknownDraftIdError,
   getDraft,
+  previewPublish,
   publishCurriculum,
   saveDraft,
 } from './curriculum-store';
@@ -274,6 +275,18 @@ export function catalogRoutes(deps: CatalogRouteDeps) {
       } catch (error) {
         return domainError(c, error);
       }
+    },
+  );
+
+  routes.get(
+    '/courses/:id/publish-preview',
+    deps.withDatabase,
+    requireCapability('staff.read'),
+    async (c) => {
+      const found = ids(c, 'id');
+      if (!found) return c.json({ error: { code: 'not_found' } }, 404);
+      const preview = await previewPublish(c.var.db, found[0]!);
+      return preview ? c.json(preview) : c.json({ error: { code: 'not_found' } }, 404);
     },
   );
 

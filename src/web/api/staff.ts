@@ -11,7 +11,7 @@ export class ForbiddenError extends Error {
   }
 }
 
-async function getJson<T>(path: string): Promise<T> {
+export async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path, { credentials: 'same-origin' });
   if (response.status === 401) throw new UnauthenticatedError();
   if (response.status === 403) throw new ForbiddenError();
