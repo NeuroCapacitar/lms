@@ -148,7 +148,11 @@ function Catalog() {
             <ul className="grid gap-4" aria-label="Cursos">
               {visible.map((course) => (
                 <li key={course.slug} className="grid gap-2 rounded-lg border p-4">
-                  <h2 className="text-xl font-semibold">{course.title}</h2>
+                  <h2 className="text-xl font-semibold">
+                    <Link to="/cursos/$slug" params={{ slug: course.slug }}>
+                      {course.title}
+                    </Link>
+                  </h2>
                   {course.summary ? <p className="max-w-prose">{course.summary}</p> : null}
                   <p className="text-sm text-[var(--text-muted)]">
                     {course.workloadHours !== null ? `${course.workloadHours} h · ` : ''}

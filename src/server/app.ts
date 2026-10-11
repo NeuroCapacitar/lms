@@ -3,6 +3,9 @@ import { Hono } from 'hono';
 
 import { withDatabase } from '../db/client';
 import { authRoutes } from './auth/routes';
+import { injectMeta, serveCoursePage } from './catalog/course-page';
+import { loadPublicCoursePage } from './catalog/public-page';
+import { publicCourseRoutes } from './catalog/public-routes';
 import { loggingMiddleware, type LogVariables } from './logging';
 import { RELEASE_ID } from './release';
 import { csrfProtection } from './security/csrf';
@@ -36,6 +39,18 @@ export function createApp() {
       return c.json({ status: 'unavailable', releaseId: RELEASE_ID }, 503);
     }
   });
+
+  // Curso público (M2-06): a API sem sessão e a página `/cursos/:slug` com meta tags (HTMLRewriter).
+  app.route('/api/public', publicCourseRoutes());
+  app.get('/cursos/*', (c) =>
+    serveCoursePage(c.req.raw, c.env, {
+      loadCourse: (env, slug) =>
+        withDatabase(env.HYPERDRIVE, (db) => loadPublicCoursePage(db, slug)),
+      inject: injectMeta,
+      onError: (error) =>
+        c.get('log')?.error(error instanceof Error ? error : new Error('course_page_failed')),
+    }),
+  );
 
   app.route('/api', authRoutes());
 

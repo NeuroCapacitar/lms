@@ -33,6 +33,7 @@
     "test/helpers/demo-course.ts",
     "test/pg/demo-seed.pg.test.ts",
     "test/pg/student-catalog.pg.test.ts",
+    "test/pg/public-course.pg.test.ts",
     "scripts/db/guards.ts",
     "test/pg/staff-invitation.pg.test.ts",
     "test/pg/bootstrap.pg.test.ts",

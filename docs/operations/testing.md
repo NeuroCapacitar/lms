@@ -135,3 +135,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Todo esquema Zod criado no **carregamento do módulo de uma rota** (`validateSearch`) depende de `src/web/zod-config.ts` ser o PRIMEIRO import de `main.tsx` (JIT desligado, senão há violação de CSP `script-src eval`). Toda tela nova entra na bateria de CSP de `e2e/security.spec.ts`; ela pegou este problema em 13 telas de uma vez.
 - `test/pg/student-catalog.pg.test.ts` monta cursos pelas funções de domínio (autor nulo) e confere a resposta **como texto** contra uma lista de termos proibidos (título interno, autoria, estado, ids). Ao acrescentar campo ao `CatalogCourseDto`, atualize o teste de igualdade exata.
 - A navegação pública tem ordem de Tab fixa em `e2e/accessibility.spec.ts`: novo link da navegação exige atualizar a lista.
+
+## Página pública do curso (M2-06)
+
+- O HTMLRewriter só existe no workerd: teste-o em `test/workers/` (com `injectMeta` ou pelo Worker construído) e deixe a LÓGICA de escolha (publicado, 404, Host forjado, falha de banco) em `test/pg/public-course.pg.test.ts`, onde `serveCoursePage` recebe `inject` de teste.
+- **Não faça o teste do workerd nem o e2e consultarem o banco em volume**: as conexões seguidas ao Neon de teste, pelo Hyperdrive local do miniflare, podem derrubar o processo com `ECONNRESET` não tratado. Nos testes de tela use o documento da raiz (`route.fetch` da `/`), e mantenha poucas requisições reais a `/cursos/:slug`.
+- A resposta 404 de curso inexistente, rascunho, arquivado e sem currículo tem de ser **byte a byte a mesma**: ao mudar a página, atualize o teste de igualdade.
+- **Manual, após o deploy em Staging:** abrir a URL de um curso publicado nos validadores do LinkedIn (Post Inspector) e do Meta (Sharing Debugger), conferir título, descrição e imagem e anotar o resultado no `STATUS.md`. O cache deles guarda a prévia: use "Scrape Again"/"Inspect" ao mudar.

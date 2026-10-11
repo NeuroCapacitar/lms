@@ -78,7 +78,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** só dados sintéticos; nada de conteúdo real nem de e-mails reais.
 
 ### M2-04 — Catálogo do aluno
-**Dependências:** M2-01, M2-02, M0-07 · **Estado:** `implemented` (verificação local; ver STATUS). Tela em `/cursos`.
+**Dependências:** M2-01, M2-02, M0-07 · **Estado:** `verified` (CI, PR #58; ver STATUS). Tela em `/cursos`.
 **Objetivo:** a pessoa logada vê os cursos visíveis, com resumo da oferta e estado (inscrições abertas ou encerradas).
 **Passos:**
 1. `GET /api/catalog/courses` (autenticado): só cursos publicados e visíveis; por curso, título, resumo e resumo da Offer aberta (gratuito/preço, prazo em meses). Sem vitrine pública em lista.
@@ -89,7 +89,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** botão "Inscrever-se" é do M3-02; "tenho interesse" (CourseInterest) é do M5; sem otimismo de UI para permissão.
 
 ### M2-06 — Página pública do curso com meta tags (HTMLRewriter)
-**Dependências:** M2-02, M2-01, M0-17 · **Estado:** `not_started`
+**Dependências:** M2-02, M2-01, M0-17 · **Estado:** `implemented` (verificação local; ver STATUS). Falta o aceite: prévia correta nos validadores LinkedIn e Meta, após o deploy em Staging.
 **Objetivo:** `/cursos/:slug` abre para qualquer pessoa e compartilha com título, descrição e imagem corretos nas redes.
 **Passos:**
 1. Incluir o caminho em `run_worker_first`. O Worker busca o `index.html` nos assets e reescreve `title`, `description`, `og:*`, `twitter:*` e `canonical` com `HTMLRewriter`, a partir do curso **publicado**; URL canônica vem de configuração, nunca do cabeçalho `Host`.

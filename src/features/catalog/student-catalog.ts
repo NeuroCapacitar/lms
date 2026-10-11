@@ -9,7 +9,7 @@ import type { OfferKind, PublicCourseDto, SequenceMode } from './catalog';
  * criador, datas, estado de rascunho nem id de oferta (a inscrição é do M3-02). Puro: sem banco.
  */
 
-interface CatalogOfferSummary {
+export interface CatalogOfferSummary {
   kind: OfferKind;
   priceCents: number;
   accessMonths: number;
