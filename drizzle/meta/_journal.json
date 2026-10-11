@@ -64,6 +64,13 @@
       "when": 1791677796589,
       "tag": "0008_legal_acceptance",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791723224278,
+      "tag": "0009_course_offer",
+      "breakpoints": true
     }
   ]
 }

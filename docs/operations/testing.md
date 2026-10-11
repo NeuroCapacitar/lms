@@ -95,3 +95,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `e2e/equipe.spec.ts` usa a API simulada **com estado** (convites, grants e suspensão mudam o que a tela recebe depois). Caixas de permissão só mudam depois da resposta do servidor: use `click()`, não `uncheck()`, e espere o resultado.
 - Seletores por nome ficam ambíguos quando o mesmo e-mail aparece em rótulo e botões: use `exact: true` ou escopo por região.
 - A casca da Staff substitui o layout público nas rotas `/staff/*` (`__root.tsx`); tela nova da Staff entra como filha de `staff.tsx` e ganha o item na navegação por capability.
+
+## Catálogo (M2-01)
+
+- `test/pg/catalog.pg.test.ts` prova duas camadas: **invariantes no banco** (CHECK e gatilhos, escritos direto com o Drizzle, que embrulha o erro do `pg`: a mensagem fica em `cause`) e **comandos pela API** (capability por rota). Toda regra comercial nova entra nas duas.
+- O `audit_log` é append-only: filtre pelo `targetId` do curso ou da oferta.
+- A mensagem de um gatilho (`slug_locked`, `offer_archived`...) é o contrato entre o banco e `catalog-store.ts`; mude os dois juntos.

@@ -34,6 +34,7 @@
     "test/pg/suspension.pg.test.ts",
     "test/pg/methods.pg.test.ts",
     "test/pg/legal.pg.test.ts",
-    "test/pg/team.pg.test.ts"
+    "test/pg/team.pg.test.ts",
+    "test/pg/catalog.pg.test.ts"
   ]
 }

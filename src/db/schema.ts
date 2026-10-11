@@ -355,3 +355,73 @@ export const termsAcceptance = pgTable(
     check('terms_acceptance_adult_check', sql`${table.adultDeclared} = true`),
   ],
 );
+
+/**
+ * Course (M2-01): identidade pedagógica e comercial estável. `slug` único (base das URLs públicas) e
+ * só muda enquanto o curso nunca foi publicado (`first_published_at`, mantido por gatilho). O título
+ * é INTERNO; os textos exibidos ao público vêm do conteúdo do M2-02. Curso com direitos, conclusões
+ * ou Orders não se apaga (só arquiva); as FKs de marcos futuros usam RESTRICT.
+ */
+export const course = pgTable(
+  'course',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    slug: text().notNull().unique(),
+    title: text().notNull(),
+    /** Escolha obrigatória, sem valor padrão: a sequência pedagógica é decisão de quem cria. */
+    sequenceMode: text().notNull(),
+    status: text().notNull().default('draft'),
+    firstPublishedAt: timestamp({ withTimezone: true }),
+    createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+    ...stamps,
+  },
+  (table) => [
+    check(
+      'course_slug_format_check',
+      sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(${table.slug}) between 3 and 80`,
+    ),
+    check('course_title_check', sql`char_length(btrim(${table.title})) between 1 and 200`),
+    check('course_sequence_mode_check', sql`${table.sequenceMode} in ('guided', 'free')`),
+    check('course_status_check', sql`${table.status} in ('draft', 'published', 'archived')`),
+  ],
+);
+
+/**
+ * Offer (M2-01): oferta de EXATAMENTE um Course. Preço em centavos inteiros de BRL (moeda fixa);
+ * TODA oferta tem prazo em meses (sem vitalício), inclusive a gratuita; parcelamento 1 a 12 sem
+ * juros (1 se gratuita). As regras comerciais estão em CHECK, não só no código.
+ */
+export const offer = pgTable(
+  'offer',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    courseId: uuid()
+      .notNull()
+      .references(() => course.id, { onDelete: 'restrict' }),
+    name: text().notNull(),
+    kind: text().notNull(),
+    priceCents: integer().notNull(),
+    currency: text().notNull().default('BRL'),
+    accessMonths: integer().notNull(),
+    maxInstallments: integer().notNull().default(1),
+    status: text().notNull().default('draft'),
+    createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+    ...stamps,
+  },
+  (table) => [
+    index('offer_course_id_idx').on(table.courseId),
+    check('offer_name_check', sql`char_length(btrim(${table.name})) between 1 and 120`),
+    check('offer_kind_check', sql`${table.kind} in ('free', 'paid')`),
+    check('offer_currency_check', sql`${table.currency} = 'BRL'`),
+    check(
+      'offer_price_check',
+      sql`(${table.kind} = 'free' and ${table.priceCents} = 0) or (${table.kind} = 'paid' and ${table.priceCents} > 0)`,
+    ),
+    check('offer_access_months_check', sql`${table.accessMonths} between 1 and 600`),
+    check(
+      'offer_installments_check',
+      sql`${table.maxInstallments} between 1 and 12 and (${table.kind} = 'paid' or ${table.maxInstallments} = 1)`,
+    ),
+    check('offer_status_check', sql`${table.status} in ('draft', 'active', 'paused', 'archived')`),
+  ],
+);
