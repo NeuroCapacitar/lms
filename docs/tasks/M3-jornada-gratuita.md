@@ -18,7 +18,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 ---
 
 ### M3-01 — Entitlement e Enrollment transacionais
-**Dependências:** M1-03, M2-01, M2-02 · **Estado:** `not_started`
+**Dependências:** M1-03, M2-01, M2-02 · **Estado:** `implemented` (verificação local; ver STATUS). Empilhamento ainda PENDENTE de confirmação.
 **Objetivo:** existe um modelo de direitos de acesso e uma função única `resolveAccess(pessoa, curso, agora)` que diz se há acesso, até quando e por quê.
 **Passos:**
 1. Tabela `entitlement`: pessoa, curso, `offer_id` (nulo em matrícula manual), `source` (`free_offer|purchase|admin_grant`), `source_ref` (único por `source`, serve de idempotência), `starts_at`, `expires_at` (> `starts_at`), `revoked_at`/motivo, concedido por.
