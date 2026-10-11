@@ -17,6 +17,7 @@ import {
   type StaffCourseDto,
   type StaffOfferDto,
 } from '../../features/catalog/catalog';
+import type { RichText } from '../../features/content/rich-text';
 import { auditEvent } from '../auth/access-store';
 import { coursesWithPublishedCurriculum } from './curriculum-store';
 
@@ -433,7 +434,11 @@ async function publicContents(
   return new Map(
     rows.map((row) => [
       row.courseId,
-      { title: row.displayTitle, description: row.description, workloadHours: row.workloadHours },
+      {
+        title: row.displayTitle,
+        description: (row.description as RichText | null) ?? null,
+        workloadHours: row.workloadHours,
+      },
     ]),
   );
 }

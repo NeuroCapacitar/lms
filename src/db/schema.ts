@@ -451,11 +451,16 @@ export const courseDraft = pgTable(
       .primaryKey()
       .references(() => course.id, { onDelete: 'cascade' }),
     displayTitle: text().notNull(),
-    description: text().notNull().default(''),
+    /** Texto rico (Tiptap JSON validado por allowlist, M2-05); nulo = sem descrição. */
+    description: jsonb(),
     workloadHours: integer(),
     ...stamps,
   },
   (table) => [
+    check(
+      'course_draft_description_size_check',
+      sql`${table.description} is null or octet_length(${table.description}::text) <= 100000`,
+    ),
     check(
       'course_draft_workload_check',
       sql`${table.workloadHours} is null or ${table.workloadHours} between 1 and 10000`,
@@ -471,11 +476,16 @@ export const courseContent = pgTable(
       .primaryKey()
       .references(() => course.id, { onDelete: 'restrict' }),
     displayTitle: text().notNull(),
-    description: text().notNull().default(''),
+    /** Texto rico (Tiptap JSON validado por allowlist, M2-05); nulo = sem descrição. */
+    description: jsonb(),
     workloadHours: integer(),
     ...stamps,
   },
   (table) => [
+    check(
+      'course_content_description_size_check',
+      sql`${table.description} is null or octet_length(${table.description}::text) <= 100000`,
+    ),
     check(
       'course_content_workload_check',
       sql`${table.workloadHours} is null or ${table.workloadHours} between 1 and 10000`,
@@ -527,6 +537,10 @@ export const lessonDraft = pgTable(
     }).onDelete('cascade'),
     index('lesson_draft_module_idx').on(table.moduleId, table.position),
     check('lesson_draft_kind_check', sql`${table.kind} = 'text'`),
+    check(
+      'lesson_draft_body_size_check',
+      sql`${table.body} is null or octet_length(${table.body}::text) <= 100000`,
+    ),
     check('lesson_draft_position_check', sql`${table.position} >= 0`),
   ],
 );
@@ -578,5 +592,9 @@ export const lesson = pgTable(
     }).onDelete('restrict'),
     index('lesson_module_idx').on(table.moduleId, table.position),
     check('lesson_kind_check', sql`${table.kind} = 'text'`),
+    check(
+      'lesson_body_size_check',
+      sql`${table.body} is null or octet_length(${table.body}::text) <= 100000`,
+    ),
   ],
 );

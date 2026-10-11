@@ -21,6 +21,7 @@ import {
   type ModuleNode,
   type PublishedCurriculumDto,
 } from '../../features/catalog/curriculum';
+import type { RichText } from '../../features/content/rich-text';
 import { auditEvent } from '../auth/access-store';
 
 export class CurriculumCourseNotFoundError extends Error {
@@ -74,10 +75,10 @@ async function readDraftTree(tx: Tx | Database, courseId: string): Promise<Curri
     details: details
       ? {
           displayTitle: details.displayTitle,
-          description: details.description,
+          description: (details.description as RichText | null) ?? null,
           workloadHours: details.workloadHours,
         }
-      : { displayTitle: courseRow?.title ?? '', description: '', workloadHours: null },
+      : { displayTitle: courseRow?.title ?? '', description: null, workloadHours: null },
     modules: modules.map<ModuleNode>((module) => ({
       id: module.id,
       title: module.title,
@@ -88,7 +89,7 @@ async function readDraftTree(tx: Tx | Database, courseId: string): Promise<Curri
           id: item.id,
           title: item.title,
           isOptional: item.isOptional,
-          body: (item.body as Record<string, unknown> | null) ?? null,
+          body: (item.body as RichText | null) ?? null,
         })),
     })),
   };
@@ -114,10 +115,10 @@ async function readPublishedTree(tx: Tx | Database, courseId: string): Promise<C
     details: details
       ? {
           displayTitle: details.displayTitle,
-          description: details.description,
+          description: (details.description as RichText | null) ?? null,
           workloadHours: details.workloadHours,
         }
-      : { displayTitle: '', description: '', workloadHours: null },
+      : { displayTitle: '', description: null, workloadHours: null },
     modules: modules.map<ModuleNode>((module) => ({
       id: module.id,
       title: module.title,
@@ -128,7 +129,7 @@ async function readPublishedTree(tx: Tx | Database, courseId: string): Promise<C
           id: item.id,
           title: item.title,
           isOptional: item.isOptional,
-          body: (item.body as Record<string, unknown> | null) ?? null,
+          body: (item.body as RichText | null) ?? null,
         })),
     })),
   };
@@ -164,7 +165,7 @@ export interface DraftInput {
       id?: string | undefined;
       title: string;
       isOptional: boolean;
-      body: Record<string, unknown> | null;
+      body: RichText | null;
     }[];
   }[];
 }

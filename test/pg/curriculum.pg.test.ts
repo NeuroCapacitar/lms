@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { openDatabase } from '../../src/db/client.ts';
 import * as schema from '../../src/db/schema.ts';
+import { richTextFromParagraph, type RichText } from '../../src/features/content/rich-text.ts';
 import { grantCapability, grantRole } from '../../src/server/auth/access-store.ts';
 import {
   CurriculumInvalidError,
@@ -89,10 +90,14 @@ type L = {
   id?: string;
   title: string;
   isOptional?: boolean;
-  body?: Record<string, unknown> | null;
+  body?: RichText | null;
 };
 type M = { id?: string; title: string; dripDays?: number; lessons: L[] };
-const details = { displayTitle: 'Título público', description: 'Descrição', workloadHours: 12 };
+const details = {
+  displayTitle: 'Título público',
+  description: richTextFromParagraph('Descrição'),
+  workloadHours: 12,
+};
 const payload = (expectedRev: number, modules: M[], d = details) => ({
   expectedRev,
   details: d,
@@ -111,7 +116,7 @@ const BASIC: M[] = [
   {
     title: 'Módulo B',
     dripDays: 7,
-    lessons: [{ title: 'B1', body: { type: 'doc', content: [] } }],
+    lessons: [{ title: 'B1', body: richTextFromParagraph('Corpo de B1') }],
   },
 ];
 
@@ -168,7 +173,7 @@ describe('rascunho', () => {
     expect(draft).toMatchObject({ rev: 0, publishedVersion: 0, modules: [] });
     expect(draft.details).toEqual({
       displayTitle: 'Título interno',
-      description: '',
+      description: null,
       workloadHours: null,
     });
     expect(
@@ -184,7 +189,7 @@ describe('rascunho', () => {
     expect(response.status).toBe(200);
     expect(body.rev).toBe(1);
     expect(shape(body.modules)).toEqual(['Módulo A(0)[A1,A2?]', 'Módulo B(7)[B1]']);
-    expect(body.modules[1].lessons[0].body).toEqual({ type: 'doc', content: [] });
+    expect(body.modules[1].lessons[0].body).toEqual(richTextFromParagraph('Corpo de B1'));
     expect(new Set([...ids(body.modules).modules, ...ids(body.modules).lessons]).size).toBe(5);
     expect(await json(await call('GET', `/courses/${courseId}/draft`, admin.headers))).toEqual(
       body,
@@ -206,7 +211,9 @@ describe('rascunho', () => {
       { ...payload(1, BASIC), modules: [{ title: 'x', dripDays: -1, lessons: [] }] },
       { ...payload(1, BASIC), expectedRev: -1 },
       { ...payload(1, BASIC), extra: true },
-      payload(1, [{ title: 'x', lessons: [{ title: 'y', body: { a: 'x'.repeat(200_001) } }] }]),
+      payload(1, [
+        { title: 'x', lessons: [{ title: 'y', body: { a: 'x'.repeat(200_001) } as never }] },
+      ]),
       payload(1, [{ title: 'x', lessons: [{ title: 'y', kind: 'video' } as never] }]),
     ]) {
       expect(
@@ -462,7 +469,7 @@ describe('publicação', () => {
         title: 'B',
         dripDays: 7,
         lessons: [
-          { id: b1.id, title: 'B1', body: { type: 'doc', content: [] } },
+          { id: b1.id, title: 'B1', body: richTextFromParagraph('Corpo de B1') },
           { id: a1.id, title: 'A1' },
         ],
       },

@@ -30,7 +30,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** sem cupom, bundle, preço promocional, vitalício, landing CMS nem moeda além de BRL. Pagamento e Order são do M6.
 
 ### M2-02 — Currículo vivo: rascunho e publicação atômica
-**Dependências:** M2-01 · **Estado:** `implemented` (verificação local; ver STATUS). API: PUT do rascunho inteiro com `expectedRev` + POST publish.
+**Dependências:** M2-01 · **Estado:** `verified` no CI (ver STATUS). API: PUT do rascunho inteiro com `expectedRev` + POST publish.
 **Objetivo:** a Staff edita um rascunho do curso (detalhes, módulos e aulas) e o publica numa única transação; quem estuda só enxerga o publicado, e os ids de módulo e aula nunca mudam.
 **Passos:**
 1. Modelo sugerido: tabelas de rascunho (`course_draft`, `module_draft`, `lesson_draft`) e tabelas publicadas (`course_content`, `module`, `lesson`) com os **mesmos ids estáveis**. Módulo: título, posição, `drip_days` (inteiro ≥0, D+N). Aula: título, posição, `kind` (só `text` neste marco), `is_optional`, corpo (M2-05), `retired_at`.
@@ -43,7 +43,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** **não** criar `CourseRelease`, revisões imutáveis, `curriculum_key` nem clones (decisão Q32); sem histórico de versões navegável. Aulas só de texto (vídeo e quiz entram no M5 por migration de expansão). A conclusão histórica por curso é do M3-04.
 
 ### M2-05 — Conteúdo rico seguro (Tiptap JSON + renderização por allowlist)
-**Dependências:** M0-07 · **Estado:** `not_started`
+**Dependências:** M0-07 · **Estado:** `implemented` (verificação local; ver STATUS). Vitrine em `/texto-rico`.
 **Objetivo:** aulas e descrições usam texto rico guardado como JSON validado e exibido por um renderizador React que só conhece nós permitidos.
 **Passos:**
 1. Esquema Zod da allowlist: parágrafo, títulos 2–3, listas, citação, quebra de linha; marcas negrito/itálico; link com `http`, `https` ou `mailto`. Limites de tamanho e profundidade (proposto: 100 KB).

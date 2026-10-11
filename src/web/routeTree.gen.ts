@@ -14,6 +14,7 @@ import { Route as BaseVisualRouteImport } from './routes/base-visual'
 import { Route as ConviteRouteImport } from './routes/convite'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as StaffRouteImport } from './routes/staff'
+import { Route as TextoRicoRouteImport } from './routes/texto-rico'
 import { Route as ContaIndexRouteImport } from './routes/conta.index'
 import { Route as ContaSegurancaRouteImport } from './routes/conta.seguranca'
 import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
@@ -44,6 +45,11 @@ const SobreRoute = SobreRouteImport.update({
 const StaffRoute = StaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TextoRicoRoute = TextoRicoRouteImport.update({
+  id: '/texto-rico',
+  path: '/texto-rico',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContaIndexRoute = ContaIndexRouteImport.update({
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
   '/staff': typeof StaffRouteWithChildren
+  '/texto-rico': typeof TextoRicoRoute
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
+  '/texto-rico': typeof TextoRicoRoute
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
   '/staff': typeof StaffRouteWithChildren
+  '/texto-rico': typeof TextoRicoRoute
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/convite'
     | '/sobre'
     | '/staff'
+    | '/texto-rico'
     | '/conta/seguranca'
     | '/entrar/confirmar'
     | '/staff/equipe'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/base-visual'
     | '/convite'
     | '/sobre'
+    | '/texto-rico'
     | '/conta/seguranca'
     | '/entrar/confirmar'
     | '/staff/equipe'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/convite'
     | '/sobre'
     | '/staff'
+    | '/texto-rico'
     | '/conta/seguranca'
     | '/entrar/confirmar'
     | '/staff/equipe'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   ConviteRoute: typeof ConviteRoute
   SobreRoute: typeof SobreRoute
   StaffRoute: typeof StaffRouteWithChildren
+  TextoRicoRoute: typeof TextoRicoRoute
   ContaSegurancaRoute: typeof ContaSegurancaRoute
   EntrarConfirmarRoute: typeof EntrarConfirmarRoute
   ContaIndexRoute: typeof ContaIndexRoute
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/staff'
       preLoaderRoute: typeof StaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/texto-rico': {
+      id: '/texto-rico'
+      path: '/texto-rico'
+      fullPath: '/texto-rico'
+      preLoaderRoute: typeof TextoRicoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conta/': {
@@ -269,6 +289,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteRoute: ConviteRoute,
   SobreRoute: SobreRoute,
   StaffRoute: StaffRouteWithChildren,
+  TextoRicoRoute: TextoRicoRoute,
   ContaSegurancaRoute: ContaSegurancaRoute,
   EntrarConfirmarRoute: EntrarConfirmarRoute,
   ContaIndexRoute: ContaIndexRoute,
