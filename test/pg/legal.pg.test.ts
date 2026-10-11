@@ -32,6 +32,12 @@ afterAll(async () => {
 
 /** Cada teste parte das duas versões provisórias da migration, sem aceites nem outras versões. */
 beforeEach(async () => {
+  // As versões semeadas têm `effective_from` = o instante da migration. Numa máquina rápida, uma versão
+  // nova publicada com `now() - 1s` ficaria ANTES dela e não seria a vigente: recua as semeadas.
+  await tools.db
+    .update(schema.legalDocumentVersion)
+    .set({ effectiveFrom: new Date(Date.now() - 24 * 60 * 60 * 1000) })
+    .where(eq(schema.legalDocumentVersion.version, 'provisorio-1'));
   await tools.db.delete(schema.termsAcceptance);
   await tools.db.delete(schema.session);
   await tools.db.delete(schema.userRole);

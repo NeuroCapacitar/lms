@@ -76,6 +76,14 @@ export function hasCapability(context: AccessContext, capability: Capability): b
   return isDelegable(capability) && context.grants.has(capability);
 }
 
+/** O que `GET /api/me/access` devolve: só para a interface decidir o que MOSTRAR (não autoriza nada). */
+export interface AccessDto {
+  roles: string[];
+  capabilities: string[];
+  /** A sessão tem prova de reautenticação recente? */
+  recentAuth: boolean;
+}
+
 /** Lista as capabilities efetivas (para a interface decidir o que mostrar; não autoriza nada). */
 export function effectiveCapabilities(context: AccessContext): Capability[] {
   return ALL_CAPABILITIES.filter((capability) => hasCapability(context, capability));

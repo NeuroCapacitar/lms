@@ -13,10 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BaseVisualRouteImport } from './routes/base-visual'
 import { Route as ConviteRouteImport } from './routes/convite'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as ContaIndexRouteImport } from './routes/conta.index'
 import { Route as ContaSegurancaRouteImport } from './routes/conta.seguranca'
 import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
 import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
+import { Route as StaffIndexRouteImport } from './routes/staff.index'
+import { Route as StaffEquipeRouteImport } from './routes/staff.equipe'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,6 +39,11 @@ const ConviteRoute = ConviteRouteImport.update({
 const SobreRoute = SobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContaIndexRoute = ContaIndexRouteImport.update({
@@ -58,16 +66,29 @@ const EntrarConfirmarRoute = EntrarConfirmarRouteImport.update({
   path: '/entrar/confirmar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffIndexRoute = StaffIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffEquipeRoute = StaffEquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => StaffRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
+  '/staff': typeof StaffRouteWithChildren
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/staff/equipe': typeof StaffEquipeRoute
   '/conta/': typeof ContaIndexRoute
   '/entrar/': typeof EntrarIndexRoute
+  '/staff/': typeof StaffIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,8 +97,10 @@ export interface FileRoutesByTo {
   '/sobre': typeof SobreRoute
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/staff/equipe': typeof StaffEquipeRoute
   '/conta': typeof ContaIndexRoute
   '/entrar': typeof EntrarIndexRoute
+  '/staff': typeof StaffIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,10 +108,13 @@ export interface FileRoutesById {
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
+  '/staff': typeof StaffRouteWithChildren
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/staff/equipe': typeof StaffEquipeRoute
   '/conta/': typeof ContaIndexRoute
   '/entrar/': typeof EntrarIndexRoute
+  '/staff/': typeof StaffIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,10 +123,13 @@ export interface FileRouteTypes {
     | '/base-visual'
     | '/convite'
     | '/sobre'
+    | '/staff'
     | '/conta/seguranca'
     | '/entrar/confirmar'
+    | '/staff/equipe'
     | '/conta/'
     | '/entrar/'
+    | '/staff/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,18 +138,23 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/conta/seguranca'
     | '/entrar/confirmar'
+    | '/staff/equipe'
     | '/conta'
     | '/entrar'
+    | '/staff'
   id:
     | '__root__'
     | '/'
     | '/base-visual'
     | '/convite'
     | '/sobre'
+    | '/staff'
     | '/conta/seguranca'
     | '/entrar/confirmar'
+    | '/staff/equipe'
     | '/conta/'
     | '/entrar/'
+    | '/staff/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -128,6 +162,7 @@ export interface RootRouteChildren {
   BaseVisualRoute: typeof BaseVisualRoute
   ConviteRoute: typeof ConviteRoute
   SobreRoute: typeof SobreRoute
+  StaffRoute: typeof StaffRouteWithChildren
   ContaSegurancaRoute: typeof ContaSegurancaRoute
   EntrarConfirmarRoute: typeof EntrarConfirmarRoute
   ContaIndexRoute: typeof ContaIndexRoute
@@ -164,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SobreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/conta/': {
       id: '/conta/'
       path: '/conta'
@@ -192,14 +234,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntrarConfirmarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/': {
+      id: '/staff/'
+      path: '/'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof StaffIndexRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff/equipe': {
+      id: '/staff/equipe'
+      path: '/equipe'
+      fullPath: '/staff/equipe'
+      preLoaderRoute: typeof StaffEquipeRouteImport
+      parentRoute: typeof StaffRoute
+    }
   }
 }
+
+interface StaffRouteChildren {
+  StaffEquipeRoute: typeof StaffEquipeRoute
+  StaffIndexRoute: typeof StaffIndexRoute
+}
+
+const StaffRouteChildren: StaffRouteChildren = {
+  StaffEquipeRoute: StaffEquipeRoute,
+  StaffIndexRoute: StaffIndexRoute,
+}
+
+const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BaseVisualRoute: BaseVisualRoute,
   ConviteRoute: ConviteRoute,
   SobreRoute: SobreRoute,
+  StaffRoute: StaffRouteWithChildren,
   ContaSegurancaRoute: ContaSegurancaRoute,
   EntrarConfirmarRoute: EntrarConfirmarRoute,
   ContaIndexRoute: ContaIndexRoute,

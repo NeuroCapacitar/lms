@@ -10,6 +10,7 @@ import {
 } from '../../db/schema';
 import {
   INVITATION_TTL_SECONDS,
+  type InvitationDto,
   type InvitationStatus,
 } from '../../features/identity/staff-invitation';
 import { normalizeEmail } from '../../features/identity/email';
@@ -163,15 +164,6 @@ export async function revokeInvitation(
     });
     return true;
   });
-}
-
-export interface InvitationDto {
-  id: string;
-  email: string;
-  status: InvitationStatus;
-  grants: string[];
-  expiresAt: string;
-  createdAt: string;
 }
 
 /** Lista os convites (mais novos primeiro) com o estado efetivo. O token nunca é devolvido. */
