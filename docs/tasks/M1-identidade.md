@@ -122,7 +122,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** Hub só implementa o mecanismo; os textos e a política de reembolso são do advogado do cliente.
 
 ### M1-10 — Shell mínimo da Staff e tela de equipe
-**Dependências:** M1-04, M1-08, M0-07 · **Estado:** `implemented` (verificação local; ver STATUS)
+**Dependências:** M1-04, M1-08, M0-07 · **Estado:** `verified` no CI (ver STATUS)
 **Objetivo:** a Staff tem navegação própria (sidebar/gaveta) e o Admin gere equipe: convites, papéis, grants e suspensão.
 **Passos:**
 1. `StaffShell` com sidebar (gaveta no celular), mesma linguagem visual do aluno; itens aparecem só com a capability (apenas conveniência).
