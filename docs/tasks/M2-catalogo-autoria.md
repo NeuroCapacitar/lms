@@ -43,7 +43,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** **não** criar `CourseRelease`, revisões imutáveis, `curriculum_key` nem clones (decisão Q32); sem histórico de versões navegável. Aulas só de texto (vídeo e quiz entram no M5 por migration de expansão). A conclusão histórica por curso é do M3-04.
 
 ### M2-05 — Conteúdo rico seguro (Tiptap JSON + renderização por allowlist)
-**Dependências:** M0-07 · **Estado:** `implemented` (verificação local; ver STATUS). Vitrine em `/texto-rico`.
+**Dependências:** M0-07 · **Estado:** `verified` (CI, PR #55; ver STATUS). Vitrine em `/texto-rico`.
 **Objetivo:** aulas e descrições usam texto rico guardado como JSON validado e exibido por um renderizador React que só conhece nós permitidos.
 **Passos:**
 1. Esquema Zod da allowlist: parágrafo, títulos 2–3, listas, citação, quebra de linha; marcas negrito/itálico; link com `http`, `https` ou `mailto`. Limites de tamanho e profundidade (proposto: 100 KB).
@@ -55,7 +55,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** sem imagens, embeds, iframes, HTML livre nem editor estilo Notion; mídia só no M5.
 
 ### M2-03 — Course Builder mínimo (Staff)
-**Dependências:** M2-02, M2-05, M1-10 · **Estado:** `not_started`
+**Dependências:** M2-02, M2-05, M1-10 · **Estado:** `implemented` (verificação local; ver STATUS). Telas em `/staff/cursos`.
 **Objetivo:** o Admin cria cursos e ofertas; o Suporte com grant edita o currículo e publica, tudo pela interface e com autorização no servidor.
 **Passos:**
 1. Telas: lista de cursos (somente leitura para quem não tem grant); criar curso e Offer (Admin); editor com abas Detalhes, Currículo e Oferta (aba visível só ao Admin); publicar com resumo do que muda (adicionadas, alteradas, aposentadas) e **pré-visualização do rascunho** com o mesmo renderizador.

@@ -116,3 +116,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - **Testes do editor:** depois de clicar num botão da barra, espere o foco voltar ao editor (`toBeFocused`) antes de digitar (o `focus()` do Tiptap é assíncrono) e espere a pré-visualização refletir antes de ler o JSON.
 - Atualizar o Tiptap pode mudar os atributos que o `getJSON()` emite (ex.: o Link v3 grava `title: null`): o esquema é estrito de propósito; ajuste-o e o teste de ida e volta.
 - Os testes de XSS em Playwright assertam que **nenhum diálogo** (`alert`) abre e que nenhum `script`, `img`, `svg` ou `iframe` é criado na pré-visualização.
+
+## Course Builder (M2-03)
+
+- `e2e/cursos.spec.ts` simula a API com `page.route` e um estado em memória (como `e2e/equipe.spec.ts`); a regra real está nos testes PG do M2-01 e M2-02. Ao mudar um contrato da API de cursos, atualize o simulador junto.
+- Cada permissão tem seu cenário (Admin, só `course.edit`, só leitura): a tela esconde, mas **o servidor é quem decide**; teste a recusa pela API nos testes PG, não pelo botão ausente.
+- Reordenar e mover são testados pelos botões e pelo `aria-live`; confirme que **nada vai ao servidor antes de "Salvar rascunho"** e que o `expectedRev` enviado é o lido.
+- O resumo de publicação é calculado no servidor (`publish-preview`) sobre o rascunho salvo; mude `curriculum-diff.ts` com o teste puro e o caso "pré-publicação" do PG.
