@@ -124,7 +124,7 @@ async function lockOffer(tx: Tx, courseId: string, offerId: string) {
 /** Cria o curso em rascunho. A sequência pedagógica é obrigatória (sem padrão). Audita. */
 export async function createCourse(
   db: Database,
-  input: { actorId: string; slug: string; title: string; sequenceMode: SequenceMode },
+  input: { actorId: string | null; slug: string; title: string; sequenceMode: SequenceMode },
 ): Promise<string> {
   try {
     return await db.transaction(async (tx) => {
@@ -186,7 +186,7 @@ export async function updateCourse(
  */
 export async function setCourseStatus(
   db: Database,
-  input: { actorId: string; id: string; status: CourseStatus },
+  input: { actorId: string | null; id: string; status: CourseStatus },
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const current = await lockCourse(tx, input.id);
@@ -208,7 +208,7 @@ export async function setCourseStatus(
 export async function createOffer(
   db: Database,
   input: {
-    actorId: string;
+    actorId: string | null;
     courseId: string;
     name: string;
     kind: OfferKind;
@@ -309,7 +309,7 @@ export async function updateOffer(
 /** Ativa, pausa ou arquiva a oferta. Arquivada é terminal. Audita a transição. */
 export async function setOfferStatus(
   db: Database,
-  input: { actorId: string; courseId: string; offerId: string; status: OfferStatus },
+  input: { actorId: string | null; courseId: string; offerId: string; status: OfferStatus },
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const current = await lockOffer(tx, input.courseId, input.offerId);

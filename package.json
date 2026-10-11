@@ -26,6 +26,7 @@
     "db:migrate": "bun scripts/db/migrate.ts",
     "db:roles": "bun scripts/db/setup-roles.ts",
     "admin:bootstrap": "bun scripts/admin-bootstrap.ts",
+    "seed:demo": "bun scripts/seed-demo.ts",
     "test:db": "node --test \"scripts/**/*.integration.ts\"",
     "knip": "knip",
     "arch": "depcruise src --config .dependency-cruiser.cjs",
