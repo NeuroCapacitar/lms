@@ -42,7 +42,14 @@ export interface TestSchema {
  * Cria um schema isolado por arquivo de teste, aplica as migrations do projeto nele e devolve
  * ajudantes. Cada arquivo roda no próprio schema, então arquivos em paralelo não se enxergam.
  */
-export async function createTestSchema(): Promise<TestSchema> {
+/**
+ * Cria um schema isolado já migrado. As duas versões PROVISÓRIAS de Termos e Política que a migration
+ * semeia são removidas por padrão: sem versão vigente não há o que aceitar, então os testes dos outros
+ * marcos não precisam registrar aceite. `keepLegalSeeds` as mantém (testes do M1-09).
+ */
+export async function createTestSchema(
+  settings: { keepLegalSeeds?: boolean } = {},
+): Promise<TestSchema> {
   const url = testDatabaseUrl();
   const name = `t_${randomBytes(6).toString('hex')}`;
   const options = `-c search_path=${name}`;
@@ -63,6 +70,7 @@ export async function createTestSchema(): Promise<TestSchema> {
       migrationsSchema: name,
       migrationsTable: '__migrations',
     });
+    if (!settings.keepLegalSeeds) await migrator.query('delete from legal_document_version');
   } finally {
     await migrator.end();
   }

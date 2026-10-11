@@ -18,6 +18,7 @@ import {
   type LinkLimits,
 } from '../../features/identity/link-policy';
 import { effectiveCapabilities } from '../../features/identity/capabilities';
+import { acceptLegalSchema, type LegalStatusDto } from '../../features/identity/legal';
 import { profilePatchSchema } from '../../features/identity/profile';
 import { sha256Hex } from '../crypto';
 import { createEmailSender } from '../email/factory';
@@ -26,6 +27,8 @@ import { getProfile, updateProfile } from './profile-store';
 import { isStaffEmail as lookupStaffEmail, isSuspended, loadAccess } from './access-store';
 import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
 import { staffRoutes } from './staff-routes';
+import { acceptCurrent, currentVersions, pendingVersions } from './legal-store';
+import { requireAcceptedTerms } from './terms-gate';
 import type { AuthVars } from './types';
 import { verifyTurnstile } from './turnstile';
 
@@ -115,6 +118,11 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   }
 
   const withDatabase = createMiddleware<{ Bindings: Env; Variables: Vars }>(async (c, next) => {
+    // Idempotente: um portão (`use`) e a própria rota podem pedir o banco sem abri-lo duas vezes.
+    if (c.get('db')) {
+      await next();
+      return;
+    }
     await runWithDatabase(c, async ({ db, auth, defer }) => {
       c.set('db', db);
       c.set('auth', auth);
@@ -130,6 +138,38 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   const notFound = (c: Context) => c.json({ error: { code: 'not_found' } }, 404);
   routes.on(['GET', 'HEAD', 'POST'], '/auth/sign-in/magic-link', notFound);
   routes.on(['GET', 'HEAD', 'POST'], '/auth/magic-link/verify', notFound);
+
+  // Aceite dos Termos e da Política com a declaração de 18+ (M1-09). Estas rotas vêm ANTES do
+  // portão abaixo: são as únicas de área logada que respondem sem o aceite (além do sign-out).
+  routes.get('/me/legal', withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const [documents, pending] = await Promise.all([
+      currentVersions(c.var.db),
+      pendingVersions(c.var.db, session.user.id),
+    ]);
+    const status: LegalStatusDto = { accepted: pending.length === 0, documents };
+    return c.json(status);
+  });
+
+  routes.post('/me/legal/accept', withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const parsed = acceptLegalSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    const result = await acceptCurrent(c.var.db, {
+      userId: session.user.id,
+      documentVersionIds: parsed.data.documentVersionIds,
+    });
+    return result === 'accepted'
+      ? c.json({ status: 'ok' })
+      : c.json({ error: { code: 'terms_changed' } }, 409);
+  });
+
+  // PORTÃO: toda rota de área logada (`/me/*` e `/staff/*`) exige o aceite das versões vigentes.
+  // Registrado antes das rotas que protege, porque a ordem de registro é a ordem de execução.
+  routes.use('/me/*', withDatabase, requireAcceptedTerms());
+  routes.use('/staff/*', withDatabase, requireAcceptedTerms());
 
   routes.post('/auth/link/request', async (c) => {
     c.header('Cache-Control', 'no-store');
@@ -299,7 +339,6 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
 
   routes.on(['GET', 'POST'], '/auth/*', (c) => c.var.auth.handler(c.req.raw));
 
-  routes.use('/me', withDatabase);
   routes.get('/me', async (c) => {
     const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) {
