@@ -15,8 +15,12 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       </a>
       <header className="border-b border-[var(--border-control)]/40">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <nav aria-label="Principal" className="flex items-center gap-5 font-medium">
+          <nav
+            aria-label="Principal"
+            className="flex flex-wrap items-center gap-x-5 gap-y-1 font-medium"
+          >
             <Link to="/">Início</Link>
+            <Link to="/cursos">Cursos</Link>
             <Link to="/sobre">Sobre</Link>
             <Link to="/base-visual">Base visual</Link>
             <Link to="/entrar">Entrar</Link>

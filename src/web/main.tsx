@@ -1,17 +1,12 @@
+import './zod-config';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { z } from 'zod';
-
 import './styles/app.css';
 import { routeTree } from './routeTree.gen';
 import { applyTheme, readThemePreference } from './theme';
-
-// A CSP não permite eval: o Zod 4 tentaria compilar validadores com `new Function` e geraria uma
-// violação de CSP a cada carga. Sem JIT o resultado é o mesmo, só um pouco mais lento.
-z.config({ jitless: true });
 
 // Aplica a preferência salva antes da primeira renderização (sem script inline, compatível com CSP).
 applyTheme(readThemePreference());

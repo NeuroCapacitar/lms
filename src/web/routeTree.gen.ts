@@ -17,6 +17,7 @@ import { Route as StaffRouteImport } from './routes/staff'
 import { Route as TextoRicoRouteImport } from './routes/texto-rico'
 import { Route as ContaIndexRouteImport } from './routes/conta.index'
 import { Route as ContaSegurancaRouteImport } from './routes/conta.seguranca'
+import { Route as CursosIndexRouteImport } from './routes/cursos.index'
 import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
 import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
@@ -64,6 +65,11 @@ const ContaSegurancaRoute = ContaSegurancaRouteImport.update({
   path: '/conta/seguranca',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CursosIndexRoute = CursosIndexRouteImport.update({
+  id: '/cursos/',
+  path: '/cursos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EntrarIndexRoute = EntrarIndexRouteImport.update({
   id: '/entrar/',
   path: '/entrar/',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/conta/': typeof ContaIndexRoute
+  '/cursos/': typeof CursosIndexRoute
   '/entrar/': typeof EntrarIndexRoute
   '/staff/': typeof StaffIndexRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/conta': typeof ContaIndexRoute
+  '/cursos': typeof CursosIndexRoute
   '/entrar': typeof EntrarIndexRoute
   '/staff': typeof StaffIndexRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/conta/': typeof ContaIndexRoute
+  '/cursos/': typeof CursosIndexRoute
   '/entrar/': typeof EntrarIndexRoute
   '/staff/': typeof StaffIndexRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/equipe'
     | '/conta/'
+    | '/cursos/'
     | '/entrar/'
     | '/staff/'
     | '/staff/cursos/$courseId'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/equipe'
     | '/conta'
+    | '/cursos'
     | '/entrar'
     | '/staff'
     | '/staff/cursos/$courseId'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/equipe'
     | '/conta/'
+    | '/cursos/'
     | '/entrar/'
     | '/staff/'
     | '/staff/cursos/$courseId'
@@ -203,6 +215,7 @@ export interface RootRouteChildren {
   ContaSegurancaRoute: typeof ContaSegurancaRoute
   EntrarConfirmarRoute: typeof EntrarConfirmarRoute
   ContaIndexRoute: typeof ContaIndexRoute
+  CursosIndexRoute: typeof CursosIndexRoute
   EntrarIndexRoute: typeof EntrarIndexRoute
 }
 
@@ -262,6 +275,13 @@ declare module '@tanstack/react-router' {
       path: '/conta/seguranca'
       fullPath: '/conta/seguranca'
       preLoaderRoute: typeof ContaSegurancaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cursos/': {
+      id: '/cursos/'
+      path: '/cursos'
+      fullPath: '/cursos/'
+      preLoaderRoute: typeof CursosIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entrar/': {
@@ -335,6 +355,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContaSegurancaRoute: ContaSegurancaRoute,
   EntrarConfirmarRoute: EntrarConfirmarRoute,
   ContaIndexRoute: ContaIndexRoute,
+  CursosIndexRoute: CursosIndexRoute,
   EntrarIndexRoute: EntrarIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -67,7 +67,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** sem arrastar-e-soltar obrigatório, sem editor visual, sem importação em lote; preço e disponibilidade só Admin; sem confiar em campo escondido na UI.
 
 ### M2-07 — Curso demonstrativo (seed e fixtures)
-**Dependências:** M2-02 · **Estado:** `implemented` (verificação local; ver STATUS; falta aplicar em Dev e Staging). Comando: `bun run seed:demo`.
+**Dependências:** M2-02 · **Estado:** `verified` (CI, PR #57; falta aplicar em Dev e Staging). Comando: `bun run seed:demo`.
 **Objetivo:** um comando cria, de forma repetível, um curso gratuito sintético usado nos testes e na jornada do M3.
 **Passos:**
 1. `scripts/seed-demo.ts` cria o curso "Curso Demonstrativo" (guiado), Offer gratuita de 3 meses e 3 módulos (D+0, D+7, D+14) com aulas de texto, uma opcional; publica pelas funções de domínio.
@@ -78,7 +78,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** só dados sintéticos; nada de conteúdo real nem de e-mails reais.
 
 ### M2-04 — Catálogo do aluno
-**Dependências:** M2-01, M2-02, M0-07 · **Estado:** `not_started`
+**Dependências:** M2-01, M2-02, M0-07 · **Estado:** `implemented` (verificação local; ver STATUS). Tela em `/cursos`.
 **Objetivo:** a pessoa logada vê os cursos visíveis, com resumo da oferta e estado (inscrições abertas ou encerradas).
 **Passos:**
 1. `GET /api/catalog/courses` (autenticado): só cursos publicados e visíveis; por curso, título, resumo e resumo da Offer aberta (gratuito/preço, prazo em meses). Sem vitrine pública em lista.

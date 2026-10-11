@@ -129,3 +129,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Teste que precisa de curso publicado com módulos em D+0, D+7 e D+14 usa `createDemoCourse(db)` (`test/helpers/demo-course.ts`) em vez de montar dados à mão: é o mesmo conteúdo do seed de Dev e Staging.
 - `bun run seed:demo <dev|staging>` é ensaio; `--apply` grava. Exige `DATABASE_URL_MIGRATION` direta do ambiente e as migrations já aplicadas. Production é recusada (teste em `scripts/seed-demo-core.test.ts`).
 - Conteúdo só sintético: não coloque texto, nome ou e-mail reais no curso demonstrativo.
+
+## Catálogo do aluno (M2-04)
+
+- Todo esquema Zod criado no **carregamento do módulo de uma rota** (`validateSearch`) depende de `src/web/zod-config.ts` ser o PRIMEIRO import de `main.tsx` (JIT desligado, senão há violação de CSP `script-src eval`). Toda tela nova entra na bateria de CSP de `e2e/security.spec.ts`; ela pegou este problema em 13 telas de uma vez.
+- `test/pg/student-catalog.pg.test.ts` monta cursos pelas funções de domínio (autor nulo) e confere a resposta **como texto** contra uma lista de termos proibidos (título interno, autoria, estado, ids). Ao acrescentar campo ao `CatalogCourseDto`, atualize o teste de igualdade exata.
+- A navegação pública tem ordem de Tab fixa em `e2e/accessibility.spec.ts`: novo link da navegação exige atualizar a lista.
