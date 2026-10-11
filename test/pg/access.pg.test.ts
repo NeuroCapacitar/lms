@@ -74,6 +74,7 @@ function protectedApp() {
             {
               emailSender: createFakeEmailSender(),
               isStaffEmail: async () => false,
+              isStaffUser: async () => false,
               isSuspended: async () => false,
             },
           ),
@@ -340,6 +341,7 @@ describe('suspensão', () => {
       {
         emailSender: createFakeEmailSender(),
         isStaffEmail: async () => false,
+        isStaffUser: async () => false,
         isSuspended: async (userId) => (await loadAccess(tools.db, userId)).suspended,
       },
     );

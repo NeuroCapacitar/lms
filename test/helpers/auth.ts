@@ -19,6 +19,8 @@ export async function createTestAuth(
     emailSender: createFakeEmailSender(),
     isStaffEmail: async () => false,
     isSuspended: async () => false,
+    // Os testes abrem sessão de Staff por `testUtils`, sem método de login: não aplica a regra "Staff só por link".
+    isStaffUser: async () => false,
   },
 ) {
   const opened = await openDatabase(connectionString);

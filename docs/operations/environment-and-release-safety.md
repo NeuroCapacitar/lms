@@ -55,3 +55,9 @@ Cloudflare (`cf`, `wrangler`) e Neon (`neon`) só podem ser usados com o perfil 
 | Chave privada `age` do backup | fora de GitHub, Worker e R2 | responsável | M9-05 |
 
 Regras de ambiente: um Worker por ambiente (`hub`, `hub-staging`, `hub-production`), cada um com seus próprios recursos; a tabela de recursos permitidos por ambiente fica em `scripts/environments.ts` e o build (`bun run build:staging` ou `build:production`) só termina se o preflight aprovar.
+
+## Login com Google (M1-07)
+
+- Segredos do Worker, por ambiente: `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` (`wrangler secret put … --env <ambiente> --profile neurocapacitar`). **Opcionais**: sem as duas o Google fica desligado (botão e rotas somem) e o resto funciona.
+- No Google Cloud do cliente (**pendência do responsável/cliente**): cliente OAuth do tipo "Aplicativo da Web" com a origem do ambiente e o URI de redirecionamento `<APP_BASE_URL>/api/auth/callback/google` (Staging: o host `workers.dev`; o domínio definitivo entra no M10). Escopos `openid`, `email` e `profile`.
+- O Google **só liga a uma conta existente** (depois de entrar por link) e exige e-mail verificado e igual; nunca cria conta. O login por senha exige **Workers Paid** (CPU do scrypt, ver ADR 0029); sem ele, só o link e o Google ficam viáveis em produção.

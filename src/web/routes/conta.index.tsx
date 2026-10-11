@@ -16,7 +16,7 @@ import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
 import { setThemePreference } from '../theme';
 
-export const Route = createFileRoute('/conta')({ component: Account });
+export const Route = createFileRoute('/conta/')({ component: Account });
 
 const THEME_LABELS: Record<Theme, string> = {
   system: 'Seguir o sistema',
@@ -106,8 +106,11 @@ function Account() {
   return (
     <>
       <h1 className="mb-2 text-3xl font-semibold">Minha conta</h1>
-      <p className="mb-8 max-w-prose text-[var(--text-muted)]">
+      <p className="mb-4 max-w-prose text-[var(--text-muted)]">
         Seu nome de exibição e suas preferências. O e-mail de acesso não é alterado por aqui.
+      </p>
+      <p className="mb-8">
+        <Link to="/conta/seguranca">Segurança da conta</Link>
       </p>
       <form
         noValidate

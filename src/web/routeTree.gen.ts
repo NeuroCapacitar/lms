@@ -11,9 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BaseVisualRouteImport } from './routes/base-visual'
-import { Route as ContaRouteImport } from './routes/conta'
 import { Route as ConviteRouteImport } from './routes/convite'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as ContaIndexRouteImport } from './routes/conta.index'
+import { Route as ContaSegurancaRouteImport } from './routes/conta.seguranca'
 import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
 import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 
@@ -27,11 +28,6 @@ const BaseVisualRoute = BaseVisualRouteImport.update({
   path: '/base-visual',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ContaRoute = ContaRouteImport.update({
-  id: '/conta',
-  path: '/conta',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ConviteRoute = ConviteRouteImport.update({
   id: '/convite',
   path: '/convite',
@@ -40,6 +36,16 @@ const ConviteRoute = ConviteRouteImport.update({
 const SobreRoute = SobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContaIndexRoute = ContaIndexRouteImport.update({
+  id: '/conta/',
+  path: '/conta/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContaSegurancaRoute = ContaSegurancaRouteImport.update({
+  id: '/conta/seguranca',
+  path: '/conta/seguranca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntrarIndexRoute = EntrarIndexRouteImport.update({
@@ -56,29 +62,32 @@ const EntrarConfirmarRoute = EntrarConfirmarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
-  '/conta': typeof ContaRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
+  '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/conta/': typeof ContaIndexRoute
   '/entrar/': typeof EntrarIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
-  '/conta': typeof ContaRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
+  '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/conta': typeof ContaIndexRoute
   '/entrar': typeof EntrarIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/base-visual': typeof BaseVisualRoute
-  '/conta': typeof ContaRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
+  '/conta/seguranca': typeof ContaSegurancaRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/conta/': typeof ContaIndexRoute
   '/entrar/': typeof EntrarIndexRoute
 }
 export interface FileRouteTypes {
@@ -86,38 +95,42 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/base-visual'
-    | '/conta'
     | '/convite'
     | '/sobre'
+    | '/conta/seguranca'
     | '/entrar/confirmar'
+    | '/conta/'
     | '/entrar/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/base-visual'
-    | '/conta'
     | '/convite'
     | '/sobre'
+    | '/conta/seguranca'
     | '/entrar/confirmar'
+    | '/conta'
     | '/entrar'
   id:
     | '__root__'
     | '/'
     | '/base-visual'
-    | '/conta'
     | '/convite'
     | '/sobre'
+    | '/conta/seguranca'
     | '/entrar/confirmar'
+    | '/conta/'
     | '/entrar/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BaseVisualRoute: typeof BaseVisualRoute
-  ContaRoute: typeof ContaRoute
   ConviteRoute: typeof ConviteRoute
   SobreRoute: typeof SobreRoute
+  ContaSegurancaRoute: typeof ContaSegurancaRoute
   EntrarConfirmarRoute: typeof EntrarConfirmarRoute
+  ContaIndexRoute: typeof ContaIndexRoute
   EntrarIndexRoute: typeof EntrarIndexRoute
 }
 
@@ -137,13 +150,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BaseVisualRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/conta': {
-      id: '/conta'
-      path: '/conta'
-      fullPath: '/conta'
-      preLoaderRoute: typeof ContaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/convite': {
       id: '/convite'
       path: '/convite'
@@ -156,6 +162,20 @@ declare module '@tanstack/react-router' {
       path: '/sobre'
       fullPath: '/sobre'
       preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conta/': {
+      id: '/conta/'
+      path: '/conta'
+      fullPath: '/conta/'
+      preLoaderRoute: typeof ContaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conta/seguranca': {
+      id: '/conta/seguranca'
+      path: '/conta/seguranca'
+      fullPath: '/conta/seguranca'
+      preLoaderRoute: typeof ContaSegurancaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entrar/': {
@@ -178,10 +198,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BaseVisualRoute: BaseVisualRoute,
-  ContaRoute: ContaRoute,
   ConviteRoute: ConviteRoute,
   SobreRoute: SobreRoute,
+  ContaSegurancaRoute: ContaSegurancaRoute,
   EntrarConfirmarRoute: EntrarConfirmarRoute,
+  ContaIndexRoute: ContaIndexRoute,
   EntrarIndexRoute: EntrarIndexRoute,
 }
 export const routeTree = rootRouteImport
