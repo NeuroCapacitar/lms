@@ -142,15 +142,19 @@ describe('transições e disponibilidade', () => {
     expect(canTransitionOffer('active', 'draft')).toBe(false);
   });
 
-  it('adquirível: só oferta ativa de curso publicado', () => {
+  it('adquirível: só oferta ativa de curso publicado COM currículo publicado', () => {
     const courses: CourseStatus[] = ['draft', 'published', 'archived'];
     const offers: OfferStatus[] = ['draft', 'active', 'paused', 'archived'];
     for (const courseStatus of courses) {
       for (const offerStatus of offers) {
-        expect(
-          isOfferAcquirable({ courseStatus, offerStatus }),
-          `${courseStatus}/${offerStatus}`,
-        ).toBe(courseStatus === 'published' && offerStatus === 'active');
+        for (const hasPublishedCurriculum of [true, false]) {
+          expect(
+            isOfferAcquirable({ courseStatus, offerStatus, hasPublishedCurriculum }),
+            `${courseStatus}/${offerStatus}/${hasPublishedCurriculum}`,
+          ).toBe(
+            courseStatus === 'published' && offerStatus === 'active' && hasPublishedCurriculum,
+          );
+        }
       }
     }
   });

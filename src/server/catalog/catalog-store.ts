@@ -2,7 +2,7 @@ import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 
 import type { Database } from '../../db/client';
 import { isCheckViolation, isRestrictViolation, isUniqueViolation } from '../../db/pg-errors';
-import { course, offer } from '../../db/schema';
+import { course, courseContent, curriculumState, offer } from '../../db/schema';
 import {
   canTransitionCourse,
   canTransitionOffer,
@@ -18,6 +18,7 @@ import {
   type StaffOfferDto,
 } from '../../features/catalog/catalog';
 import { auditEvent } from '../auth/access-store';
+import { coursesWithPublishedCurriculum } from './curriculum-store';
 
 /** Outro curso já usa este slug. */
 export class SlugTakenError extends Error {
@@ -84,7 +85,11 @@ function toStaffOffer(row: typeof offer.$inferSelect): StaffOfferDto {
   };
 }
 
-function toStaffCourse(row: typeof course.$inferSelect, offers: StaffOfferDto[]): StaffCourseDto {
+function toStaffCourse(
+  row: typeof course.$inferSelect,
+  offers: StaffOfferDto[],
+  publishedVersion: number,
+): StaffCourseDto {
   return {
     id: row.id,
     slug: row.slug,
@@ -92,6 +97,7 @@ function toStaffCourse(row: typeof course.$inferSelect, offers: StaffOfferDto[])
     sequenceMode: row.sequenceMode as SequenceMode,
     status: row.status as CourseStatus,
     firstPublishedAt: row.firstPublishedAt ? iso(row.firstPublishedAt) : null,
+    publishedVersion,
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt),
     offers,
@@ -332,30 +338,46 @@ async function offersOf(db: Database | Tx, courseIds: string[]) {
 /** Todos os cursos para a Staff, os mais novos primeiro, cada um com as suas ofertas. */
 export async function listStaffCourses(db: Database): Promise<StaffCourseDto[]> {
   const courses = await db.select().from(course).orderBy(desc(course.createdAt));
-  const offers = await offersOf(
-    db,
-    courses.map((row) => row.id),
-  );
+  const ids = courses.map((row) => row.id);
+  const offers = await offersOf(db, ids);
+  const versions = await publishedVersions(db, ids);
   return courses.map((row) =>
-    toStaffCourse(row, offers.filter((item) => item.courseId === row.id).map(toStaffOffer)),
+    toStaffCourse(
+      row,
+      offers.filter((item) => item.courseId === row.id).map(toStaffOffer),
+      versions.get(row.id) ?? 0,
+    ),
   );
+}
+
+async function publishedVersions(db: Database, courseIds: string[]): Promise<Map<string, number>> {
+  if (courseIds.length === 0) return new Map();
+  const rows = await db
+    .select({ id: curriculumState.courseId, version: curriculumState.publishedVersion })
+    .from(curriculumState)
+    .where(inArray(curriculumState.courseId, courseIds));
+  return new Map(rows.map((row) => [row.id, row.version]));
 }
 
 export async function getStaffCourse(db: Database, id: string): Promise<StaffCourseDto | null> {
   const [row] = await db.select().from(course).where(eq(course.id, id));
   if (!row) return null;
   const offers = await offersOf(db, [row.id]);
-  return toStaffCourse(row, offers.map(toStaffOffer));
+  const versions = await publishedVersions(db, [row.id]);
+  return toStaffCourse(row, offers.map(toStaffOffer), versions.get(row.id) ?? 0);
 }
 
 function toPublicCourse(
   row: typeof course.$inferSelect,
   offers: (typeof offer.$inferSelect)[],
+  hasPublishedCurriculum: boolean,
+  content: PublicCourseDto['content'],
 ): PublicCourseDto {
   const acquirable = offers.filter((item) =>
     isOfferAcquirable({
       courseStatus: row.status as CourseStatus,
       offerStatus: item.status as OfferStatus,
+      hasPublishedCurriculum,
     }),
   );
   const publicOffers: PublicOfferDto[] = acquirable.map((item) => ({
@@ -370,6 +392,7 @@ function toPublicCourse(
     slug: row.slug,
     sequenceMode: row.sequenceMode as SequenceMode,
     acquirable: publicOffers.length > 0,
+    content,
     offers: publicOffers,
   };
 }
@@ -384,15 +407,34 @@ export async function listPublicCourses(db: Database): Promise<PublicCourseDto[]
     .from(course)
     .where(eq(course.status, 'published'))
     .orderBy(asc(course.slug));
-  const offers = await offersOf(
-    db,
-    courses.map((row) => row.id),
-  );
+  const ids = courses.map((row) => row.id);
+  const offers = await offersOf(db, ids);
+  const published = await coursesWithPublishedCurriculum(db, ids);
+  const contents = await publicContents(db, [...published]);
   return courses.map((row) =>
     toPublicCourse(
       row,
       offers.filter((item) => item.courseId === row.id),
+      published.has(row.id),
+      contents.get(row.id) ?? null,
     ),
+  );
+}
+
+async function publicContents(
+  db: Database,
+  courseIds: string[],
+): Promise<Map<string, NonNullable<PublicCourseDto['content']>>> {
+  if (courseIds.length === 0) return new Map();
+  const rows = await db
+    .select()
+    .from(courseContent)
+    .where(inArray(courseContent.courseId, courseIds));
+  return new Map(
+    rows.map((row) => [
+      row.courseId,
+      { title: row.displayTitle, description: row.description, workloadHours: row.workloadHours },
+    ]),
   );
 }
 
@@ -402,5 +444,12 @@ export async function getPublicCourse(db: Database, slug: string): Promise<Publi
     .from(course)
     .where(and(eq(course.slug, slug), eq(course.status, 'published')));
   if (!row) return null;
-  return toPublicCourse(row, await offersOf(db, [row.id]));
+  const published = await coursesWithPublishedCurriculum(db, [row.id]);
+  const contents = await publicContents(db, [...published]);
+  return toPublicCourse(
+    row,
+    await offersOf(db, [row.id]),
+    published.has(row.id),
+    contents.get(row.id) ?? null,
+  );
 }

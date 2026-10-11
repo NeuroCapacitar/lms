@@ -145,15 +145,19 @@ export function canTransitionOffer(from: OfferStatus, to: OfferStatus): boolean 
 }
 
 /**
- * Regra ÚNICA de "adquirível": só uma Offer `active` de um Course `published`. Reutilizada pelo
- * catálogo, pela oferta gratuita (M3-02) e pela compra (M6). O requisito de currículo publicado
- * entra com o M2-02 (a função receberá esse fato), sem mudar quem a chama.
+ * Regra ÚNICA de "adquirível": uma Offer `active` de um Course `published` que TEM currículo
+ * publicado (M2-02). Reutilizada pelo catálogo, pela oferta gratuita (M3-02) e pela compra (M6).
  */
 export function isOfferAcquirable(input: {
   courseStatus: CourseStatus;
   offerStatus: OfferStatus;
+  hasPublishedCurriculum: boolean;
 }): boolean {
-  return input.courseStatus === 'published' && input.offerStatus === 'active';
+  return (
+    input.courseStatus === 'published' &&
+    input.offerStatus === 'active' &&
+    input.hasPublishedCurriculum
+  );
 }
 
 /** Oferta como o público/aluno a vê: só termos comerciais, sem IDs internos de autoria nem status. */
@@ -168,12 +172,14 @@ export interface PublicOfferDto {
 
 /**
  * Curso para o público/aluno: SEM título interno, criador, datas de autoria nem estado de rascunho.
- * `acquirable` separa visibilidade (o curso aparece) de disponibilidade (há oferta ativa).
+ * `acquirable` separa visibilidade (o curso aparece) de disponibilidade (há oferta ativa e currículo
+ * publicado). `content` são os textos publicados (nulo enquanto o currículo não foi publicado).
  */
 export interface PublicCourseDto {
   slug: string;
   sequenceMode: SequenceMode;
   acquirable: boolean;
+  content: { title: string; description: string; workloadHours: number | null } | null;
   offers: PublicOfferDto[];
 }
 
@@ -193,6 +199,8 @@ export interface StaffCourseDto {
   sequenceMode: SequenceMode;
   status: CourseStatus;
   firstPublishedAt: string | null;
+  /** Versão do currículo publicado (0 = nunca publicado). */
+  publishedVersion: number;
   createdAt: string;
   updatedAt: string;
   offers: StaffOfferDto[];

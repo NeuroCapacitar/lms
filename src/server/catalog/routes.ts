@@ -9,6 +9,7 @@ import {
   updateCourseSchema,
   updateOfferSchema,
 } from '../../features/catalog/catalog';
+import { saveDraftSchema } from '../../features/catalog/curriculum';
 import { requireCapability } from '../auth/authorization';
 import type { AuthVars } from '../auth/types';
 import {
@@ -29,6 +30,15 @@ import {
   updateCourse,
   updateOffer,
 } from './catalog-store';
+import {
+  CurriculumCourseNotFoundError,
+  CurriculumInvalidError,
+  DraftConflictError,
+  UnknownDraftIdError,
+  getDraft,
+  publishCurriculum,
+  saveDraft,
+} from './curriculum-store';
 
 type CatalogContext = Context<{ Bindings: Env; Variables: AuthVars }>;
 
@@ -52,6 +62,16 @@ function domainError(c: CatalogContext, error: unknown): Response {
   }
   if (error instanceof CourseNotFoundError || error instanceof OfferNotFoundError) {
     return c.json({ error: { code: 'not_found' } }, 404);
+  }
+  if (error instanceof CurriculumCourseNotFoundError) {
+    return c.json({ error: { code: 'not_found' } }, 404);
+  }
+  if (error instanceof DraftConflictError) {
+    return c.json({ error: { code: 'draft_conflict', currentRev: error.currentRev } }, 409);
+  }
+  if (error instanceof UnknownDraftIdError) return c.json({ error: { code: 'unknown_id' } }, 400);
+  if (error instanceof CurriculumInvalidError) {
+    return c.json({ error: { code: 'curriculum_invalid', problems: error.problems } }, 422);
   }
   if (error instanceof InvalidOfferTermsError) {
     return c.json({ error: { code: 'invalid_request', fields: error.fields } }, 400);
@@ -203,6 +223,54 @@ export function catalogRoutes(deps: CatalogRouteDeps) {
           status: parsed.data.status,
         });
         return c.json({ status: 'ok' });
+      } catch (error) {
+        return domainError(c, error);
+      }
+    },
+  );
+
+  // Currículo vivo (M2-02): o rascunho é lido por quem lê a área da Staff e editado por `course.edit`
+  // (que inclui publicar). A tela salva o rascunho INTEIRO com o `expectedRev` que leu.
+  routes.get(
+    '/courses/:id/draft',
+    deps.withDatabase,
+    requireCapability('staff.read'),
+    async (c) => {
+      const found = ids(c, 'id');
+      if (!found) return c.json({ error: { code: 'not_found' } }, 404);
+      const draft = await getDraft(c.var.db, found[0]!);
+      return draft ? c.json(draft) : c.json({ error: { code: 'not_found' } }, 404);
+    },
+  );
+
+  routes.put(
+    '/courses/:id/draft',
+    deps.withDatabase,
+    requireCapability('course.edit'),
+    async (c) => {
+      const found = ids(c, 'id');
+      if (!found) return c.json({ error: { code: 'not_found' } }, 404);
+      const parsed = saveDraftSchema.safeParse(await c.req.json().catch(() => null));
+      if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+      try {
+        return c.json(await saveDraft(c.var.db, { courseId: found[0]!, ...parsed.data }));
+      } catch (error) {
+        return domainError(c, error);
+      }
+    },
+  );
+
+  routes.post(
+    '/courses/:id/publish',
+    deps.withDatabase,
+    requireCapability('course.edit'),
+    async (c) => {
+      const found = ids(c, 'id');
+      if (!found) return c.json({ error: { code: 'not_found' } }, 404);
+      try {
+        return c.json(
+          await publishCurriculum(c.var.db, { actorId: actor(c), courseId: found[0]! }),
+        );
       } catch (error) {
         return domainError(c, error);
       }

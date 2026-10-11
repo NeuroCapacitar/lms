@@ -18,7 +18,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 ---
 
 ### M2-01 — Course, Offer e disponibilidade
-**Dependências:** M1-03, M0-04 · **Estado:** `implemented` (verificação local; ver STATUS). Estados da Offer: `draft|active|paused|archived` (spec de domínio).
+**Dependências:** M1-03, M0-04 · **Estado:** `verified` no CI (ver STATUS). Estados da Offer: `draft|active|paused|archived` (spec de domínio).
 **Objetivo:** existe o cadastro de cursos e ofertas com regras comerciais corretas, e a visibilidade do curso é separada da disponibilidade de inscrição.
 **Passos:**
 1. Tabela `course`: id, `slug` único, título interno, `sequence_mode` (`guided|free`, escolha obrigatória, sem default), estado (`draft|published|archived`), criado por. Textos exibidos ao público ficam no conteúdo do M2-02.
@@ -30,7 +30,7 @@ M2-01 → M2-02 → M2-05 → M2-03 → M2-07 → M2-04 → M2-06.
 **Fora do escopo / cuidados:** sem cupom, bundle, preço promocional, vitalício, landing CMS nem moeda além de BRL. Pagamento e Order são do M6.
 
 ### M2-02 — Currículo vivo: rascunho e publicação atômica
-**Dependências:** M2-01 · **Estado:** `not_started`
+**Dependências:** M2-01 · **Estado:** `implemented` (verificação local; ver STATUS). API: PUT do rascunho inteiro com `expectedRev` + POST publish.
 **Objetivo:** a Staff edita um rascunho do curso (detalhes, módulos e aulas) e o publica numa única transação; quem estuda só enxerga o publicado, e os ids de módulo e aula nunca mudam.
 **Passos:**
 1. Modelo sugerido: tabelas de rascunho (`course_draft`, `module_draft`, `lesson_draft`) e tabelas publicadas (`course_content`, `module`, `lesson`) com os **mesmos ids estáveis**. Módulo: título, posição, `drip_days` (inteiro ≥0, D+N). Aula: título, posição, `kind` (só `text` neste marco), `is_optional`, corpo (M2-05), `retired_at`.

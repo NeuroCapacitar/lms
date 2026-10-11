@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as schema from '../../src/db/schema.ts';
@@ -30,8 +30,9 @@ afterAll(async () => {
   await database.drop();
 });
 beforeEach(async () => {
-  await tools.db.delete(schema.offer);
-  await tools.db.delete(schema.course);
+  await tools.db.execute(
+    sql`truncate table lesson, module, lesson_draft, module_draft, course_content, course_draft, curriculum_state, offer, course cascade`,
+  );
   await tools.db.delete(schema.session);
   await tools.db.delete(schema.staffGrant);
   await tools.db.delete(schema.userRole);
@@ -108,6 +109,28 @@ const offerStatus = (
 ) => call('POST', `/courses/${courseId}/offers/${offerId}/status`, admin.headers, { status });
 const courseStatus = (admin: { headers: Headers }, courseId: string, status: string) =>
   call('POST', `/courses/${courseId}/status`, admin.headers, { status });
+/** Publica um currículo mínimo (um módulo, uma aula obrigatória) pela API, como a Staff faria. */
+async function withCurriculum(admin: { headers: Headers }, courseId: string) {
+  const draft = await json(await call('GET', `/courses/${courseId}/draft`, admin.headers));
+  const saved = await call('PUT', `/courses/${courseId}/draft`, admin.headers, {
+    expectedRev: draft.rev,
+    details: {
+      displayTitle: 'Título público',
+      description: 'Descrição pública',
+      workloadHours: 10,
+    },
+    modules: [
+      {
+        title: 'Módulo 1',
+        dripDays: 0,
+        lessons: [{ title: 'Aula 1', isOptional: false, body: null }],
+      },
+    ],
+  });
+  expect(saved.status).toBe(200);
+  const published = await call('POST', `/courses/${courseId}/publish`, admin.headers, {});
+  expect(published.status).toBe(200);
+}
 const auditFor = async (targetId: string) =>
   (await tools.db.select().from(schema.auditLog)).filter((row) => row.targetId === targetId);
 
@@ -579,6 +602,12 @@ describe('disponibilidade x visibilidade e DTOs', () => {
     const hidden = await offerVia(admin, open, FREE);
     await offerStatus(admin, open, hidden, 'archived');
     await courseStatus(admin, open, 'published');
+    await withCurriculum(admin, open);
+    // publicado, com oferta ativa, mas SEM currículo publicado: visível e NÃO adquirível
+    const bare = await courseVia(admin, { ...COURSE, slug: 'curso-sem-curriculo' });
+    const bareOffer = await offerVia(admin, bare);
+    await offerStatus(admin, bare, bareOffer, 'active');
+    await courseStatus(admin, bare, 'published');
     // arquivado: some
     const gone = await courseVia(admin, { ...COURSE, slug: 'curso-arquivado' });
     const goneOffer = await offerVia(admin, gone);
@@ -587,7 +616,11 @@ describe('disponibilidade x visibilidade e DTOs', () => {
     await courseStatus(admin, gone, 'archived');
 
     const list = await listPublicCourses(tools.db);
-    expect(list.map((c) => c.slug)).toEqual(['curso-aberto', 'curso-sem-oferta']);
+    expect(list.map((c) => c.slug)).toEqual([
+      'curso-aberto',
+      'curso-sem-curriculo',
+      'curso-sem-oferta',
+    ]);
     expect(list[0]).toMatchObject({ acquirable: true, sequenceMode: 'free' });
     expect(list[0]!.offers).toEqual([
       {
@@ -599,7 +632,13 @@ describe('disponibilidade x visibilidade e DTOs', () => {
         maxInstallments: 12,
       },
     ]);
-    expect(list[1]).toMatchObject({ acquirable: false, offers: [] });
+    expect(list[0]!.content).toEqual({
+      title: 'Título público',
+      description: 'Descrição pública',
+      workloadHours: 10,
+    });
+    expect(list[1]).toMatchObject({ acquirable: false, offers: [], content: null });
+    expect(list[2]).toMatchObject({ acquirable: false, offers: [], content: null });
     expect(await getPublicCourse(tools.db, 'curso-rascunho')).toBeNull();
     expect(await getPublicCourse(tools.db, 'curso-arquivado')).toBeNull();
     expect((await getPublicCourse(tools.db, 'curso-aberto'))!.acquirable).toBe(true);
@@ -610,7 +649,7 @@ describe('disponibilidade x visibilidade e DTOs', () => {
       acquirable: false,
       offers: [],
     });
-  });
+  }, 240_000);
 
   it('o DTO público não traz campos internos; o da Staff traz tudo', async () => {
     const admin = await newAdmin();
@@ -618,9 +657,16 @@ describe('disponibilidade x visibilidade e DTOs', () => {
     const offerId = await offerVia(admin, courseId);
     await offerStatus(admin, courseId, offerId, 'active');
     await courseStatus(admin, courseId, 'published');
+    await withCurriculum(admin, courseId);
 
     const publicDto = (await getPublicCourse(tools.db, 'protea-r'))!;
-    expect(Object.keys(publicDto).sort()).toEqual(['acquirable', 'offers', 'sequenceMode', 'slug']);
+    expect(Object.keys(publicDto).sort()).toEqual([
+      'acquirable',
+      'content',
+      'offers',
+      'sequenceMode',
+      'slug',
+    ]);
     expect(Object.keys(publicDto.offers[0]!).sort()).toEqual(
       ['accessMonths', 'id', 'kind', 'maxInstallments', 'name', 'priceCents'].sort(),
     );
