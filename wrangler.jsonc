@@ -13,8 +13,9 @@
     "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
   },
   "assets": {
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"],
+    "run_worker_first": ["/api/*", "/cursos/*"],
   },
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cda50f48086646dda22bbb4424791e58" }],
   "env": {

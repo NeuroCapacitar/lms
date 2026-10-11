@@ -94,7 +94,12 @@ test.describe('estados da tela', () => {
     const closed = page.getByRole('listitem').filter({ hasText: 'Introdução antiga' });
     await expect(closed).toContainText('Inscrições encerradas');
     await expect(closed.getByRole('button')).toHaveCount(0);
-    await expect(closed.getByRole('link')).toHaveCount(0);
+    // só o título leva à página do curso; nenhuma ação de inscrição
+    await expect(closed.getByRole('link')).toHaveCount(1);
+    await expect(closed.getByRole('link', { name: 'Introdução antiga' })).toHaveAttribute(
+      'href',
+      '/cursos/antigo',
+    );
     // a inscrição é do M3-02: nenhum curso tem botão ainda
     await expect(page.getByRole('button', { name: /inscrever/i })).toHaveCount(0);
   });
