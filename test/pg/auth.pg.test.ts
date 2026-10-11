@@ -86,7 +86,7 @@ describe('sessão de 7 dias rolling', () => {
         expiresAt: new Date(Date.now() + 5 * DAY),
       })
       .where(eq(schema.session.id, created!.id));
-    const refreshed = await call('/auth/get-session', { headers });
+    const refreshed = await call('/me', { headers });
     expect(refreshed.status).toBe(200);
     const [after] = await sessionOf(user.id);
     expect((after!.expiresAt.getTime() - Date.now()) / DAY).toBeGreaterThan(6.9);
@@ -95,8 +95,8 @@ describe('sessão de 7 dias rolling', () => {
   it('dentro do mesmo dia não reescreve a sessão (sem escrita a cada requisição)', async () => {
     const { user, headers } = await signedInUser();
     const [before] = await sessionOf(user.id);
-    await call('/auth/get-session', { headers });
-    await call('/auth/get-session', { headers });
+    await call('/me', { headers });
+    await call('/me', { headers });
     const [after] = await sessionOf(user.id);
     expect(after!.updatedAt.getTime()).toBe(before!.updatedAt.getTime());
   });
@@ -118,7 +118,7 @@ describe('sessão de 7 dias rolling', () => {
         expiresAt: new Date(Date.now() + 5 * DAY),
       })
       .where(eq(schema.session.id, row!.id));
-    const response = await call('/auth/get-session', { headers });
+    const response = await call('/me', { headers });
     const cookie = response.headers.getSetCookie().find((value) => value.includes('session_token'));
     expect(cookie, 'a renovação reenvia o cookie').toBeDefined();
     expect(cookie).toMatch(/^__Secure-better-auth\.session_token=/);

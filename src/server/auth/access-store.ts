@@ -78,6 +78,16 @@ export async function isSuspended(db: Database, userId: string): Promise<boolean
   return rows.length > 0;
 }
 
+/** Esta pessoa tem papel de Staff ativo? (Staff só entra por link de acesso) */
+export async function hasStaffRole(db: Database, userId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: userRole.id })
+    .from(userRole)
+    .where(and(eq(userRole.userId, userId), isNull(userRole.revokedAt)))
+    .limit(1);
+  return rows.length > 0;
+}
+
 /** Este e-mail pertence a alguém com papel de Staff ativo? (impede cadastro livre de Staff) */
 export async function isStaffEmail(db: Database, email: string): Promise<boolean> {
   const rows = await db

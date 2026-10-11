@@ -74,3 +74,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 
 - `test/pg/suspension.pg.test.ts` prova a corrida **sem depender de sorte**: duas conexões brutas (`database.client()`), uma segurando a transação aberta, e a outra tentando o login (ou a suspensão); confere que a segunda ESPERA (`settled` falso após 300 ms) e depois o resultado. Há também 15 rodadas de corrida real em conexões separadas.
 - Para provar o gatilho sem passar pelo Better Auth, insere-se a sessão direto com o Drizzle; o erro do `pg` vem em `error.cause` (`code` 23001, mensagem `account_suspended`).
+
+## Senha e Google (M1-07)
+
+- `test/pg/methods.pg.test.ts` simula o Google **só no endpoint de token** (`oauth2.googleapis.com/token`) com `vi.spyOn(globalThis, 'fetch')`; o `id_token` é um JWT sem assinatura (o Better Auth decodifica o que vem direto do Google). O ciclo completo (gerar o endereço, "voltar" com `state` e os cookies do início, ler o redirecionamento e as contas) roda contra as rotas reais.
+- Toda falha de login deve ter a MESMA resposta: compare o corpo/redirecionamento da falha de Staff e suspensa com o de senha errada.
+- Os testes que abrem sessão por `testUtils` usam `isStaffUser: async () => false` (não passam por método de login); o gancho "Staff só por link" é exercitado pelas rotas, que usam a consulta real.
+- `e2e/seguranca.spec.ts` simula a API e o Turnstile; o fluxo real do Google só roda com as credenciais do cliente.

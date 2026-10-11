@@ -88,7 +88,7 @@ M1-01 → M1-06 (magic link) → M1-02 → M1-03 → M1-05 → M1-04 → M1-07 �
 **Fora do escopo / cuidados:** sem outbox/Queue (M4 pode migrar o envio); não enviar marketing por aqui.
 
 ### M1-07 — Google e senha opcionais para o aluno
-**Dependências:** M1-01, M1-06 · **Estado:** `not_started`
+**Dependências:** M1-01, M1-06 · **Estado:** `implemented` (verificação local; ver STATUS). Google real pendente das credenciais do cliente.
 **Objetivo:** o aluno pode, depois de entrar, adicionar login com Google e/ou senha; a Staff continua só por link.
 **Passos:**
 1. Provedor Google e `emailAndPassword` habilitados; linking apenas por e-mail **verificado**; `disableImplicitLinking` ou equivalente validado; sem `trustedProviders`/`allowDifferentEmails`.

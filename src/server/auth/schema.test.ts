@@ -18,6 +18,7 @@ const expected = getAuthTables(
       emailSender: createFakeEmailSender(),
       isStaffEmail: async () => false,
       isSuspended: async () => false,
+      isStaffUser: async () => false,
     },
   ),
 );

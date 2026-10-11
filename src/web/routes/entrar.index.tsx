@@ -1,12 +1,22 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useCallback, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
-import { requestLink, type RequestLinkResult } from '../api/auth';
+import {
+  fetchAuthOptions,
+  requestLink,
+  startGoogleSignIn,
+  type RequestLinkResult,
+} from '../api/auth';
+import { PasswordSignIn } from '../components/password-sign-in';
 import { Turnstile } from '../components/turnstile';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
 
-export const Route = createFileRoute('/entrar/')({ component: SignIn });
+export const Route = createFileRoute('/entrar/')({
+  component: SignIn,
+  validateSearch: (search: Record<string, unknown>): { erro?: 'google' } =>
+    search.erro === 'google' ? { erro: 'google' } : {},
+});
 
 const MESSAGES: Record<Exclude<RequestLinkResult, 'sent'>, string> = {
   captcha_failed: 'Não foi possível confirmar a verificação de segurança. Tente de novo.',
@@ -16,6 +26,27 @@ const MESSAGES: Record<Exclude<RequestLinkResult, 'sent'>, string> = {
 
 /** Pedido do link de acesso. A resposta é a mesma para qualquer e-mail válido (não revela cadastro). */
 function SignIn() {
+  const search = Route.useSearch();
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleError, setGoogleError] = useState(false);
+  useEffect(() => {
+    void fetchAuthOptions().then((options) => setGoogleEnabled(options.google));
+  }, []);
+
+  async function signInWithGoogle() {
+    setGoogleBusy(true);
+    setGoogleError(false);
+    const url = await startGoogleSignIn();
+    if (url) {
+      window.location.assign(url);
+      return;
+    }
+    setGoogleBusy(false);
+    setGoogleError(true);
+  }
+
   const [email, setEmail] = useState('');
   const [captcha, setCaptcha] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -58,6 +89,11 @@ function SignIn() {
       <p className="mb-8 max-w-prose text-[var(--text-muted)]">
         Informe seu e-mail e enviaremos um link de acesso. Não é preciso criar senha.
       </p>
+      {search.erro === 'google' || googleError ? (
+        <p role="alert" className="mb-6 max-w-prose font-medium text-[var(--text-danger)]">
+          Não foi possível entrar com o Google. Use o link de acesso abaixo.
+        </p>
+      ) : null}
       <form onSubmit={onSubmit} noValidate className="grid max-w-md gap-5">
         <TextField
           label="E-mail"
@@ -80,6 +116,37 @@ function SignIn() {
           </Button>
         </div>
       </form>
+
+      <section aria-labelledby="outras-formas" className="mt-12 grid max-w-md gap-4">
+        <h2 id="outras-formas" className="text-xl font-semibold">
+          Outras formas de entrar
+        </h2>
+        <p className="text-[var(--text-muted)]">
+          Valem para quem já adicionou senha ou Google em "Segurança da conta". A equipe entra
+          somente por link de acesso.
+        </p>
+        {googleEnabled ? (
+          <div>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={googleBusy}
+              onClick={() => void signInWithGoogle()}
+            >
+              {googleBusy ? 'Abrindo o Google…' : 'Entrar com Google'}
+            </Button>
+          </div>
+        ) : null}
+        {showPassword ? (
+          <PasswordSignIn />
+        ) : (
+          <div>
+            <Button type="button" variant="secondary" onClick={() => setShowPassword(true)}>
+              Entrar com e-mail e senha
+            </Button>
+          </div>
+        )}
+      </section>
     </>
   );
 }
