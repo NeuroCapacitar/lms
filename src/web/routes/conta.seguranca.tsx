@@ -3,7 +3,6 @@ import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState, type FormEvent } from 'react';
 
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../../features/identity/credentials';
-import { requestReauth, type RequestReauthResult } from '../api/auth';
 import { UnauthenticatedError } from '../api/profile';
 import {
   fetchSecurity,
@@ -13,6 +12,7 @@ import {
   unlinkGoogle,
   type ChangeResult,
 } from '../api/security';
+import { ReauthPanel } from '../components/reauth-panel';
 import { Button } from '../components/ui/button';
 import { RequireTerms } from '../components/require-terms';
 import { TextField } from '../components/ui/field';
@@ -35,13 +35,6 @@ const FAILURES: Partial<Record<ChangeResult, string>> = {
   unavailable: 'Não foi possível concluir agora. Tente novamente em instantes.',
 };
 
-const REAUTH_MESSAGES: Record<RequestReauthResult, string> = {
-  sent: 'Enviamos um link de confirmação para o seu e-mail. Abra-o neste navegador, volte aqui e repita a ação.',
-  unauthenticated: 'Sua sessão expirou. Entre novamente.',
-  rate_limited: 'Muitos pedidos. Aguarde alguns minutos e tente de novo.',
-  unavailable: 'Não foi possível enviar agora. Tente novamente em instantes.',
-};
-
 /**
  * "Segurança da conta": o aluno pode ADICIONAR senha e Google ao link de acesso, que é a base e
  * nunca some. Mudar método exige reautenticação recente (um novo link). A equipe só entra por link.
@@ -54,7 +47,6 @@ function AccountSecurity() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | undefined>();
   const [needsReauth, setNeedsReauth] = useState(false);
-  const [reauth, setReauth] = useState<RequestReauthResult | undefined>();
 
   async function run(action: () => Promise<ChangeResult>, success: string) {
     setBusy(true);
@@ -89,10 +81,6 @@ function AccountSecurity() {
       return;
     }
     setMessage({ kind: 'error', text: FAILURES[result] ?? FAILURES.unavailable! });
-  }
-
-  async function sendReauth() {
-    setReauth(await requestReauth());
   }
 
   const title = <h1 className="mb-2 text-3xl font-semibold">Segurança da conta</h1>;
@@ -169,23 +157,7 @@ function AccountSecurity() {
         </li>
       </ul>
 
-      {needsReauth ? (
-        <div role="alert" className="mb-8 grid max-w-prose gap-3 rounded-lg border p-4">
-          <p className="font-medium">
-            Para alterar um método de entrada, confirme primeiro a sua identidade.
-          </p>
-          <div>
-            <Button type="button" variant="secondary" onClick={() => void sendReauth()}>
-              Enviar link de confirmação
-            </Button>
-          </div>
-          {reauth ? (
-            <p role="status" className="text-[var(--text-muted)]">
-              {REAUTH_MESSAGES[reauth]}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+      {needsReauth ? <ReauthPanel action="alterar um método de entrada" /> : null}
 
       {message ? (
         <p

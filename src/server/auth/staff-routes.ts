@@ -7,12 +7,22 @@ import { user } from '../../db/schema';
 import { hitThrottle } from '../../db/throttle';
 import type { EmailSender } from '../../features/identity/link-policy';
 import { USER_ID_PATTERN, suspendUserSchema } from '../../features/identity/suspension';
+import { grantBodySchema } from '../../features/identity/team';
 import {
   acceptInvitationSchema,
   inviteStaffSchema,
 } from '../../features/identity/staff-invitation';
 import { sha256Hex } from '../crypto';
-import { LastAdminError, liftSuspension, suspendUser } from './access-store';
+import {
+  LastAdminError,
+  NotDelegableError,
+  TargetNotSupportError,
+  grantCapability,
+  liftSuspension,
+  revokeCapability,
+  revokeRole,
+  suspendUser,
+} from './access-store';
 import { requireCapability } from './authorization';
 import { requireRecentAuth } from './reauth';
 import {
@@ -24,6 +34,7 @@ import {
   resendInvitation,
   revokeInvitation,
 } from './staff-invitations';
+import { listTeam } from './team-store';
 import type { AuthVars } from './types';
 
 type StaffContext = Context<{ Bindings: Env; Variables: AuthVars }>;
@@ -169,6 +180,60 @@ export function staffRoutes(deps: StaffRouteDeps) {
     if (!targetId) return c.json({ error: { code: 'not_found' } }, 404);
     const actor = (await c.var.auth.api.getSession({ headers: c.req.raw.headers }))!.user;
     const changed = await liftSuspension(c.var.db, { actorId: actor.id, targetId });
+    return c.json({ status: 'ok', changed });
+  });
+
+  // Equipe (M1-10): a lista é só leitura (`staff.manage`); conceder e retirar grants e tirar o papel
+  // de Suporte exigem também a reautenticação recente. Cada mudança audita e encerra as sessões da
+  // pessoa (ADR 0008): ela entra de novo por link e passa a valer o que mudou.
+  routes.get('/team', deps.withDatabase, requireCapability('staff.manage'), async (c) =>
+    c.json({ members: await listTeam(c.var.db) }),
+  );
+
+  routes.post('/users/:id/grants', ...sensitive, async (c) => {
+    const parsed = grantBodySchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    const targetId = await targetUser(c);
+    if (!targetId) return c.json({ error: { code: 'not_found' } }, 404);
+    const actor = (await c.var.auth.api.getSession({ headers: c.req.raw.headers }))!.user;
+    try {
+      const changed = await grantCapability(c.var.db, {
+        actorId: actor.id,
+        targetId,
+        capability: parsed.data.capability,
+      });
+      return c.json({ status: 'ok', changed });
+    } catch (error) {
+      if (error instanceof TargetNotSupportError) {
+        return c.json({ error: { code: 'not_support' } }, 409);
+      }
+      if (error instanceof NotDelegableError) {
+        return c.json({ error: { code: 'invalid_request' } }, 400);
+      }
+      throw error;
+    }
+  });
+
+  routes.post('/users/:id/grants/revoke', ...sensitive, async (c) => {
+    const parsed = grantBodySchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    const targetId = await targetUser(c);
+    if (!targetId) return c.json({ error: { code: 'not_found' } }, 404);
+    const actor = (await c.var.auth.api.getSession({ headers: c.req.raw.headers }))!.user;
+    const changed = await revokeCapability(c.var.db, {
+      actorId: actor.id,
+      targetId,
+      capability: parsed.data.capability,
+    });
+    return c.json({ status: 'ok', changed });
+  });
+
+  // Tirar a pessoa do Suporte: perde o papel e os grants (o papel de Admin, se houver, não muda aqui).
+  routes.post('/users/:id/support/revoke', ...sensitive, async (c) => {
+    const targetId = await targetUser(c);
+    if (!targetId) return c.json({ error: { code: 'not_found' } }, 404);
+    const actor = (await c.var.auth.api.getSession({ headers: c.req.raw.headers }))!.user;
+    const changed = await revokeRole(c.var.db, { actorId: actor.id, targetId, role: 'support' });
     return c.json({ status: 'ok', changed });
   });
 

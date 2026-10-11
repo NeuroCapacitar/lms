@@ -6,6 +6,16 @@ import { normalizeEmail } from './email';
 /** Validade do convite de Staff (proposta: 7 dias; confirmar com o responsável). */
 export const INVITATION_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+/** Convite como a tela de equipe o recebe (nunca traz o token). */
+export interface InvitationDto {
+  id: string;
+  email: string;
+  status: InvitationStatus;
+  grants: string[];
+  expiresAt: string;
+  createdAt: string;
+}
+
 /** Estado exibido: `expired` é calculado (pendente com `expires_at` no passado). */
 export type InvitationStatus = 'pending' | 'expired' | 'accepted' | 'revoked';
 

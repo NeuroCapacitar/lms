@@ -1,3 +1,4 @@
+import { postAction, type ActionResult } from './action';
 import { UnauthenticatedError } from './profile';
 
 /** Cliente de "Segurança da conta" (M1-07). A sessão vive só no cookie HttpOnly. */
@@ -9,14 +10,7 @@ export interface SecurityDto {
 }
 
 /** Resultado de uma mudança de método: `reauth_required` pede o link de confirmação de identidade. */
-export type ChangeResult =
-  | 'ok'
-  | 'reauth_required'
-  | 'unauthenticated'
-  | 'invalid'
-  | 'forbidden'
-  | 'not_found'
-  | 'unavailable';
+export type ChangeResult = ActionResult;
 
 export async function fetchSecurity(): Promise<SecurityDto> {
   const response = await fetch('/api/me/security', { credentials: 'same-origin' });
@@ -29,29 +23,8 @@ async function change(
   path: string,
   body: unknown,
 ): Promise<{ result: ChangeResult; url?: string }> {
-  let response: Response;
-  try {
-    response = await fetch(path, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify(body),
-    });
-  } catch {
-    return { result: 'unavailable' };
-  }
-  if (response.ok) {
-    const data = (await response.json().catch(() => null)) as { url?: string } | null;
-    return data?.url ? { result: 'ok', url: data.url } : { result: 'ok' };
-  }
-  if (response.status === 401) return { result: 'unauthenticated' };
-  if (response.status === 400) return { result: 'invalid' };
-  if (response.status === 404) return { result: 'not_found' };
-  if (response.status === 403) {
-    const data = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
-    return { result: data?.error?.code === 'reauth_required' ? 'reauth_required' : 'forbidden' };
-  }
-  return { result: 'unavailable' };
+  const { result, data } = await postAction<{ url?: string }>(path, body);
+  return data?.url ? { result, url: data.url } : { result };
 }
 
 export const setPassword = async (password: string) =>

@@ -88,3 +88,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Rota nova de área logada deve ficar sob `/me/*` ou `/staff/*` (o portão cobre os dois prefixos) ou receber `requireAcceptedTerms()`; acrescente a rota à matriz de `test/pg/legal.pg.test.ts`.
 - O portão é o primeiro `getSession` da requisição e repassa os cookies renovados; um teste de cookie rolling falha se isso for removido.
 - `e2e/termos.spec.ts` simula `/api/me/legal`; telas de área logada novas devem usar `<RequireTerms>`.
+
+## Equipe e casca da Staff (M1-10)
+
+- `test/pg/team.pg.test.ts` prova o servidor (lista, grants, saída do Suporte, reautenticação, auditoria). **O `audit_log` é append-only e não se limpa entre testes**: filtre sempre pelo alvo (`targetId`), senão uma linha de outro teste engana a asserção.
+- `e2e/equipe.spec.ts` usa a API simulada **com estado** (convites, grants e suspensão mudam o que a tela recebe depois). Caixas de permissão só mudam depois da resposta do servidor: use `click()`, não `uncheck()`, e espere o resultado.
+- Seletores por nome ficam ambíguos quando o mesmo e-mail aparece em rótulo e botões: use `exact: true` ou escopo por região.
+- A casca da Staff substitui o layout público nas rotas `/staff/*` (`__root.tsx`); tela nova da Staff entra como filha de `staff.tsx` e ganha o item na navegação por capability.
