@@ -330,7 +330,7 @@ describe('o banco recusa o que o mecanismo não permite', () => {
     await acceptCurrentDocs(await person.login());
     await expectViolation(
       tools.db.delete(schema.legalDocumentVersion),
-      /terms_acceptance_document_version_id_legal_document_version_id_fk/,
+      /violates RESTRICT setting of foreign key constraint/,
     );
   });
 

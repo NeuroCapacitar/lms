@@ -13,10 +13,17 @@ import {
 } from '../../features/identity/profile';
 import { fetchProfile, saveProfile, UnauthenticatedError } from '../api/profile';
 import { Button } from '../components/ui/button';
+import { RequireTerms } from '../components/require-terms';
 import { TextField } from '../components/ui/field';
 import { setThemePreference } from '../theme';
 
-export const Route = createFileRoute('/conta/')({ component: Account });
+export const Route = createFileRoute('/conta/')({
+  component: () => (
+    <RequireTerms>
+      <Account />
+    </RequireTerms>
+  ),
+});
 
 const THEME_LABELS: Record<Theme, string> = {
   system: 'Seguir o sistema',

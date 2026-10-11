@@ -14,10 +14,15 @@ import {
   type ChangeResult,
 } from '../api/security';
 import { Button } from '../components/ui/button';
+import { RequireTerms } from '../components/require-terms';
 import { TextField } from '../components/ui/field';
 
 export const Route = createFileRoute('/conta/seguranca')({
-  component: AccountSecurity,
+  component: () => (
+    <RequireTerms>
+      <AccountSecurity />
+    </RequireTerms>
+  ),
   validateSearch: (search: Record<string, unknown>): { erro?: 'google' } =>
     search.erro === 'google' ? { erro: 'google' } : {},
 });

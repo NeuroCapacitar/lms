@@ -12,7 +12,17 @@ import type { AuthVars } from './types';
  */
 export function requireAcceptedTerms() {
   return createMiddleware<{ Bindings: Env; Variables: AuthVars }>(async (c, next) => {
-    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    // `returnHeaders`: este é o primeiro `getSession` da requisição e é ele quem renova a sessão
+    // rolling; se o cookie renovado não fosse repassado aqui, a rota (que já encontra a sessão em dia)
+    // não o reenviaria e o navegador o descartaria 7 dias após o login.
+    const result = await c.var.auth.api.getSession({
+      headers: c.req.raw.headers,
+      returnHeaders: true,
+    });
+    for (const cookie of result.headers.getSetCookie()) {
+      c.header('set-cookie', cookie, { append: true });
+    }
+    const session = result.response;
     if (session && !(await hasAcceptedCurrent(c.var.db, session.user.id))) {
       return c.json({ error: { code: 'terms_required' } }, 403);
     }

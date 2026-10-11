@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const LEGAL_KINDS = ['terms', 'privacy'] as const;
+const LEGAL_KINDS = ['terms', 'privacy'] as const;
 export type LegalKind = (typeof LEGAL_KINDS)[number];
 
 /** Uma versão de documento legal como a interface a recebe (o texto é do advogado do cliente). */
