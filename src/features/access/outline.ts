@@ -37,6 +37,8 @@ export interface CourseOutlineDto {
   /** Quando o curso foi concluído (ISO 8601), ou `null`. Histórico: não some se o currículo mudar. */
   completedAt: string | null;
   modules: OutlineModuleDto[];
+  /** `true` só na prévia da Staff (M3-07): nada é gravado e drip, sequência e direito são ignorados. */
+  preview?: true;
 }
 
 interface LessonNeighborDto {
@@ -51,4 +53,6 @@ export interface LessonViewDto {
   /** Aulas vizinhas na ordem do curso (só id e título; abrir uma bloqueada é recusado pelo servidor). */
   previous: LessonNeighborDto | null;
   next: LessonNeighborDto | null;
+  /** `true` só na prévia da Staff (M3-07). */
+  preview?: true;
 }

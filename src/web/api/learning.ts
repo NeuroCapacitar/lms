@@ -14,7 +14,9 @@ export type StudyResult<T> =
   | { kind: 'locked'; reason: LessonLockReason; releasesAt: string | null }
   | { kind: 'not_found' }
   | { kind: 'unauthenticated' }
-  | { kind: 'terms_required' };
+  | { kind: 'terms_required' }
+  /** Só a equipe usa esta área (prévia): a pessoa não tem papel de Staff. */
+  | { kind: 'forbidden' };
 
 async function readStudy<T>(path: string): Promise<StudyResult<T>> {
   const response = await fetch(path, { credentials: 'same-origin' });
@@ -27,6 +29,7 @@ async function readStudy<T>(path: string): Promise<StudyResult<T>> {
     } | null;
     const error = body?.error;
     if (error?.code === 'terms_required') return { kind: 'terms_required' };
+    if (error?.code === 'forbidden') return { kind: 'forbidden' };
     if (error?.code === 'lesson_locked') {
       return {
         kind: 'locked',
@@ -46,6 +49,13 @@ export const fetchOutline = (courseId: string) =>
 
 export const fetchLesson = (lessonId: string) =>
   readStudy<LessonViewDto>(`/api/lessons/${lessonId}`);
+
+/** Prévia de aluno da Staff (M3-07): as mesmas formas, só leitura, tudo liberado. */
+export const fetchPreviewOutline = (courseId: string) =>
+  readStudy<CourseOutlineDto>(`/api/staff/preview/courses/${courseId}/outline`);
+
+export const fetchPreviewLesson = (courseId: string, lessonId: string) =>
+  readStudy<LessonViewDto>(`/api/staff/preview/courses/${courseId}/lessons/${lessonId}`);
 
 /** Resposta de `POST /api/lessons/:id/complete`. */
 export interface CompleteLessonResponse {

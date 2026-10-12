@@ -67,7 +67,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** vídeo **nunca** conclui por aba aberta e não tem botão manual (M5); sem conclusão manual pela Staff; sem outbox/certificado agora (gancho é do M7-01). Momento de reconhecer a conclusão quando a retirada de uma aula deixa tudo concluído: **PENDENTE (decisão do responsável)**.
 
 ### M3-06 — Matrícula manual, suspensão de acesso e lista de inscritos
-**Dependências:** M3-01, M1-03 · **Estado:** `implemented` (verificação local; ver STATUS). Capability `access.grant` (nome do catálogo de domínio, no lugar de `enrollment.manage`).
+**Dependências:** M3-01, M1-03 · **Estado:** `verified` (CI, PR #64; ver STATUS). Capability `access.grant` (nome do catálogo de domínio, no lugar de `enrollment.manage`).
 **Objetivo:** a Staff com grant matricula uma pessoa com duração em meses e suspende acesso; qualquer Staff vê quem está inscrito.
 **Passos:**
 1. `POST /api/staff/enrollments` (`enrollment.manage`): pessoa **já cadastrada**, curso, meses (inteiro ≥1), motivo, `requestId` (vira `source_ref`, evita duplicidade); cria Entitlement `admin_grant` e recompõe o Enrollment; `audit_log`.
@@ -79,7 +79,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** não criar usuário pela matrícula (a pessoa se cadastra por link antes — limitação a confirmar); sem revogação por reembolso (M6); sem exceção de conclusão.
 
 ### M3-07 — Prévia de aluno (Staff, sem gravar progresso)
-**Dependências:** M3-03, M3-04, M1-10 · **Estado:** `not_started`
+**Dependências:** M3-03, M3-04, M1-10 · **Estado:** `implemented` (verificação local; ver STATUS).
 **Objetivo:** qualquer Staff abre o curso publicado como o aluno vê, para revisar o conteúdo, sem criar matrícula nem progresso.
 **Passos:**
 1. Rotas separadas `/api/staff/preview/courses/:id/outline` e `…/lessons/:lessonId` devolvendo o **mesmo formato** das rotas do aluno, com `preview: true`; acesso por papel Staff (sem grant); ignoram direito, drip e sequência.
