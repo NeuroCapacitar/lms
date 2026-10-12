@@ -31,7 +31,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** sem cron para expirar; sem `EnrollmentEpisode`; compra paga e revogação por reembolso são do M6; nunca ler a expiração só do cliente.
 
 ### M3-02 — Inscrição gratuita
-**Dependências:** M3-01, M2-04, M1-09 · **Estado:** `implemented` (verificação local; ver STATUS).
+**Dependências:** M3-01, M2-04, M1-09 · **Estado:** `verified` (CI, PR #61; ver STATUS).
 **Objetivo:** a pessoa logada clica em "Inscrever-se" num curso com Offer gratuita aberta e passa a ter acesso, uma única vez, sem pagamento.
 **Passos:**
 1. `POST /api/courses/:id/enroll` (autenticado, termos aceitos, conta ativa): valida que a Offer é `free`, está **aberta** e o curso está publicado (função de "adquirível" do M2-01); cria Entitlement `free_offer` e recompõe o Enrollment na mesma transação; retorna o estado de acesso.
@@ -43,7 +43,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** não criar Payment de R$ 0; compra e checkout são do M6; interesse por curso fechado é do M5.
 
 ### M3-03 — Resolução de aula, drip D+N e sequência
-**Dependências:** M3-01, M2-02 · **Estado:** `not_started`
+**Dependências:** M3-01, M2-02 · **Estado:** `implemented` (verificação local; ver STATUS). A tabela `lesson_completion` foi criada aqui (migration 0013); a escrita é do M3-04.
 **Objetivo:** o aluno vê o mapa do curso e só abre as aulas liberadas para a situação dele; o servidor decide sempre.
 **Passos:**
 1. Função pura de domínio `computeLessonAccess` (módulo `drip_days`, `anchor_at`, `agora`, `sequence_mode`, aulas obrigatórias concluídas, aula opcional, retirada) com códigos de motivo: `no_access`, `expired`, `suspended`, `drip_locked` (com data de liberação), `sequence_locked`, `retired`.

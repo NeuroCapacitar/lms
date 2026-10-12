@@ -156,3 +156,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - O corpo de erro de oferta indisponível tem de ser **byte a byte o mesmo** para oferta pausada, arquivada, em rascunho, de outro curso e inexistente (sem vazamento do que existe).
 - `returnTo`: qualquer mudança em `safeReturnTo` ganha caso malicioso na tabela de `return-to.test.ts`; o e2e confere que valor externo, `//host`, `/api/*` e `javascript:` nunca são guardados nem seguidos, e que o valor adulterado no `localStorage` é revalidado na leitura.
 - A regra `acesso-nao-importa-pagamentos` é provada de verdade criando um import proibido temporário e rodando `bun run arch` (deve falhar); `scripts/arch-rules.test.ts` confere o contrato da regra.
+
+## Estudo: drip e sequência (M3-03)
+
+- **Relógio injetado, nunca espera:** as rotas de estudo recebem `clock` (`apiApp({ clock })`). Teste "daqui a N dias" mudando o relógio e confira a FRONTEIRA do dia civil de São Paulo (02:59:59.999Z bloqueia, 03:00:00.000Z abre). No Playwright use `page.clock.setFixedTime` (só afeta o rótulo; quem decide é o servidor).
+- **Vazamento de conteúdo:** a resposta de aula bloqueada e o mapa são conferidos **como texto**: sem o campo `body`, sem o título da aula bloqueada e sem o texto das aulas. Ao acrescentar campo ao mapa, atualize essa lista.
+- Para criar conclusões em teste, insira em `lesson_completion` direto (a rota de escrita é do M3-04); o banco exige matrícula e a aula do mesmo curso, e a linha é append-only: a limpeza deve `TRUNCATE` `lesson_completion` ANTES de `enrollment` e `lesson`.
+- Espaços em texto formado por JSX: título e nota (`(libera em ...)`, `— motivo`) precisam de `{' '}` entre eles, senão o nome acessível sai colado ("Aprofundando(libera").

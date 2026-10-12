@@ -16,12 +16,19 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 /** "Você está inscrito. Acesso até dd/mm/aaaa." (a pessoa já tem acesso válido). */
-export function AccessStatus({ access }: { access: AccessDto }) {
+export function AccessStatus({ access, courseId }: { access: AccessDto; courseId: string }) {
   return (
-    <p role="status" className="font-medium text-[var(--text-success)]">
-      Você está inscrito
-      {access.expiresAt ? `. Acesso até ${formatAccessDate(access.expiresAt)}.` : '.'}
-    </p>
+    <div className="grid gap-2">
+      <p role="status" className="font-medium text-[var(--text-success)]">
+        Você está inscrito
+        {access.expiresAt ? `. Acesso até ${formatAccessDate(access.expiresAt)}.` : '.'}
+      </p>
+      <div>
+        <Link to="/estudar/$courseId" params={{ courseId }} className="underline">
+          Ir para o curso
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -56,7 +63,7 @@ export function EnrollControl({
       </Link>
     );
   }
-  if (access.hasAccess) return <AccessStatus access={access} />;
+  if (access.hasAccess) return <AccessStatus access={access} courseId={courseId} />;
   if (access.reason === 'suspended') {
     return (
       <p role="status" className="font-medium">
