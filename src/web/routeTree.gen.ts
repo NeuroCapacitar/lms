@@ -27,6 +27,8 @@ import { Route as EstudarCourseIdIndexRouteImport } from './routes/estudar.$cour
 import { Route as StaffCursosIndexRouteImport } from './routes/staff.cursos.index'
 import { Route as StaffCursosCourseIdRouteImport } from './routes/staff.cursos.$courseId'
 import { Route as EstudarCourseIdAulasLessonIdRouteImport } from './routes/estudar.$courseId.aulas.$lessonId'
+import { Route as StaffPreviaCourseIdIndexRouteImport } from './routes/staff.previa.$courseId.index'
+import { Route as StaffPreviaCourseIdAulasLessonIdRouteImport } from './routes/staff.previa.$courseId.aulas.$lessonId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -119,6 +121,18 @@ const EstudarCourseIdAulasLessonIdRoute =
     path: '/estudar/$courseId/aulas/$lessonId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const StaffPreviaCourseIdIndexRoute =
+  StaffPreviaCourseIdIndexRouteImport.update({
+    id: '/previa/$courseId/',
+    path: '/previa/$courseId/',
+    getParentRoute: () => StaffRoute,
+  } as any)
+const StaffPreviaCourseIdAulasLessonIdRoute =
+  StaffPreviaCourseIdAulasLessonIdRouteImport.update({
+    id: '/previa/$courseId/aulas/$lessonId',
+    path: '/previa/$courseId/aulas/$lessonId',
+    getParentRoute: () => StaffRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -139,6 +153,8 @@ export interface FileRoutesByFullPath {
   '/estudar/$courseId/': typeof EstudarCourseIdIndexRoute
   '/staff/cursos/': typeof StaffCursosIndexRoute
   '/estudar/$courseId/aulas/$lessonId': typeof EstudarCourseIdAulasLessonIdRoute
+  '/staff/previa/$courseId/': typeof StaffPreviaCourseIdIndexRoute
+  '/staff/previa/$courseId/aulas/$lessonId': typeof StaffPreviaCourseIdAulasLessonIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -158,6 +174,8 @@ export interface FileRoutesByTo {
   '/estudar/$courseId': typeof EstudarCourseIdIndexRoute
   '/staff/cursos': typeof StaffCursosIndexRoute
   '/estudar/$courseId/aulas/$lessonId': typeof EstudarCourseIdAulasLessonIdRoute
+  '/staff/previa/$courseId': typeof StaffPreviaCourseIdIndexRoute
+  '/staff/previa/$courseId/aulas/$lessonId': typeof StaffPreviaCourseIdAulasLessonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -179,6 +197,8 @@ export interface FileRoutesById {
   '/estudar/$courseId/': typeof EstudarCourseIdIndexRoute
   '/staff/cursos/': typeof StaffCursosIndexRoute
   '/estudar/$courseId/aulas/$lessonId': typeof EstudarCourseIdAulasLessonIdRoute
+  '/staff/previa/$courseId/': typeof StaffPreviaCourseIdIndexRoute
+  '/staff/previa/$courseId/aulas/$lessonId': typeof StaffPreviaCourseIdAulasLessonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +221,8 @@ export interface FileRouteTypes {
     | '/estudar/$courseId/'
     | '/staff/cursos/'
     | '/estudar/$courseId/aulas/$lessonId'
+    | '/staff/previa/$courseId/'
+    | '/staff/previa/$courseId/aulas/$lessonId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -220,6 +242,8 @@ export interface FileRouteTypes {
     | '/estudar/$courseId'
     | '/staff/cursos'
     | '/estudar/$courseId/aulas/$lessonId'
+    | '/staff/previa/$courseId'
+    | '/staff/previa/$courseId/aulas/$lessonId'
   id:
     | '__root__'
     | '/'
@@ -240,6 +264,8 @@ export interface FileRouteTypes {
     | '/estudar/$courseId/'
     | '/staff/cursos/'
     | '/estudar/$courseId/aulas/$lessonId'
+    | '/staff/previa/$courseId/'
+    | '/staff/previa/$courseId/aulas/$lessonId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -387,6 +413,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EstudarCourseIdAulasLessonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/previa/$courseId/': {
+      id: '/staff/previa/$courseId/'
+      path: '/previa/$courseId'
+      fullPath: '/staff/previa/$courseId/'
+      preLoaderRoute: typeof StaffPreviaCourseIdIndexRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff/previa/$courseId/aulas/$lessonId': {
+      id: '/staff/previa/$courseId/aulas/$lessonId'
+      path: '/previa/$courseId/aulas/$lessonId'
+      fullPath: '/staff/previa/$courseId/aulas/$lessonId'
+      preLoaderRoute: typeof StaffPreviaCourseIdAulasLessonIdRouteImport
+      parentRoute: typeof StaffRoute
+    }
   }
 }
 
@@ -395,6 +435,8 @@ interface StaffRouteChildren {
   StaffIndexRoute: typeof StaffIndexRoute
   StaffCursosCourseIdRoute: typeof StaffCursosCourseIdRoute
   StaffCursosIndexRoute: typeof StaffCursosIndexRoute
+  StaffPreviaCourseIdIndexRoute: typeof StaffPreviaCourseIdIndexRoute
+  StaffPreviaCourseIdAulasLessonIdRoute: typeof StaffPreviaCourseIdAulasLessonIdRoute
 }
 
 const StaffRouteChildren: StaffRouteChildren = {
@@ -402,6 +444,8 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffIndexRoute: StaffIndexRoute,
   StaffCursosCourseIdRoute: StaffCursosCourseIdRoute,
   StaffCursosIndexRoute: StaffCursosIndexRoute,
+  StaffPreviaCourseIdIndexRoute: StaffPreviaCourseIdIndexRoute,
+  StaffPreviaCourseIdAulasLessonIdRoute: StaffPreviaCourseIdAulasLessonIdRoute,
 }
 
 const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)

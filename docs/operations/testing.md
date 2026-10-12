@@ -179,3 +179,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Os testes de auditoria **filtram por alvo** (`targetId`): o `audit_log` é append-only e não é truncado entre os testes.
 - O "sem Order nem Payment" é conferido olhando o catálogo do banco (nenhuma tabela `order`, `payment` ou `checkout` existe neste marco).
 - Qualquer layout novo da casca da Staff entra no teste de 375 px: o cabeçalho já estourou a largura por causa do seletor de tema.
+
+## Prévia de aluno da Staff (M3-07)
+
+- **Sem efeito colateral se prova no BANCO:** conte as linhas de `entitlement`, `enrollment`, `lesson_completion`, `course_completion` e `audit_log` antes e depois de percorrer o curso inteiro na prévia; têm de ser iguais (e zero para uma Staff sem matrícula).
+- **"Mesmo formato" se prova comparando as chaves** da resposta da prévia com as da resposta real do aluno (mapa, módulo, aula e a aula inteira): a prévia acrescenta só `preview: true`. Ao acrescentar campo ao mapa ou à aula, o teste pega a divergência.
+- **Só leitura:** teste POST, PUT, PATCH e DELETE em cada caminho da prévia (inclusive um `/complete` inventado): têm de dar 404, e a contagem de linhas não muda.
+- No e2e, a tela da prévia não pode chamar nenhuma rota `/api/courses/*` nem `/api/lessons/*` (as do aluno) nem enviar pedido de escrita; o botão "Concluir aula" fica desabilitado com descrição acessível.
+- As telas de estudo são UMA só (`src/web/study`, modo aluno ou prévia): mudança nelas roda os specs `estudo` e `previa` juntos.

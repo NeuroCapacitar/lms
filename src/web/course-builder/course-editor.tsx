@@ -168,6 +168,12 @@ export function CourseEditor({ courseId }: { courseId: string }) {
           : 'Você tem acesso só de leitura a este curso.'}
       </p>
 
+      <p className="mb-6">
+        <Link to="/staff/previa/$courseId" params={{ courseId }}>
+          Ver como aluno (prévia do curso publicado)
+        </Link>
+      </p>
+
       <div
         className="mb-6 flex flex-wrap items-center gap-4 rounded-lg border p-3"
         aria-label="Rascunho"

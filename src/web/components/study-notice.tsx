@@ -54,6 +54,13 @@ export function StudyNotice<T>({ result, returnTo }: { result: StudyResult<T>; r
       </p>
     );
   }
+  if (result.kind === 'forbidden') {
+    return (
+      <p role="alert" className="max-w-prose">
+        Esta área é só da equipe.
+      </p>
+    );
+  }
   if (result.kind === 'denied') {
     return (
       <div className="grid max-w-prose gap-3">
