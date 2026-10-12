@@ -2,6 +2,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { confirmLink, confirmReauth, type ConfirmReauthResult } from '../api/auth';
+import { takeReturnTo } from '../return-to';
 import { Button } from '../components/ui/button';
 
 export const Route = createFileRoute('/entrar/confirmar')({ component: ConfirmSignIn });
@@ -61,6 +62,12 @@ function ConfirmSignIn() {
     }
     const result = await confirmLink(token);
     if (result === 'ok') {
+      // Volta à página de onde a pessoa veio (caminho interno validado) ou à página inicial.
+      const back = takeReturnTo();
+      if (back) {
+        window.location.assign(back);
+        return;
+      }
       await navigate({ to: '/' });
       return;
     }

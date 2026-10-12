@@ -18,7 +18,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 ---
 
 ### M3-01 — Entitlement e Enrollment transacionais
-**Dependências:** M1-03, M2-01, M2-02 · **Estado:** `implemented` (verificação local; ver STATUS). Empilhamento ainda PENDENTE de confirmação.
+**Dependências:** M1-03, M2-01, M2-02 · **Estado:** `verified` (CI, PR #60; ver STATUS). Empilhamento ainda PENDENTE de confirmação.
 **Objetivo:** existe um modelo de direitos de acesso e uma função única `resolveAccess(pessoa, curso, agora)` que diz se há acesso, até quando e por quê.
 **Passos:**
 1. Tabela `entitlement`: pessoa, curso, `offer_id` (nulo em matrícula manual), `source` (`free_offer|purchase|admin_grant`), `source_ref` (único por `source`, serve de idempotência), `starts_at`, `expires_at` (> `starts_at`), `revoked_at`/motivo, concedido por.
@@ -31,7 +31,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** sem cron para expirar; sem `EnrollmentEpisode`; compra paga e revogação por reembolso são do M6; nunca ler a expiração só do cliente.
 
 ### M3-02 — Inscrição gratuita
-**Dependências:** M3-01, M2-04, M1-09 · **Estado:** `not_started`
+**Dependências:** M3-01, M2-04, M1-09 · **Estado:** `implemented` (verificação local; ver STATUS).
 **Objetivo:** a pessoa logada clica em "Inscrever-se" num curso com Offer gratuita aberta e passa a ter acesso, uma única vez, sem pagamento.
 **Passos:**
 1. `POST /api/courses/:id/enroll` (autenticado, termos aceitos, conta ativa): valida que a Offer é `free`, está **aberta** e o curso está publicado (função de "adquirível" do M2-01); cria Entitlement `free_offer` e recompõe o Enrollment na mesma transação; retorna o estado de acesso.

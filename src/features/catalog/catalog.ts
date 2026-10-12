@@ -178,6 +178,7 @@ export interface PublicOfferDto {
  * publicado). `content` são os textos publicados (nulo enquanto o currículo não foi publicado).
  */
 export interface PublicCourseDto {
+  id: string;
   slug: string;
   sequenceMode: SequenceMode;
   acquirable: boolean;

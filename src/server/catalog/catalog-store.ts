@@ -390,6 +390,7 @@ function toPublicCourse(
     maxInstallments: item.maxInstallments,
   }));
   return {
+    id: row.id,
     slug: row.slug,
     sequenceMode: row.sequenceMode as SequenceMode,
     acquirable: publicOffers.length > 0,

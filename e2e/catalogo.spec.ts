@@ -5,24 +5,35 @@ const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 const COURSES = [
   {
+    id: 'c-neuro',
     slug: 'neuro',
     title: 'Neurociência aplicada',
     summary: 'Atenção, memória e aprendizagem na prática clínica.',
     workloadHours: 12,
     sequenceMode: 'guided',
     availability: 'open',
-    offer: { kind: 'paid', priceCents: 19_700, accessMonths: 12, maxInstallments: 12 },
+    offer: {
+      id: 'o-neuro',
+      kind: 'paid',
+      priceCents: 19_700,
+      accessMonths: 12,
+      maxInstallments: 12,
+    },
+    access: { hasAccess: false, reason: 'no_access', expiresAt: null },
   },
   {
+    id: 'c-demo',
     slug: 'demo',
     title: 'Curso Demonstrativo',
     summary: 'Conteúdo sintético para conferir a plataforma.',
     workloadHours: 3,
     sequenceMode: 'guided',
     availability: 'open',
-    offer: { kind: 'free', priceCents: 0, accessMonths: 3, maxInstallments: 1 },
+    offer: { id: 'o-demo', kind: 'free', priceCents: 0, accessMonths: 3, maxInstallments: 1 },
+    access: { hasAccess: false, reason: 'no_access', expiresAt: null },
   },
   {
+    id: 'c-antigo',
     slug: 'antigo',
     title: 'Introdução antiga',
     summary: '',
@@ -30,6 +41,7 @@ const COURSES = [
     sequenceMode: 'free',
     availability: 'closed',
     offer: null,
+    access: { hasAccess: false, reason: 'no_access', expiresAt: null },
   },
 ];
 
@@ -101,7 +113,14 @@ test.describe('estados da tela', () => {
       '/cursos/antigo',
     );
     // a inscrição é do M3-02: nenhum curso tem botão ainda
-    await expect(page.getByRole('button', { name: /inscrever/i })).toHaveCount(0);
+    // só o curso gratuito aberto tem ação (a inscrição, M3-02); o pago e o encerrado não têm
+    await expect(page.getByRole('button', { name: /inscrever/i })).toHaveCount(1);
+    await expect(
+      page
+        .getByRole('listitem')
+        .filter({ hasText: 'Curso Demonstrativo' })
+        .getByRole('button', { name: 'Inscrever-se' }),
+    ).toHaveCount(1);
   });
 
   test('carregando, depois vazio', async ({ page }) => {

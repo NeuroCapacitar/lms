@@ -12,6 +12,7 @@ import { formatBrl } from '../../features/catalog/money';
 import { fetchCatalog } from '../api/courses';
 import { ForbiddenError } from '../api/staff';
 import { UnauthenticatedError } from '../api/profile';
+import { AccessStatus, EnrollControl } from '../components/enroll-control';
 import { RequireTerms } from '../components/require-terms';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
@@ -163,6 +164,16 @@ function Catalog() {
                       ? `Inscrições abertas · ${offerLine(course)}`
                       : 'Inscrições encerradas'}
                   </p>
+                  {course.access.hasAccess ? (
+                    <AccessStatus access={course.access} />
+                  ) : course.availability === 'open' && course.offer?.kind === 'free' ? (
+                    <EnrollControl
+                      courseId={course.id}
+                      offerId={course.offer.id}
+                      access={course.access}
+                      returnTo="/cursos"
+                    />
+                  ) : null}
                 </li>
               ))}
             </ul>
