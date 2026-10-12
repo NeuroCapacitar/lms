@@ -21,7 +21,11 @@ initWorkersLogger({
   redact: {
     paths: [...SECRET_KEY_PATHS],
     // E-mail por padrão próprio: o mascaramento parcial dos `builtins` ainda é dado pessoal.
-    builtins: ['creditCard', 'ipv4', 'phone', 'jwt', 'bearer', 'iban'],
+    // Sem `creditCard`, `phone` e `iban`: eles mascaravam pedaços do id de correlação (um UUID com
+    // dígitos em sequência virava "****4806-****9012") e o suporte não achava o id no log. O log não tem
+    // corpo, cabeçalho nem query string, então não há telefone nem cartão para proteger; e-mail, token,
+    // link de acesso, cookie e segredo continuam redigidos pelos padrões e pelos caminhos abaixo.
+    builtins: ['ipv4', 'jwt', 'bearer'],
     patterns: [new RegExp(ACCESS_LINK_PATTERN.source, 'g'), new RegExp(EMAIL_PATTERN.source, 'g')],
     replacement: REDACTED,
   },

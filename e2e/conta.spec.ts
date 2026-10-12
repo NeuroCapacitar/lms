@@ -30,6 +30,33 @@ test.describe('Minha conta (/conta)', () => {
     await expect(page).toHaveURL(/\/entrar$/);
   });
 
+  test('"Sair da conta" encerra a sessão (um POST) e volta à página inicial', async ({ page }) => {
+    await page.route('**/api/me/profile', (route) => route.fulfill({ json: PROFILE }));
+    const calls: string[] = [];
+    await page.route('**/api/auth/sign-out', (route) => {
+      calls.push(route.request().method());
+      return route.fulfill({ json: { success: true } });
+    });
+    await page.goto('/conta');
+    await page.getByRole('button', { name: 'Sair da conta' }).click();
+    await expect(page).toHaveURL(/localhost:\d+\/$/);
+    expect(calls).toEqual(['POST']);
+  });
+
+  test('"Sair da conta": se o servidor falha, avisa e a pessoa continua na tela para tentar de novo', async ({
+    page,
+  }) => {
+    await page.route('**/api/me/profile', (route) => route.fulfill({ json: PROFILE }));
+    await page.route('**/api/auth/sign-out', (route) => route.fulfill({ status: 500, json: {} }));
+    await page.goto('/conta');
+    await page.getByRole('button', { name: 'Sair da conta' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Não foi possível sair agora. Tente novamente.',
+    );
+    await expect(page.getByRole('button', { name: 'Sair da conta' })).toBeEnabled();
+    await expect(page).toHaveURL(/\/conta$/);
+  });
+
   test('mostra o perfil, tema padrão "Seguir o sistema" e autoavanço desligado', async ({
     page,
   }) => {

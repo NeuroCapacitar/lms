@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { withDatabase } from '../db/client';
-import { authRoutes } from './auth/routes';
+import { authRoutes, type AuthRouteOverrides } from './auth/routes';
 import { injectMeta, serveCoursePage } from './catalog/course-page';
 import { loadPublicCoursePage } from './catalog/public-page';
 import { publicCourseRoutes } from './catalog/public-routes';
@@ -16,7 +16,7 @@ import { sentryMiddleware } from './sentry';
  * Composição HTTP do Worker. Aqui só entram adapters de entrada; regras de negócio
  * ficam em `src/features` e nunca importam Hono (ver docs/architecture.md).
  */
-export function createApp() {
+export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
   const app = new Hono<{ Bindings: Env } & LogVariables>();
 
   app.use(sentryMiddleware(app));
@@ -52,7 +52,7 @@ export function createApp() {
     }),
   );
 
-  app.route('/api', authRoutes());
+  app.route('/api', authRoutes(options.auth));
 
   // Qualquer /api desconhecida devolve JSON, nunca o HTML da SPA.
   app.notFound((c) => c.json({ error: { code: 'not_found' } }, 404));

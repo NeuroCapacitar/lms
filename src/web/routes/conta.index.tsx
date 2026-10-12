@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import {
@@ -11,6 +11,7 @@ import {
   type ProfileFormValues,
   type Theme,
 } from '../../features/identity/profile';
+import { signOut } from '../api/auth';
 import { fetchProfile, saveProfile, UnauthenticatedError } from '../api/profile';
 import { Button } from '../components/ui/button';
 import { RequireTerms } from '../components/require-terms';
@@ -61,6 +62,21 @@ function Account() {
       setThemePreference(profile.data.theme);
     }
   }, [profile.data, form]);
+
+  const [leaving, setLeaving] = useState(false);
+  const [leaveFailed, setLeaveFailed] = useState(false);
+  async function leave() {
+    setLeaving(true);
+    setLeaveFailed(false);
+    if (await signOut()) {
+      // Nada da pessoa fica em memória: o cache de consultas é descartado e a página recarrega.
+      queryClient.clear();
+      window.location.assign('/');
+      return;
+    }
+    setLeaving(false);
+    setLeaveFailed(true);
+  }
 
   const save = useMutation({
     mutationFn: (values: ProfileFormValues) =>
@@ -176,6 +192,23 @@ function Account() {
           </Button>
         </div>
       </form>
+
+      <section aria-labelledby="sessao-titulo" className="mt-12 grid max-w-md gap-3">
+        <h2 id="sessao-titulo" className="text-xl font-semibold">
+          Sessão
+        </h2>
+        <p className="text-[var(--text-muted)]">Encerra o acesso neste aparelho.</p>
+        {leaveFailed ? (
+          <p role="alert" className="font-medium text-[var(--text-danger)]">
+            Não foi possível sair agora. Tente novamente.
+          </p>
+        ) : null}
+        <div>
+          <Button type="button" variant="secondary" disabled={leaving} onClick={() => void leave()}>
+            {leaving ? 'Saindo…' : 'Sair da conta'}
+          </Button>
+        </div>
+      </section>
     </>
   );
 }

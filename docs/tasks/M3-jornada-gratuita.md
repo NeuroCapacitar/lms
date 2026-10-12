@@ -79,7 +79,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** não criar usuário pela matrícula (a pessoa se cadastra por link antes — limitação a confirmar); sem revogação por reembolso (M6); sem exceção de conclusão.
 
 ### M3-07 — Prévia de aluno (Staff, sem gravar progresso)
-**Dependências:** M3-03, M3-04, M1-10 · **Estado:** `implemented` (verificação local; ver STATUS).
+**Dependências:** M3-03, M3-04, M1-10 · **Estado:** `verified` (CI, PR #65; ver STATUS).
 **Objetivo:** qualquer Staff abre o curso publicado como o aluno vê, para revisar o conteúdo, sem criar matrícula nem progresso.
 **Passos:**
 1. Rotas separadas `/api/staff/preview/courses/:id/outline` e `…/lessons/:lessonId` devolvendo o **mesmo formato** das rotas do aluno, com `preview: true`; acesso por papel Staff (sem grant); ignoram direito, drip e sequência.
@@ -90,7 +90,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** não é impersonation nem login como o aluno; prévia de **rascunho** é do Course Builder (M2-03).
 
 ### M3-05 — Primeira jornada E2E gratuita
-**Dependências:** M3-02, M3-03, M3-04, M3-06, M3-07 · **Estado:** `not_started`
+**Dependências:** M3-02, M3-03, M3-04, M3-06, M3-07 · **Estado:** `implemented` em ambiente de TESTE (`bun run test:journey`, API real + Postgres 18); **a execução em Staging, que o aceite exige, está PENDENTE** (ver STATUS).
 **Objetivo:** provar de ponta a ponta, em Staging, a jornada gratuita e as ações de Staff, sem dependência do Asaas.
 **Passos:**
 1. Usar o curso demonstrativo (M2-07) e dois usuários sintéticos (aluno e Suporte com grant).

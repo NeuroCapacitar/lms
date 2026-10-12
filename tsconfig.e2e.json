@@ -3,5 +3,10 @@
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },
-  "include": ["e2e/**/*.ts", "playwright.config.ts"]
+  "include": [
+    "e2e/**/*.ts",
+    "e2e-journey/*.spec.ts",
+    "playwright.config.ts",
+    "playwright.journey.config.ts"
+  ]
 }

@@ -93,6 +93,9 @@ jobs:
         run: |
           bun x playwright install --with-deps chromium
           bun run test:e2e
+      - name: Jornada E2E gratuita (M3-05, API real + Postgres 18)
+        if: ${{ !cancelled() }}
+        run: bun run test:journey
       - name: Build do Worker por ambiente + preflight
         if: ${{ !cancelled() }}
         run: |

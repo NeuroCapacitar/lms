@@ -40,6 +40,7 @@
     "test/pg/completion.pg.test.ts",
     "test/pg/manual-enrollment.pg.test.ts",
     "test/pg/preview.pg.test.ts",
+    "e2e-journey/server.ts",
     "scripts/db/guards.ts",
     "test/pg/staff-invitation.pg.test.ts",
     "test/pg/bootstrap.pg.test.ts",

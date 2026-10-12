@@ -7,9 +7,18 @@
     "scripts/**/*.test.ts",
     "scripts/db/*.integration.ts",
     "test/**/*.test.ts",
-    "e2e/**/*.spec.ts"
+    "e2e/**/*.spec.ts",
+    "e2e-journey/*.ts",
+    "playwright.journey.config.ts"
   ],
-  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}", "*.ts", "test/**/*.ts", "e2e/**/*.ts"],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.{ts,mjs}",
+    "*.ts",
+    "test/**/*.ts",
+    "e2e/**/*.ts",
+    "e2e-journey/**/*.ts"
+  ],
   "ignore": ["src/web/routeTree.gen.ts"],
   "ignoreDependencies": [
     "@swc/core",
