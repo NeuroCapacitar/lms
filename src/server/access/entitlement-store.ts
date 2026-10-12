@@ -1,14 +1,14 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
 import type { Database } from '../../db/client';
-import { enrollment, entitlement } from '../../db/schema';
+import { enrollment, entitlement, userSuspension } from '../../db/schema';
 import {
   addCalendarMonths,
   decideAccess,
   effectiveExpiry,
   type AccessResult,
 } from '../../features/access/access';
-import { auditEvent, isSuspended } from '../auth/access-store';
+import { auditEvent } from '../auth/access-store';
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
@@ -192,6 +192,44 @@ export async function revokeEntitlement(
 }
 
 /**
+ * A decisão de acesso DENTRO de uma transação já aberta: lê a matrícula, os direitos e a suspensão da
+ * conta e entrega à função pura. É a mesma decisão de `resolveAccess`; existe para quem precisa
+ * decidir e escrever na MESMA transação (ex.: concluir uma aula, M3-04).
+ */
+export async function resolveAccessIn(
+  tx: Tx,
+  userId: string,
+  courseId: string,
+  now: Date,
+): Promise<AccessResult> {
+  const [suspension] = await tx
+    .select({ id: userSuspension.id })
+    .from(userSuspension)
+    .where(and(eq(userSuspension.userId, userId), isNull(userSuspension.liftedAt)))
+    .limit(1);
+  const [row] = await tx
+    .select({ anchorAt: enrollment.anchorAt, suspendedAt: enrollment.suspendedAt })
+    .from(enrollment)
+    .where(and(eq(enrollment.userId, userId), eq(enrollment.courseId, courseId)));
+  const rows = row
+    ? await tx
+        .select({
+          startsAt: entitlement.startsAt,
+          expiresAt: entitlement.expiresAt,
+          revokedAt: entitlement.revokedAt,
+        })
+        .from(entitlement)
+        .where(and(eq(entitlement.userId, userId), eq(entitlement.courseId, courseId)))
+    : [];
+  return decideAccess({
+    enrollment: row ?? null,
+    accountSuspended: suspension !== undefined,
+    entitlements: rows,
+    now,
+  });
+}
+
+/**
  * A ÚNICA decisão de acesso do servidor: lê a matrícula, os direitos e a suspensão da conta numa
  * leitura consistente e entrega à função pura. `agora` vem de quem chama; a expiração é avaliada a
  * cada chamada, sem tarefa agendada. A interface só reflete este resultado.
@@ -202,30 +240,8 @@ export async function resolveAccess(
   courseId: string,
   now: Date,
 ): Promise<AccessResult> {
-  const accountSuspended = await isSuspended(db, userId);
-  return db.transaction(
-    async (tx) => {
-      const [row] = await tx
-        .select({ anchorAt: enrollment.anchorAt, suspendedAt: enrollment.suspendedAt })
-        .from(enrollment)
-        .where(and(eq(enrollment.userId, userId), eq(enrollment.courseId, courseId)));
-      const rows = row
-        ? await tx
-            .select({
-              startsAt: entitlement.startsAt,
-              expiresAt: entitlement.expiresAt,
-              revokedAt: entitlement.revokedAt,
-            })
-            .from(entitlement)
-            .where(and(eq(entitlement.userId, userId), eq(entitlement.courseId, courseId)))
-        : [];
-      return decideAccess({
-        enrollment: row ?? null,
-        accountSuspended,
-        entitlements: rows,
-        now,
-      });
-    },
-    { isolationLevel: 'repeatable read', accessMode: 'read only' },
-  );
+  return db.transaction((tx) => resolveAccessIn(tx, userId, courseId, now), {
+    isolationLevel: 'repeatable read',
+    accessMode: 'read only',
+  });
 }

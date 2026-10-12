@@ -1,3 +1,4 @@
+import { postAction } from './action';
 import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outline';
 import type { LessonLockReason } from '../../features/access/lesson-access';
 
@@ -45,3 +46,16 @@ export const fetchOutline = (courseId: string) =>
 
 export const fetchLesson = (lessonId: string) =>
   readStudy<LessonViewDto>(`/api/lessons/${lessonId}`);
+
+/** Resposta de `POST /api/lessons/:id/complete`. */
+export interface CompleteLessonResponse {
+  status: 'completed' | 'already_completed';
+  progress: { completed: number; total: number; percent: number };
+  courseCompleted: boolean;
+  /** `true` só na chamada que criou a conclusão do curso (mensagem de parabéns). */
+  courseJustCompleted: boolean;
+  courseCompletedAt: string | null;
+}
+
+export const completeLesson = (lessonId: string) =>
+  postAction<CompleteLessonResponse>(`/api/lessons/${lessonId}/complete`, {});

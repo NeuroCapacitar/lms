@@ -97,7 +97,10 @@ async function readDraftTree(tx: Tx | Database, courseId: string): Promise<Curri
 }
 
 /** Lê a árvore PUBLICADA ativa (sem o que foi aposentado). */
-async function readPublishedTree(tx: Tx | Database, courseId: string): Promise<CurriculumTree> {
+export async function readPublishedTree(
+  tx: Tx | Database,
+  courseId: string,
+): Promise<CurriculumTree> {
   const [details] = await tx
     .select()
     .from(courseContent)
