@@ -13,6 +13,8 @@ const doc = (text: string) => ({
 const OUTLINE = {
   course: { id: COURSE_ID, title: 'Curso Demonstrativo', sequenceMode: 'guided' },
   access: { hasAccess: true, reason: 'ok', expiresAt: '2027-01-10T12:00:00.000Z' },
+  progress: { completed: 1, total: 3, percent: 33 },
+  completedAt: null,
   modules: [
     {
       id: 'm1',
@@ -420,4 +422,164 @@ test.describe('entradas e acessibilidade', () => {
       expect(overflow, path).toBeLessThanOrEqual(0);
     }
   });
+});
+
+test.describe('progresso e conclusão (M3-04)', () => {
+  test('o mapa mostra o progresso das obrigatórias e avisa que as opcionais não contam', async ({
+    page,
+  }) => {
+    await stub(page);
+    await outlineApi(page, 200, OUTLINE);
+    await page.goto(`/estudar/${COURSE_ID}`);
+    await expect(
+      page.getByText('Progresso: 33% (1 de 3 aulas obrigatórias concluídas)'),
+    ).toBeVisible();
+    const bar = page.getByRole('progressbar', { name: /Progresso: 33%/ });
+    await expect(bar).toHaveAttribute('value', '1');
+    await expect(bar).toHaveAttribute('max', '3');
+    await expect(page.getByText('As aulas opcionais não entram no progresso.')).toBeVisible();
+    await expect(page.getByText(/Você concluiu este curso/)).toHaveCount(0);
+  });
+
+  test('curso concluído: mensagem com a data, mesmo se o percentual caiu depois', async ({
+    page,
+  }) => {
+    await stub(page);
+    await outlineApi(page, 200, {
+      ...OUTLINE,
+      progress: { completed: 3, total: 4, percent: 75 },
+      completedAt: '2026-12-01T15:00:00.000Z',
+    });
+    await page.goto(`/estudar/${COURSE_ID}`);
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Você concluiu este curso em 01/12/2026.' }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Progresso: 75% (3 de 4 aulas obrigatórias concluídas)'),
+    ).toBeVisible();
+  });
+
+  test('curso sem aulas obrigatórias: aviso em vez da barra', async ({ page }) => {
+    await stub(page);
+    await outlineApi(page, 200, { ...OUTLINE, progress: { completed: 0, total: 0, percent: 0 } });
+    await page.goto(`/estudar/${COURSE_ID}`);
+    await expect(page.getByText('Este curso ainda não tem aulas obrigatórias.')).toBeVisible();
+    await expect(page.getByRole('progressbar')).toHaveCount(0);
+  });
+
+  test('"Concluir aula": um pedido, mensagem e o botão some quando a aula passa a concluída', async ({
+    page,
+  }) => {
+    await stub(page);
+    await outlineApi(page, 200, OUTLINE);
+    let completed = false;
+    const calls: string[] = [];
+    await page.route('**/api/lessons/*/complete', async (route) => {
+      calls.push(route.request().url());
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      completed = true;
+      return route.fulfill({
+        status: 201,
+        json: {
+          status: 'completed',
+          progress: { completed: 2, total: 3, percent: 66 },
+          courseCompleted: false,
+          courseJustCompleted: false,
+          courseCompletedAt: null,
+        },
+      });
+    });
+    await page.route('**/api/lessons/*', (route) =>
+      route.request().method() === 'GET'
+        ? route.fulfill({ json: { ...LESSON, completed } })
+        : route.fallback(),
+    );
+    await page.goto(`/estudar/${COURSE_ID}/aulas/${L(2)}`);
+    await page.getByRole('button', { name: 'Concluir aula' }).dblclick();
+    await expect(page.getByRole('button', { name: 'Concluindo…' })).toBeDisabled();
+    await expect(page.getByText('Aula concluída.').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Concluir aula|Concluindo/ })).toHaveCount(0);
+    expect(calls).toHaveLength(1);
+  });
+
+  test('a última obrigatória mostra os parabéns', async ({ page }) => {
+    await stub(page);
+    await lessonApi(page, 200, LESSON);
+    await page.route('**/api/lessons/*/complete', (route) =>
+      route.fulfill({
+        status: 201,
+        json: {
+          status: 'completed',
+          progress: { completed: 3, total: 3, percent: 100 },
+          courseCompleted: true,
+          courseJustCompleted: true,
+          courseCompletedAt: '2026-12-01T15:00:00.000Z',
+        },
+      }),
+    );
+    await page.goto(`/estudar/${COURSE_ID}/aulas/${L(2)}`);
+    await page.getByRole('button', { name: 'Concluir aula' }).click();
+    await expect(page.getByText('Aula concluída. Parabéns, você concluiu o curso!')).toBeVisible();
+  });
+
+  test('aula já concluída: sem botão, só o aviso', async ({ page }) => {
+    await stub(page);
+    await lessonApi(page, 200, { ...LESSON, completed: true });
+    await page.goto(`/estudar/${COURSE_ID}/aulas/${L(2)}`);
+    await expect(page.getByText('Aula concluída.')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Concluir/ })).toHaveCount(0);
+  });
+
+  for (const [status, json, text] of [
+    [
+      403,
+      { error: { code: 'lesson_locked', reason: 'sequence_locked', releasesAt: null } },
+      'Esta aula ainda não pode ser concluída.',
+    ],
+    [
+      403,
+      { error: { code: 'access_denied', reason: 'expired' } },
+      'Seu acesso a este curso não permite concluir a aula.',
+    ],
+    [401, { error: { code: 'unauthenticated' } }, 'Sua sessão expirou. Entre novamente.'],
+    [
+      500,
+      { error: { code: 'internal_error' } },
+      'Não foi possível concluir a aula agora. Tente novamente.',
+    ],
+  ] as const) {
+    test(`erro ${status} (${(json as { error: { code: string } }).error.code}) ao concluir aparece em português e libera o botão`, async ({
+      page,
+    }) => {
+      await stub(page);
+      await lessonApi(page, 200, LESSON);
+      await page.route('**/api/lessons/*/complete', (route) => route.fulfill({ status, json }));
+      await page.goto(`/estudar/${COURSE_ID}/aulas/${L(2)}`);
+      await page.getByRole('button', { name: 'Concluir aula' }).click();
+      await expect(page.getByRole('alert').filter({ hasText: text })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Concluir aula' })).toBeEnabled();
+    });
+  }
+
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`axe sem violações: mapa com progresso e concluído, aula com botão (${scheme})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await stub(page);
+      await outlineApi(page, 200, OUTLINE);
+      await page.goto(`/estudar/${COURSE_ID}`);
+      await page.getByRole('progressbar').waitFor();
+      await expectNoViolations(page, `mapa com progresso (${scheme})`);
+      await page.unroute('**/api/courses/*/outline');
+      await outlineApi(page, 200, { ...OUTLINE, completedAt: '2026-12-01T15:00:00.000Z' });
+      await page.reload();
+      await page.getByText(/Você concluiu este curso/).waitFor();
+      await expectNoViolations(page, `mapa concluído (${scheme})`);
+      await lessonApi(page, 200, LESSON);
+      await page.goto(`/estudar/${COURSE_ID}/aulas/${L(2)}`);
+      await page.getByRole('button', { name: 'Concluir aula' }).waitFor();
+      await expectNoViolations(page, `aula com botão (${scheme})`);
+    });
+  }
 });

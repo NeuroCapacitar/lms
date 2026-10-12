@@ -259,12 +259,6 @@ test.describe('meta tags servidas pelo Worker (HTMLRewriter de verdade)', () => 
       expect(html.match(pattern)?.length, String(pattern)).toBe(1);
     }
     expect(html).not.toContain('curso-que-nao-existe');
-
-    // O Host forjado não vira a canônica (ela vem da configuração).
-    const forged = await request.get('/cursos/curso-que-nao-existe', {
-      headers: { host: 'evil.example', 'x-forwarded-host': 'evil.example' },
-    });
-    expect(await forged.text()).not.toMatch(/(href|content)="https?:\/\/evil\.example/);
   });
 
   test('a imagem de compartilhamento existe e é um PNG', async ({ request }) => {

@@ -84,7 +84,7 @@ function Outline() {
     );
   }
 
-  const { course, access, modules } = result.data;
+  const { course, access, modules, progress, completedAt } = result.data;
   return (
     <>
       <h1 className="mb-2 text-3xl font-semibold">{course.title}</h1>
@@ -94,6 +94,29 @@ function Outline() {
           : 'Sequência livre: estude as aulas liberadas na ordem que quiser.'}
         {access.expiresAt ? ` Acesso até ${formatAccessDate(access.expiresAt)}.` : ''}
       </p>
+      {completedAt ? (
+        <p role="status" className="mb-4 max-w-prose font-medium text-[var(--text-success)]">
+          Você concluiu este curso em {formatAccessDate(completedAt)}.
+        </p>
+      ) : null}
+      <section aria-labelledby="progresso-titulo" className="mb-8 grid max-w-prose gap-2">
+        <p id="progresso-titulo" className="font-medium">
+          {progress.total === 0
+            ? 'Este curso ainda não tem aulas obrigatórias.'
+            : `Progresso: ${progress.percent}% (${progress.completed} de ${progress.total} aulas obrigatórias concluídas)`}
+        </p>
+        {progress.total > 0 ? (
+          <progress
+            aria-labelledby="progresso-titulo"
+            max={progress.total}
+            value={progress.completed}
+            className="h-3 w-full accent-[var(--button-primary-bg)]"
+          />
+        ) : null}
+        <p className="text-sm text-[var(--text-muted)]">
+          As aulas opcionais não entram no progresso.
+        </p>
+      </section>
       <div className="grid max-w-prose gap-8">
         {modules.map((module, index) => {
           const open = new Date(module.releasesAt).getTime() <= Date.now();

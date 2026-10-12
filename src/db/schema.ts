@@ -718,3 +718,28 @@ export const lessonCompletion = pgTable(
     check('lesson_completion_method_check', sql`${table.method} = 'manual'`),
   ],
 );
+
+/**
+ * Conclusão do curso (M3-04): HISTÓRICA e única por (pessoa, curso). Nasce na MESMA transação da
+ * última aula obrigatória, depois de travar a matrícula, e persiste mesmo que o currículo mude depois
+ * (o percentual pode cair; a conclusão não some nem se duplica). `required_total` é o total de aulas
+ * obrigatórias NO MOMENTO. Append-only por gatilho. O certificado (M7) nasce desta linha.
+ */
+export const courseCompletion = pgTable(
+  'course_completion',
+  {
+    userId: text().notNull(),
+    courseId: uuid().notNull(),
+    completedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    requiredTotal: integer().notNull(),
+  },
+  (table) => [
+    primaryKey({ name: 'course_completion_pk', columns: [table.userId, table.courseId] }),
+    foreignKey({
+      name: 'course_completion_enrollment_fk',
+      columns: [table.userId, table.courseId],
+      foreignColumns: [enrollment.userId, enrollment.courseId],
+    }).onDelete('restrict'),
+    check('course_completion_total_check', sql`${table.requiredTotal} > 0`),
+  ],
+);

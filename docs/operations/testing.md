@@ -163,3 +163,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - **Vazamento de conteúdo:** a resposta de aula bloqueada e o mapa são conferidos **como texto**: sem o campo `body`, sem o título da aula bloqueada e sem o texto das aulas. Ao acrescentar campo ao mapa, atualize essa lista.
 - Para criar conclusões em teste, insira em `lesson_completion` direto (a rota de escrita é do M3-04); o banco exige matrícula e a aula do mesmo curso, e a linha é append-only: a limpeza deve `TRUNCATE` `lesson_completion` ANTES de `enrollment` e `lesson`.
 - Espaços em texto formado por JSX: título e nota (`(libera em ...)`, `— motivo`) precisam de `{' '}` entre eles, senão o nome acessível sai colado ("Aprofundando(libera").
+
+## Conclusão de aula e do curso (M3-04)
+
+- Todo `POST` da API exige `content-type: application/json` (CSRF próprio), **mesmo sem corpo**: nos testes envie `{}`; sem isso a resposta é 415 e o teste "não grava nada" passa pelo motivo errado.
+- Conclusão simultânea se prova com **a mesma aula várias vezes** (uma só `course_completion`, um só `courseJustCompleted`) e com **aulas diferentes** no curso livre (todas 201, uma só conclusão do curso). Confira sempre a CONTAGEM no banco.
+- Staff sem matrícula não grava progresso: o teste dá o papel, **entra de novo** (dar papel encerra as sessões antigas) e espera 403 sem linha em `lesson_completion`, `enrollment` nem `course_completion`.
+- A limpeza trunca `course_completion` e `lesson_completion` ANTES de `enrollment` e `lesson` (FKs `restrict`, linhas append-only).
+- **E2E e banco real:** muitas requisições reais ao Neon de teste derrubam o preview local com `ECONNRESET` não tratado. Mantenha UMA requisição real (as meta tags do curso) e stube todo o resto.

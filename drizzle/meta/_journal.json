@@ -99,6 +99,13 @@
       "when": 1791778644378,
       "tag": "0013_lesson_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791780382278,
+      "tag": "0014_course_completion",
+      "breakpoints": true
     }
   ]
 }

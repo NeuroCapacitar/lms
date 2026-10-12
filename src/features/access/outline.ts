@@ -1,6 +1,7 @@
 import type { RichText } from '../content/rich-text';
 import type { SequenceMode } from '../catalog/catalog';
 import type { AccessDto } from './access';
+import type { CourseProgress } from './progress';
 import type { LessonLockReason } from './lesson-access';
 
 /**
@@ -31,6 +32,10 @@ interface OutlineModuleDto {
 export interface CourseOutlineDto {
   course: { id: string; title: string; sequenceMode: SequenceMode };
   access: AccessDto;
+  /** Progresso das aulas OBRIGATÓRIAS (as opcionais ficam fora do cálculo). */
+  progress: CourseProgress;
+  /** Quando o curso foi concluído (ISO 8601), ou `null`. Histórico: não some se o currículo mudar. */
+  completedAt: string | null;
   modules: OutlineModuleDto[];
 }
 

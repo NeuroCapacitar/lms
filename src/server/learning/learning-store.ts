@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 
 import type { Database } from '../../db/client';
-import { course, courseContent, lesson, lessonCompletion } from '../../db/schema';
+import { course, courseCompletion, courseContent, lesson, lessonCompletion } from '../../db/schema';
 import { toAccessDto, type AccessResult } from '../../features/access/access';
 import {
   computeLessonAccess,
@@ -15,6 +15,7 @@ import type {
 } from '../../features/access/outline';
 import type { SequenceMode } from '../../features/catalog/catalog';
 import type { PublishedCurriculumDto } from '../../features/catalog/curriculum';
+import { computeProgress, type CourseProgress } from '../../features/access/progress';
 import { resolveAccess } from '../access/entitlement-store';
 import { getPublishedCurriculum } from '../catalog/curriculum-store';
 
@@ -29,6 +30,8 @@ interface StudentCourse {
   curriculum: PublishedCurriculumDto;
   completed: Set<string>;
   decisions: LessonDecision[];
+  progress: CourseProgress;
+  completedAt: Date | null;
 }
 
 async function loadStudentCourse(
@@ -58,6 +61,10 @@ async function loadStudentCourse(
     .from(lessonCompletion)
     .where(and(eq(lessonCompletion.userId, userId), eq(lessonCompletion.courseId, courseId)));
   const completed = new Set(done.map((item) => item.lessonId));
+  const [finished] = await db
+    .select({ completedAt: courseCompletion.completedAt })
+    .from(courseCompletion)
+    .where(and(eq(courseCompletion.userId, userId), eq(courseCompletion.courseId, courseId)));
   const sequenceMode = row.sequenceMode as SequenceMode;
   const decisions = computeLessonAccess({
     access,
@@ -79,6 +86,8 @@ async function loadStudentCourse(
       curriculum,
       completed,
       decisions,
+      progress: computeProgress(curriculum.modules, completed),
+      completedAt: finished?.completedAt ?? null,
     },
   };
 }
@@ -109,6 +118,8 @@ export async function getCourseOutline(
     outline: {
       course: { id: courseId, title: data.title, sequenceMode: data.sequenceMode },
       access: toAccessDto(data.access),
+      progress: data.progress,
+      completedAt: data.completedAt ? data.completedAt.toISOString() : null,
       modules: data.curriculum.modules.map((module) => ({
         id: module.id,
         title: module.title,

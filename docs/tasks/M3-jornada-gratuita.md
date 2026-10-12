@@ -43,7 +43,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** não criar Payment de R$ 0; compra e checkout são do M6; interesse por curso fechado é do M5.
 
 ### M3-03 — Resolução de aula, drip D+N e sequência
-**Dependências:** M3-01, M2-02 · **Estado:** `implemented` (verificação local; ver STATUS). A tabela `lesson_completion` foi criada aqui (migration 0013); a escrita é do M3-04.
+**Dependências:** M3-01, M2-02 · **Estado:** `verified` (CI, PR #62; ver STATUS). A tabela `lesson_completion` foi criada aqui (migration 0013); a escrita é do M3-04.
 **Objetivo:** o aluno vê o mapa do curso e só abre as aulas liberadas para a situação dele; o servidor decide sempre.
 **Passos:**
 1. Função pura de domínio `computeLessonAccess` (módulo `drip_days`, `anchor_at`, `agora`, `sequence_mode`, aulas obrigatórias concluídas, aula opcional, retirada) com códigos de motivo: `no_access`, `expired`, `suspended`, `drip_locked` (com data de liberação), `sequence_locked`, `retired`.
@@ -55,7 +55,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** não calcular acesso na UI; vídeo/quiz são do M5; sem aula "desbloqueada" por exceção da Staff.
 
 ### M3-04 — Conclusão manual da aula de texto e progresso obrigatório
-**Dependências:** M3-03 · **Estado:** `not_started`
+**Dependências:** M3-03 · **Estado:** `implemented` (verificação local; ver STATUS). `lesson_completion` veio do M3-03; aqui, `course_completion` (migration 0014).
 **Objetivo:** o aluno conclui aulas de texto pelo botão "Concluir"; o progresso conta só as obrigatórias, e a conclusão do curso nasce uma única vez.
 **Passos:**
 1. Tabela `lesson_completion` (pessoa, aula, quando, método `manual`), única por pessoa+aula. `POST /api/lessons/:id/complete`: só aula de texto, com acesso, liberada e (se guiada) disponível; idempotente.
