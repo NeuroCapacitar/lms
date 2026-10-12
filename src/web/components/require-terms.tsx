@@ -17,7 +17,14 @@ const TITLES: Record<LegalKind, string> = {
  * logada); isto é só a consequência na interface. Sem sessão, mostra o conteúdo (ele pede o login).
  */
 export function RequireTerms({ children }: { children: ReactNode }) {
-  const legal = useQuery({ queryKey: ['legal'], queryFn: fetchLegal, retry: false });
+  // O aceite muda raramente: 5 min de cache evitam repetir `GET /api/me/legal` a cada tela (eram 33 chamadas
+  // numa sessão curta no Staging). Aceitar invalida a consulta, então a tela libera na hora.
+  const legal = useQuery({
+    queryKey: ['legal'],
+    queryFn: fetchLegal,
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
 
   if (legal.isPending) return <p role="status">Carregando…</p>;
   if (legal.isError) {

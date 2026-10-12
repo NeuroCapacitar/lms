@@ -90,7 +90,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** não é impersonation nem login como o aluno; prévia de **rascunho** é do Course Builder (M2-03).
 
 ### M3-05 — Primeira jornada E2E gratuita
-**Dependências:** M3-02, M3-03, M3-04, M3-06, M3-07 · **Estado:** `implemented` em ambiente de TESTE (`bun run test:journey`, API real + Postgres 18); **a execução em Staging, que o aceite exige, está PENDENTE** (ver STATUS).
+**Dependências:** M3-02, M3-03, M3-04, M3-06, M3-07 · **Estado:** `verified` no CI (jornada com API real + Postgres 18) e **executada em Staging até o módulo 1** (2026-10-12); falta concluir o curso no Staging (módulo 3 libera em 26/10/2026) e anotar os validadores (ver STATUS).
 **Objetivo:** provar de ponta a ponta, em Staging, a jornada gratuita e as ações de Staff, sem dependência do Asaas.
 **Passos:**
 1. Usar o curso demonstrativo (M2-07) e dois usuários sintéticos (aluno e Suporte com grant).
