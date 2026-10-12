@@ -165,7 +165,7 @@ function Catalog() {
                       : 'Inscrições encerradas'}
                   </p>
                   {course.access.hasAccess ? (
-                    <AccessStatus access={course.access} />
+                    <AccessStatus access={course.access} courseId={course.id} />
                   ) : course.availability === 'open' && course.offer?.kind === 'free' ? (
                     <EnrollControl
                       courseId={course.id}

@@ -92,6 +92,13 @@
       "when": 1791756171737,
       "tag": "0012_entitlement_enrollment",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791778644378,
+      "tag": "0013_lesson_completion",
+      "breakpoints": true
     }
   ]
 }

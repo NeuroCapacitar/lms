@@ -112,6 +112,13 @@ test.describe('a CSP não é violada nas telas existentes', () => {
     test(`${path.split('#')[0]}: nenhuma violação de CSP, com o widget e o Sentry simulados`, async ({
       page,
     }) => {
+      // Sem sessão e sem consultar o banco de teste (conexões demais derrubam o preview local).
+      await page.route('**/api/catalog/courses', (route) =>
+        route.fulfill({ status: 401, json: { error: { code: 'unauthenticated' } } }),
+      );
+      await page.route('**/api/me/legal', (route) =>
+        route.fulfill({ status: 401, json: { error: { code: 'unauthenticated' } } }),
+      );
       const consoleViolations: string[] = [];
       page.on('console', (message) => {
         if (/content security policy/i.test(message.text())) consoleViolations.push(message.text());

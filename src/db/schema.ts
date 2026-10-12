@@ -592,6 +592,7 @@ export const lesson = pgTable(
       foreignColumns: [courseModule.id, courseModule.courseId],
     }).onDelete('restrict'),
     index('lesson_module_idx').on(table.moduleId, table.position),
+    unique('lesson_id_course_unique').on(table.id, table.courseId),
     check('lesson_kind_check', sql`${table.kind} = 'text'`),
     check(
       'lesson_body_size_check',
@@ -683,5 +684,37 @@ export const entitlement = pgTable(
       'entitlement_revocation_check',
       sql`(${table.revokedAt} is null and ${table.revokedReason} is null and ${table.revokedBy} is null) or (${table.revokedAt} is not null and ${table.revokedReason} is not null)`,
     ),
+  ],
+);
+
+/**
+ * Conclusão de aula (M3-03 cria a tabela para o drip e a sequência guiada lerem; a ESCRITA, o botão
+ * "Concluir" e a conclusão do curso são do M3-04). Única por (pessoa, aula), só existe para quem tem
+ * matrícula no curso da aula (FK composta) e é APPEND-ONLY: uma conclusão não se desfaz nem se
+ * reescreve (gatilho), então o progresso histórico não some.
+ */
+export const lessonCompletion = pgTable(
+  'lesson_completion',
+  {
+    userId: text().notNull(),
+    courseId: uuid().notNull(),
+    lessonId: uuid().notNull(),
+    completedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    method: text().notNull().default('manual'),
+  },
+  (table) => [
+    primaryKey({ name: 'lesson_completion_pk', columns: [table.userId, table.lessonId] }),
+    foreignKey({
+      name: 'lesson_completion_enrollment_fk',
+      columns: [table.userId, table.courseId],
+      foreignColumns: [enrollment.userId, enrollment.courseId],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'lesson_completion_lesson_fk',
+      columns: [table.lessonId, table.courseId],
+      foreignColumns: [lesson.id, lesson.courseId],
+    }).onDelete('restrict'),
+    index('lesson_completion_course_idx').on(table.userId, table.courseId),
+    check('lesson_completion_method_check', sql`${table.method} = 'manual'`),
   ],
 );

@@ -33,6 +33,7 @@ import {
 import { catalogRoutes } from '../catalog/routes';
 import { studentCatalogRoutes } from '../catalog/student-routes';
 import { courseAccessRoutes } from '../access/routes';
+import { learningRoutes } from '../learning/routes';
 import { methodRoutes } from './method-routes';
 import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
 import { staffRoutes } from './staff-routes';
@@ -61,6 +62,8 @@ export interface AuthRouteOverrides {
   google?: { clientId: string; clientSecret: string } | null;
   turnstileFetch?: typeof fetch;
   limits?: LinkLimits;
+  /** Relógio das rotas de estudo (drip), só nos testes. */
+  clock?: () => Date;
 }
 
 type Vars = AuthVars;
@@ -187,12 +190,13 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       : c.json({ error: { code: 'terms_changed' } }, 409);
   });
 
-  // PORTÃO: toda rota de área logada (`/me/*`, `/staff/*`, `/catalog/*` e `/courses/*`) exige o aceite das versões vigentes.
+  // PORTÃO: toda rota de área logada (`/me/*`, `/staff/*`, `/catalog/*`, `/courses/*` e `/lessons/*`) exige o aceite das versões vigentes.
   // Registrado antes das rotas que protege, porque a ordem de registro é a ordem de execução.
   routes.use('/me/*', withDatabase, requireAcceptedTerms());
   routes.use('/staff/*', withDatabase, requireAcceptedTerms());
   routes.use('/catalog/*', withDatabase, requireAcceptedTerms());
   routes.use('/courses/*', withDatabase, requireAcceptedTerms());
+  routes.use('/lessons/*', withDatabase, requireAcceptedTerms());
 
   routes.post('/auth/link/request', async (c) => {
     c.header('Cache-Control', 'no-store');
@@ -367,6 +371,12 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
 
   // Acesso do aluno a um curso (M3-02): /api/courses/:id/access e /enroll (termos aceitos).
   routes.route('/', courseAccessRoutes({ withDatabase }));
+
+  // Estudo (M3-03): o mapa do curso e a aula, com drip e sequência decididos no servidor.
+  routes.route(
+    '/',
+    learningRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
+  );
 
   // Senha e Google (M1-07): login, retorno do Google e "Segurança da conta".
   routes.route(

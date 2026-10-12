@@ -105,7 +105,9 @@ function CoursePage() {
         {data.availability === 'closed' ? (
           <>
             <p className="font-medium">Inscrições encerradas</p>
-            {access.data?.hasAccess ? <AccessStatus access={access.data} /> : null}
+            {access.data?.hasAccess ? (
+              <AccessStatus access={access.data} courseId={data.id} />
+            ) : null}
           </>
         ) : (
           <>
@@ -119,7 +121,9 @@ function CoursePage() {
               />
             ) : (
               <>
-                {access.data?.hasAccess ? <AccessStatus access={access.data} /> : null}
+                {access.data?.hasAccess ? (
+                  <AccessStatus access={access.data} courseId={data.id} />
+                ) : null}
                 <p className="text-sm text-[var(--text-muted)]">
                   A compra deste curso ainda não está disponível.
                 </p>
