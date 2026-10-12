@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -37,6 +38,7 @@ function takeFromHash(): Captured {
  */
 function ConfirmSignIn() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [state, setState] = useState<State>({ kind: 'reading' });
   // A ref sobrevive ao efeito duplo do StrictMode (desenvolvimento): o fragmento é lido uma só vez.
   const [purpose, setPurpose] = useState<Captured['purpose']>('login');
@@ -62,6 +64,9 @@ function ConfirmSignIn() {
     }
     const result = await confirmLink(token);
     if (result === 'ok') {
+      // Outra pessoa pode ter usado este aparelho: nada da sessão anterior (como o aceite dos termos,
+      // que fica em cache) pode valer para a nova.
+      queryClient.clear();
       // Volta à página de onde a pessoa veio (caminho interno validado) ou à página inicial.
       const back = takeReturnTo();
       if (back) {

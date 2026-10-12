@@ -50,7 +50,7 @@ export const DEMO_DRAFT: {
   },
   modules: [
     {
-      title: 'Módulo 1: Primeiros passos',
+      title: 'Primeiros passos',
       dripDays: 0,
       lessons: [
         lesson(
@@ -61,7 +61,7 @@ export const DEMO_DRAFT: {
       ],
     },
     {
-      title: 'Módulo 2: Aprofundando',
+      title: 'Aprofundando',
       dripDays: 7,
       lessons: [
         lesson(
@@ -76,7 +76,7 @@ export const DEMO_DRAFT: {
       ],
     },
     {
-      title: 'Módulo 3: Fechamento',
+      title: 'Fechamento',
       dripDays: 14,
       lessons: [
         lesson('Revisão', 'Texto de exemplo da revisão. Libera 14 dias após o acesso.'),
