@@ -40,6 +40,8 @@ export interface GrantInput {
   /** Início do direito (o `agora` de quem chama). Na primeira concessão também vira a ÂNCORA do drip. */
   startsAt: Date;
   grantedBy: string | null;
+  /** Motivo (matrícula manual): vai para a auditoria. */
+  reason?: string;
 }
 
 export interface GrantResult {
@@ -51,7 +53,7 @@ export interface GrantResult {
 }
 
 /** Recalcula `effective_expires_at` (maior expiração dos não revogados) NA transação de quem mudou. */
-async function recompute(tx: Tx, userId: string, courseId: string): Promise<Date | null> {
+export async function recompute(tx: Tx, userId: string, courseId: string): Promise<Date | null> {
   const rows = await tx
     .select({
       startsAt: entitlement.startsAt,
@@ -144,6 +146,7 @@ export async function grantEntitlementIn(tx: Tx, input: GrantInput): Promise<Gra
         source: input.source,
         accessMonths: input.accessMonths,
         expiresAt: expiresAt.toISOString(),
+        ...(input.reason ? { reason: input.reason } : {}),
       },
     });
   }

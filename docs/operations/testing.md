@@ -171,3 +171,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Staff sem matrícula não grava progresso: o teste dá o papel, **entra de novo** (dar papel encerra as sessões antigas) e espera 403 sem linha em `lesson_completion`, `enrollment` nem `course_completion`.
 - A limpeza trunca `course_completion` e `lesson_completion` ANTES de `enrollment` e `lesson` (FKs `restrict`, linhas append-only).
 - **E2E e banco real:** muitas requisições reais ao Neon de teste derrubam o preview local com `ECONNRESET` não tratado. Mantenha UMA requisição real (as meta tags do curso) e stube todo o resto.
+
+## Matrícula manual e inscritos (M3-06)
+
+- **Cada capability tem o seu teste de negação direto pela API:** anônimo 401, aluno 403, Suporte SEM grant 403 em TODAS as escritas e 200 na lista; `access.grant` não ajusta prazo e `enrollment.support_edit` não matricula. Esconder o botão na tela nunca é a barreira.
+- Quem recebe papel ou grant **tem de entrar de novo** antes de chamar a API (dar papel encerra as sessões antigas): o helper `newStaff` do teste concede e só então faz o login.
+- Os testes de auditoria **filtram por alvo** (`targetId`): o `audit_log` é append-only e não é truncado entre os testes.
+- O "sem Order nem Payment" é conferido olhando o catálogo do banco (nenhuma tabela `order`, `payment` ou `checkout` existe neste marco).
+- Qualquer layout novo da casca da Staff entra no teste de 375 px: o cabeçalho já estourou a largura por causa do seletor de tema.

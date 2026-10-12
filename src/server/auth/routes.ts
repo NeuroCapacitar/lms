@@ -33,6 +33,7 @@ import {
 import { catalogRoutes } from '../catalog/routes';
 import { studentCatalogRoutes } from '../catalog/student-routes';
 import { courseAccessRoutes } from '../access/routes';
+import { enrollmentStaffRoutes } from '../access/staff-routes';
 import { learningRoutes } from '../learning/routes';
 import { methodRoutes } from './method-routes';
 import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
@@ -361,6 +362,12 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       emailSender: (c) => overrides.emailSender ?? createEmailSender(c.env),
       globalPerDay: limits.globalPerDay,
     }),
+  );
+
+  // Matrícula manual, suspensão e inscritos (M3-06): /api/staff/enrollments, /entitlements e /courses/:id/enrollments.
+  routes.route(
+    '/staff',
+    enrollmentStaffRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
   );
 
   // Catálogo da Staff (M2-01): /api/staff/courses/*.

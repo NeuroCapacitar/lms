@@ -55,7 +55,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** não calcular acesso na UI; vídeo/quiz são do M5; sem aula "desbloqueada" por exceção da Staff.
 
 ### M3-04 — Conclusão manual da aula de texto e progresso obrigatório
-**Dependências:** M3-03 · **Estado:** `implemented` (verificação local; ver STATUS). `lesson_completion` veio do M3-03; aqui, `course_completion` (migration 0014).
+**Dependências:** M3-03 · **Estado:** `verified` (CI, PR #63; ver STATUS). `lesson_completion` veio do M3-03; aqui, `course_completion` (migration 0014).
 **Objetivo:** o aluno conclui aulas de texto pelo botão "Concluir"; o progresso conta só as obrigatórias, e a conclusão do curso nasce uma única vez.
 **Passos:**
 1. Tabela `lesson_completion` (pessoa, aula, quando, método `manual`), única por pessoa+aula. `POST /api/lessons/:id/complete`: só aula de texto, com acesso, liberada e (se guiada) disponível; idempotente.
@@ -67,7 +67,7 @@ M3-01 → M3-02 → M3-03 → M3-04 → M3-06 → M3-07 → M3-05 (a E2E é a ú
 **Fora do escopo / cuidados:** vídeo **nunca** conclui por aba aberta e não tem botão manual (M5); sem conclusão manual pela Staff; sem outbox/certificado agora (gancho é do M7-01). Momento de reconhecer a conclusão quando a retirada de uma aula deixa tudo concluído: **PENDENTE (decisão do responsável)**.
 
 ### M3-06 — Matrícula manual, suspensão de acesso e lista de inscritos
-**Dependências:** M3-01, M1-03 · **Estado:** `not_started`
+**Dependências:** M3-01, M1-03 · **Estado:** `implemented` (verificação local; ver STATUS). Capability `access.grant` (nome do catálogo de domínio, no lugar de `enrollment.manage`).
 **Objetivo:** a Staff com grant matricula uma pessoa com duração em meses e suspende acesso; qualquer Staff vê quem está inscrito.
 **Passos:**
 1. `POST /api/staff/enrollments` (`enrollment.manage`): pessoa **já cadastrada**, curso, meses (inteiro ≥1), motivo, `requestId` (vira `source_ref`, evita duplicidade); cria Entitlement `admin_grant` e recompõe o Enrollment; `audit_log`.
