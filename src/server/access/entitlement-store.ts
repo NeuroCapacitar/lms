@@ -69,23 +69,34 @@ async function recompute(tx: Tx, userId: string, courseId: string): Promise<Date
 }
 
 /**
+ * Garante a linha da matrícula e a TRAVA para a transação (`INSERT ... ON CONFLICT DO NOTHING` e
+ * `SELECT ... FOR UPDATE`). A âncora só é definida aqui na primeira vez (`anchorAt`) e nunca muda.
+ */
+export async function lockEnrollmentIn(
+  tx: Tx,
+  userId: string,
+  courseId: string,
+  anchorAt: Date,
+): Promise<{ anchorAt: Date; suspendedAt: Date | null }> {
+  await tx.insert(enrollment).values({ userId, courseId, anchorAt }).onConflictDoNothing();
+  const [locked] = await tx
+    .select({ anchorAt: enrollment.anchorAt, suspendedAt: enrollment.suspendedAt })
+    .from(enrollment)
+    .where(and(eq(enrollment.userId, userId), eq(enrollment.courseId, courseId)))
+    .for('update');
+  return locked!;
+}
+
+/**
  * Concede um direito DENTRO de uma transação já aberta (para compor com a compra no M6 e a inscrição
  * no M3-02). Concessões simultâneas se serializam pela linha da matrícula: `INSERT ... ON CONFLICT DO
  * NOTHING` garante UMA linha e UMA âncora; o `SELECT ... FOR UPDATE` põe as demais na fila. A mesma
  * `source_ref` é idempotente. A matrícula e a âncora nascem na primeira concessão e nunca mais mudam,
  * então conceder de novo depois de expirar continua o drip e o progresso.
  */
-async function grantEntitlementIn(tx: Tx, input: GrantInput): Promise<GrantResult> {
+export async function grantEntitlementIn(tx: Tx, input: GrantInput): Promise<GrantResult> {
   const expiresAt = addCalendarMonths(input.startsAt, input.accessMonths);
-  await tx
-    .insert(enrollment)
-    .values({ userId: input.userId, courseId: input.courseId, anchorAt: input.startsAt })
-    .onConflictDoNothing();
-  const [locked] = await tx
-    .select({ anchorAt: enrollment.anchorAt })
-    .from(enrollment)
-    .where(and(eq(enrollment.userId, input.userId), eq(enrollment.courseId, input.courseId)))
-    .for('update');
+  const locked = await lockEnrollmentIn(tx, input.userId, input.courseId, input.startsAt);
 
   const inserted = await tx
     .insert(entitlement)

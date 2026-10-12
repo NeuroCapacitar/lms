@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import type { AccessDto } from '../access/access';
 import type { RichText } from '../content/rich-text';
 import type { OfferKind, PublicCourseDto, SequenceMode } from './catalog';
 
@@ -10,6 +11,8 @@ import type { OfferKind, PublicCourseDto, SequenceMode } from './catalog';
  */
 
 export interface CatalogOfferSummary {
+  /** Id da oferta: a inscrição (M3-02) diz QUAL oferta a pessoa viu. */
+  id: string;
   kind: OfferKind;
   priceCents: number;
   accessMonths: number;
@@ -17,6 +20,7 @@ export interface CatalogOfferSummary {
 }
 
 export interface CatalogCourseDto {
+  id: string;
   slug: string;
   title: string;
   /** Texto simples tirado da descrição publicada (até `SUMMARY_MAX` caracteres); vazio sem descrição. */
@@ -70,6 +74,7 @@ function featuredOffer(offers: PublicCourseDto['offers']): CatalogOfferSummary |
   const first = sorted[0];
   return first
     ? {
+        id: first.id,
         kind: first.kind,
         priceCents: first.priceCents,
         accessMonths: first.accessMonths,
@@ -86,6 +91,7 @@ export function toCatalogCourse(course: PublicCourseDto): CatalogCourseDto | nul
   if (!course.content) return null;
   const offer = featuredOffer(course.offers);
   return {
+    id: course.id,
     slug: course.slug,
     title: course.content.title,
     summary: summarize(course.content.description),
@@ -95,6 +101,9 @@ export function toCatalogCourse(course: PublicCourseDto): CatalogCourseDto | nul
     offer,
   };
 }
+
+/** Um item do catálogo do aluno: o curso e o ACESSO da própria pessoa a ele (M3-02). */
+export type StudentCatalogItem = CatalogCourseDto & { access: AccessDto };
 
 export const CATALOG_FILTERS = ['todos', 'abertos', 'encerrados'] as const;
 export type CatalogFilter = (typeof CATALOG_FILTERS)[number];
@@ -114,10 +123,10 @@ export function normalizeForSearch(value: string): string {
   return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
 }
 
-export function filterCatalog(
-  courses: CatalogCourseDto[],
+export function filterCatalog<T extends CatalogCourseDto>(
+  courses: T[],
   search: CatalogSearch,
-): CatalogCourseDto[] {
+): T[] {
   const needle = normalizeForSearch(search.busca);
   return courses.filter((course) => {
     if (search.filtro === 'abertos' && course.availability !== 'open') return false;

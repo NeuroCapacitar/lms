@@ -9,19 +9,20 @@ const doc = (text: string) => ({
 });
 
 const FREE = {
+  id: 'c-demo',
   slug: 'demo',
   title: 'Curso Demonstrativo',
   description: doc('Texto público sobre o curso.'),
   workloadHours: 3,
   sequenceMode: 'guided',
   availability: 'open',
-  offer: { kind: 'free', priceCents: 0, accessMonths: 3, maxInstallments: 1 },
+  offer: { id: 'o-demo', kind: 'free', priceCents: 0, accessMonths: 3, maxInstallments: 1 },
   syllabus: ['Primeiros passos', 'Aprofundando', 'Fechamento'],
 };
 const PAID = {
   ...FREE,
   slug: 'pago',
-  offer: { kind: 'paid', priceCents: 19_700, accessMonths: 12, maxInstallments: 12 },
+  offer: { id: 'o-pago', kind: 'paid', priceCents: 19_700, accessMonths: 12, maxInstallments: 12 },
 };
 const CLOSED = { ...FREE, slug: 'fechado', availability: 'closed', offer: null };
 
@@ -39,6 +40,10 @@ async function serveShell(page: Page) {
 }
 async function stubCourse(page: Page, course: unknown | null, status = 200) {
   await serveShell(page);
+  // Sem sessão por padrão: o estado de acesso responde 401 (a página mostra o convite para entrar).
+  await page.route('**/api/courses/*/access', (route) =>
+    route.fulfill({ status: 401, json: { error: { code: 'unauthenticated' } } }),
+  );
   await page.route('**/api/public/courses/**', (route) =>
     course === null
       ? route.fulfill({ status: 404, json: { error: { code: 'not_found' } } })
@@ -71,7 +76,7 @@ test.describe('página pública do curso', () => {
     ]);
     await expect(page.getByText('Gratuito · acesso por 3 meses')).toBeVisible();
     const enter = page.getByRole('link', { name: 'Entrar para se inscrever' });
-    await expect(enter).toHaveAttribute('href', '/entrar');
+    await expect(enter).toHaveAttribute('href', '/entrar?returnTo=%2Fcursos%2Fdemo');
     await enter.click();
     await expect(page).toHaveURL(/\/entrar/);
   });
@@ -130,8 +135,14 @@ test.describe('página pública do curso', () => {
     await stubCourse(page, FREE);
     await page.goto('/cursos/demo');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // só a API pública e o estado de acesso (que responde 401 sem sessão); nada de /api/me
     expect(
-      calls.filter((path) => path.startsWith('/api/') && !path.startsWith('/api/public/')),
+      calls.filter(
+        (path) =>
+          path.startsWith('/api/') &&
+          !path.startsWith('/api/public/') &&
+          !/^\/api\/courses\/[^/]+\/access$/.test(path),
+      ),
     ).toEqual([]);
   });
 
@@ -174,6 +185,7 @@ test.describe('página pública do curso', () => {
               sequenceMode: 'guided',
               availability: 'open',
               offer: FREE.offer,
+              access: { hasAccess: false, reason: 'no_access', expiresAt: null },
             },
           ],
         },

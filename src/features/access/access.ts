@@ -94,3 +94,19 @@ export function decideAccess(input: AccessInput): AccessResult {
   );
   return { hasAccess: false, reason: hadAny ? 'expired' : 'no_access', ...base };
 }
+
+/** O que a interface recebe da decisão de acesso: sem a âncora (a tela do curso chega no M3-03). */
+export interface AccessDto {
+  hasAccess: boolean;
+  reason: AccessReason;
+  /** ISO 8601; a maior expiração dos direitos não revogados, ou `null`. */
+  expiresAt: string | null;
+}
+
+export function toAccessDto(result: AccessResult): AccessDto {
+  return {
+    hasAccess: result.hasAccess,
+    reason: result.reason,
+    expiresAt: result.expiresAt ? result.expiresAt.toISOString() : null,
+  };
+}

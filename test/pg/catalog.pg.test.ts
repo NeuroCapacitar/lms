@@ -664,6 +664,7 @@ describe('disponibilidade x visibilidade e DTOs', () => {
     expect(Object.keys(publicDto).sort()).toEqual([
       'acquirable',
       'content',
+      'id',
       'offers',
       'sequenceMode',
       'slug',

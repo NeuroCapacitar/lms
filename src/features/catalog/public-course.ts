@@ -8,6 +8,7 @@ import { toCatalogCourse, type CatalogOfferSummary } from './student-catalog';
  * aulas nem conteúdo) e o resumo da oferta aberta. Sem título interno, autoria, estado nem id.
  */
 export interface PublicCoursePageDto {
+  id: string;
   slug: string;
   title: string;
   description: RichText | null;
@@ -26,6 +27,7 @@ export function toPublicCoursePage(
   const catalog = toCatalogCourse(course);
   if (!catalog || !course.content) return null;
   return {
+    id: catalog.id,
     slug: catalog.slug,
     title: catalog.title,
     description: course.content.description,

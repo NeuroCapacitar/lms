@@ -148,3 +148,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Concorrência de concessão se prova com **conexões separadas** (`openDatabase` por tentativa), não com uma conexão só: uma conexão serializa tudo e não prova a corrida. Os testes confirmam UMA matrícula, UMA âncora e a idempotência por `source_ref`.
 - Toda decisão de acesso nos testes passa por `resolveAccess(db, pessoa, curso, agora)` com `agora` EXPLÍCITO; não use `Date.now()` nem tarefa agendada para "fazer expirar".
 - Para testar uma violação de gatilho, use SQL direto (`tools.db.execute`) e confira a mensagem em `cause` (`anchor_locked`, `entitlement_immutable`, `revoked_is_final`...). A limpeza dos testes deve truncar `entitlement, enrollment` ANTES de `user` e `course` (as FKs são `restrict`).
+
+## Inscrição gratuita (M3-02)
+
+- **Concorrência com RELÓGIO DEFASADO:** além de várias conexões simultâneas, teste a decisão com relógios diferentes por pedido (`clock` injetável em `enrollInFreeOffer`). Um teste com conexões separadas e o mesmo relógio passou isolado e falhou sob carga: o bug só aparece quando o perdedor da fila está "no passado" em relação ao direito do vencedor.
+- Todo teste que afirma "exatamente um direito" deve conferir também a CONTAGEM no banco, não só o código HTTP.
+- O corpo de erro de oferta indisponível tem de ser **byte a byte o mesmo** para oferta pausada, arquivada, em rascunho, de outro curso e inexistente (sem vazamento do que existe).
+- `returnTo`: qualquer mudança em `safeReturnTo` ganha caso malicioso na tabela de `return-to.test.ts`; o e2e confere que valor externo, `//host`, `/api/*` e `javascript:` nunca são guardados nem seguidos, e que o valor adulterado no `localStorage` é revalidado na leitura.
+- A regra `acesso-nao-importa-pagamentos` é provada de verdade criando um import proibido temporário e rodando `bun run arch` (deve falhar); `scripts/arch-rules.test.ts` confere o contrato da regra.

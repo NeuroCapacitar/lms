@@ -32,6 +32,7 @@ import {
 } from './access-store';
 import { catalogRoutes } from '../catalog/routes';
 import { studentCatalogRoutes } from '../catalog/student-routes';
+import { courseAccessRoutes } from '../access/routes';
 import { methodRoutes } from './method-routes';
 import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
 import { staffRoutes } from './staff-routes';
@@ -186,11 +187,12 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       : c.json({ error: { code: 'terms_changed' } }, 409);
   });
 
-  // PORTÃO: toda rota de área logada (`/me/*`, `/staff/*` e `/catalog/*`) exige o aceite das versões vigentes.
+  // PORTÃO: toda rota de área logada (`/me/*`, `/staff/*`, `/catalog/*` e `/courses/*`) exige o aceite das versões vigentes.
   // Registrado antes das rotas que protege, porque a ordem de registro é a ordem de execução.
   routes.use('/me/*', withDatabase, requireAcceptedTerms());
   routes.use('/staff/*', withDatabase, requireAcceptedTerms());
   routes.use('/catalog/*', withDatabase, requireAcceptedTerms());
+  routes.use('/courses/*', withDatabase, requireAcceptedTerms());
 
   routes.post('/auth/link/request', async (c) => {
     c.header('Cache-Control', 'no-store');
@@ -362,6 +364,9 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
 
   // Catálogo do aluno (M2-04): /api/catalog/courses (com sessão e termos aceitos).
   routes.route('/catalog', studentCatalogRoutes({ withDatabase }));
+
+  // Acesso do aluno a um curso (M3-02): /api/courses/:id/access e /enroll (termos aceitos).
+  routes.route('/', courseAccessRoutes({ withDatabase }));
 
   // Senha e Google (M1-07): login, retorno do Google e "Segurança da conta".
   routes.route(

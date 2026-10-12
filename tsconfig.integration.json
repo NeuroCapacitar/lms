@@ -35,6 +35,7 @@
     "test/pg/student-catalog.pg.test.ts",
     "test/pg/public-course.pg.test.ts",
     "test/pg/entitlement.pg.test.ts",
+    "test/pg/free-enrollment.pg.test.ts",
     "scripts/db/guards.ts",
     "test/pg/staff-invitation.pg.test.ts",
     "test/pg/bootstrap.pg.test.ts",

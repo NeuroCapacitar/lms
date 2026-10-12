@@ -128,13 +128,20 @@ describe('GET /api/public/courses/:slug', () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body).toEqual({
+      id: expect.any(String),
       slug: 'curso-aberto',
       title: 'Curso "curso-aberto" <b>',
       description: richTextFromParagraph('Descrição pública do curso.'),
       workloadHours: 5,
       sequenceMode: 'guided',
       availability: 'open',
-      offer: { kind: 'free', priceCents: 0, accessMonths: 3, maxInstallments: 1 },
+      offer: {
+        id: expect.any(String),
+        kind: 'free',
+        priceCents: 0,
+        accessMonths: 3,
+        maxInstallments: 1,
+      },
       syllabus: ['Módulo Um', 'Módulo Dois'],
     });
     const text = JSON.stringify(body);
@@ -145,7 +152,6 @@ describe('GET /api/public/courses/:slug', () => {
       'Oferta interna',
       'createdBy',
       'status',
-      '"id"',
     ]) {
       expect(text, forbidden).not.toContain(forbidden);
     }

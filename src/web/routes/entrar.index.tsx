@@ -7,6 +7,8 @@ import {
   startGoogleSignIn,
   type RequestLinkResult,
 } from '../api/auth';
+import { safeReturnTo } from '../../features/identity/return-to';
+import { rememberReturnTo } from '../return-to';
 import { PasswordSignIn } from '../components/password-sign-in';
 import { Turnstile } from '../components/turnstile';
 import { Button } from '../components/ui/button';
@@ -14,8 +16,14 @@ import { TextField } from '../components/ui/field';
 
 export const Route = createFileRoute('/entrar/')({
   component: SignIn,
-  validateSearch: (search: Record<string, unknown>): { erro?: 'google' } =>
-    search.erro === 'google' ? { erro: 'google' } : {},
+  validateSearch: (search: Record<string, unknown>): { erro?: 'google'; returnTo?: string } => {
+    // `returnTo` só passa se for um caminho interno válido (M3-02); o resto some.
+    const returnTo = safeReturnTo(search.returnTo);
+    return {
+      ...(search.erro === 'google' ? { erro: 'google' as const } : {}),
+      ...(returnTo ? { returnTo } : {}),
+    };
+  },
 });
 
 const MESSAGES: Record<Exclude<RequestLinkResult, 'sent'>, string> = {
@@ -34,6 +42,10 @@ function SignIn() {
   useEffect(() => {
     void fetchAuthOptions().then((options) => setGoogleEnabled(options.google));
   }, []);
+  // Depois do login a pessoa volta à página de onde veio (o link do e-mail pode abrir em outra aba).
+  useEffect(() => {
+    if (search.returnTo) rememberReturnTo(search.returnTo);
+  }, [search.returnTo]);
 
   async function signInWithGoogle() {
     setGoogleBusy(true);

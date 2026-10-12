@@ -187,15 +187,24 @@ describe('o que aparece', () => {
     const body = await json(await catalog(await newStudent()));
     const [paid, free] = body.courses;
     expect(paid).toEqual({
+      id: expect.any(String),
       slug: 'i-pago',
       title: 'Público i-pago',
       summary: 'Resumo de i-pago',
       workloadHours: 4,
       sequenceMode: 'guided',
       availability: 'open',
-      offer: { kind: 'paid', priceCents: 19_700, accessMonths: 12, maxInstallments: 12 },
+      offer: {
+        id: expect.any(String),
+        kind: 'paid',
+        priceCents: 19_700,
+        accessMonths: 12,
+        maxInstallments: 12,
+      },
+      access: { hasAccess: false, reason: 'no_access', expiresAt: null },
     });
     expect(free.offer).toEqual({
+      id: expect.any(String),
       kind: 'free',
       priceCents: 0,
       accessMonths: 12,
@@ -216,7 +225,6 @@ describe('o que aparece', () => {
       'firstPublishedAt',
       'status',
       'draft',
-      '"id"',
       'acquirable',
     ]) {
       expect(text, `a resposta não deve conter "${forbidden}"`).not.toContain(forbidden);

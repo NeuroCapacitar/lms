@@ -22,6 +22,7 @@ const offer = (over: Partial<PublicCourseDto['offers'][number]> = {}) => ({
   ...over,
 });
 const course = (over: Partial<PublicCourseDto> = {}): PublicCourseDto => ({
+  id: 'c1',
   slug: 'curso',
   sequenceMode: 'guided',
   acquirable: true,
@@ -85,15 +86,17 @@ describe('toCatalogCourse', () => {
   it('mostra título publicado, resumo, carga e a oferta aberta, sem id de oferta', () => {
     const dto = toCatalogCourse(course())!;
     expect(dto).toEqual({
+      id: 'c1',
       slug: 'curso',
       title: 'Curso',
       summary: 'Texto.',
       workloadHours: 3,
       sequenceMode: 'guided',
       availability: 'open',
-      offer: { kind: 'paid', priceCents: 19_700, accessMonths: 12, maxInstallments: 12 },
+      offer: { id: 'o1', kind: 'paid', priceCents: 19_700, accessMonths: 12, maxInstallments: 12 },
     });
-    expect(JSON.stringify(dto)).not.toContain('"id"');
+    // só os ids do curso e da oferta; nada de id de autoria
+    expect(Object.keys(dto)).not.toContain('createdBy');
   });
 
   it('sem currículo publicado não entra (nulo)', () => {
@@ -122,6 +125,7 @@ describe('toCatalogCourse', () => {
 describe('busca e filtro', () => {
   const list: CatalogCourseDto[] = [
     {
+      id: 'a',
       slug: 'a',
       title: 'Neurociência aplicada',
       summary: 'Atenção e memória',
@@ -131,6 +135,7 @@ describe('busca e filtro', () => {
       offer: null,
     },
     {
+      id: 'b',
       slug: 'b',
       title: 'Introdução',
       summary: 'Conceitos básicos',
