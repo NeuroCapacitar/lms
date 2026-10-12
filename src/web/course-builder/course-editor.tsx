@@ -14,12 +14,13 @@ import { Button } from '../components/ui/button';
 import { useAccess } from '../hooks/use-access';
 import { CurriculumTab } from './curriculum-tab';
 import { DetailsTab } from './details-tab';
+import { EnrollmentsTab } from './enrollments-tab';
 import { OffersTab } from './offers-tab';
 import { PreviewTab } from './preview-tab';
 import { PublishPanel } from './publish-panel';
 import { Tabs, type TabDef } from './tabs';
 
-type TabId = 'detalhes' | 'curriculo' | 'oferta' | 'previa' | 'publicar';
+type TabId = 'detalhes' | 'curriculo' | 'oferta' | 'inscritos' | 'previa' | 'publicar';
 
 type SaveState =
   | { kind: 'idle' }
@@ -149,6 +150,7 @@ export function CourseEditor({ courseId }: { courseId: string }) {
     { id: 'detalhes', label: 'Detalhes' },
     { id: 'curriculo', label: 'Currículo' },
     ...(canOffers ? [{ id: 'oferta' as const, label: 'Oferta' }] : []),
+    { id: 'inscritos', label: 'Inscritos' },
     { id: 'previa', label: 'Pré-visualização' },
     { id: 'publicar', label: 'Publicar' },
   ];
@@ -234,6 +236,7 @@ export function CourseEditor({ courseId }: { courseId: string }) {
         {activeTab === 'oferta' && canOffers ? (
           <OffersTab course={course.data} onChanged={courseChanged} />
         ) : null}
+        {activeTab === 'inscritos' ? <EnrollmentsTab courseId={courseId} /> : null}
         {activeTab === 'previa' ? <PreviewTab draft={draft} /> : null}
         {activeTab === 'publicar' ? (
           <PublishPanel
