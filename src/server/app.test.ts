@@ -98,6 +98,35 @@ describe('pelo ponto de entrada do Worker (index.ts)', () => {
     expect(logged).not.toMatch(/pessoa@|TOKEN_SECRETO|COOKIE_SECRETO|forjado/);
   });
 
+  it('o id de correlação sai INTACTO no log, mesmo com sequências de dígitos que lembram telefone ou cartão', async () => {
+    // Regressão (M3-05): a redação embutida de "telefone" do evlog mascarava pedaços de UUIDs como
+    // este ("****4806-8066-..."), e o suporte não conseguia achar no log o id que o cliente recebeu.
+    const ids = [
+      '66e43a01-3341-4806-8066-3120b7241215',
+      '12345678-1234-4806-8066-123456789012',
+      '00000000-0000-4000-8000-000000000000',
+      '2026-1012-4806-8066-1234567890ab',
+    ];
+    const context = {
+      waitUntil: () => {},
+      passThroughOnException: () => {},
+    } as unknown as ExecutionContext;
+    for (const id of ids) {
+      output.length = 0;
+      const spy = vi
+        .spyOn(crypto, 'randomUUID')
+        .mockReturnValue(id as `${string}-${string}-${string}-${string}-${string}`);
+      const response = await worker.fetch(
+        new Request('http://example.com/api/health/live') as Parameters<typeof worker.fetch>[0],
+        env,
+        context,
+      );
+      spy.mockRestore();
+      expect(response.headers.get('x-request-id')).toBe(id);
+      expect(output.join('\n'), id).toContain(id);
+    }
+  });
+
   it('o e-mail na mensagem de um erro não chega ao registro nem à resposta', async () => {
     const app = createApp();
     app.get('/api/_boom', () => {

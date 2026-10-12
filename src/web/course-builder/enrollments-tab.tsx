@@ -35,6 +35,11 @@ const ERRORS: Record<string, string> = {
 
 type Message = { kind: 'ok' | 'error'; text: string };
 
+/** Quem entrou por link de acesso pode estar sem nome: nesse caso a tela usa o e-mail. */
+function nameOf(row: EnrolleeDto): string {
+  return row.name.trim() || row.email;
+}
+
 function messageFor(outcome: { result: string; code?: string | undefined }): string {
   if (outcome.result === 'forbidden') return 'Você não tem permissão para esta ação.';
   if (outcome.result === 'unauthenticated') return 'Sua sessão expirou. Entre novamente.';
@@ -162,7 +167,9 @@ function RowForm({
     setBusy(false);
     if (outcome.result === 'ok') {
       onDone(
-        kind === 'suspend' ? `Acesso de ${row.name} suspenso.` : `Prazo de ${row.name} ajustado.`,
+        kind === 'suspend'
+          ? `Acesso de ${nameOf(row)} suspenso.`
+          : `Prazo de ${nameOf(row)} ajustado.`,
       );
       return;
     }
@@ -172,7 +179,9 @@ function RowForm({
   return (
     <form
       onSubmit={(event) => void submit(event)}
-      aria-label={kind === 'suspend' ? `Suspender ${row.name}` : `Ajustar prazo de ${row.name}`}
+      aria-label={
+        kind === 'suspend' ? `Suspender ${nameOf(row)}` : `Ajustar prazo de ${nameOf(row)}`
+      }
       className="grid max-w-xl gap-3"
     >
       {kind === 'adjust' ? (
@@ -243,7 +252,7 @@ export function EnrollmentsTab({ courseId }: { courseId: string }) {
     setMessage(undefined);
     const outcome = await reinstateEnrollment(courseId, row.userId);
     setBusyRow(undefined);
-    if (outcome.result === 'ok') done(`Acesso de ${row.name} reativado.`);
+    if (outcome.result === 'ok') done(`Acesso de ${nameOf(row)} reativado.`);
     else setMessage({ kind: 'error', text: messageFor(outcome) });
   }
 
@@ -391,7 +400,7 @@ function RowView({
     <>
       <tr className="border-b align-top">
         <th scope="row" className="py-3 pr-4 font-normal">
-          <span className="font-medium">{row.name}</span>
+          <span className="font-medium">{nameOf(row)}</span>
           <br />
           <span className="text-sm text-[var(--text-muted)]">{row.email}</span>
         </th>
@@ -416,17 +425,17 @@ function RowView({
           <div className="flex flex-wrap gap-2">
             {canGrant && row.status !== 'suspended' ? (
               <Button type="button" variant="secondary" onClick={() => onAction('suspend')}>
-                Suspender {row.name}
+                Suspender {nameOf(row)}
               </Button>
             ) : null}
             {canGrant && row.status === 'suspended' ? (
               <Button type="button" variant="secondary" disabled={busy} onClick={onReinstate}>
-                Reativar {row.name}
+                Reativar {nameOf(row)}
               </Button>
             ) : null}
             {canAdjust && row.manualGrant ? (
               <Button type="button" variant="secondary" onClick={() => onAction('adjust')}>
-                Ajustar prazo de {row.name}
+                Ajustar prazo de {nameOf(row)}
               </Button>
             ) : null}
           </div>

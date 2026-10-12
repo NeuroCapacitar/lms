@@ -120,3 +120,12 @@ export async function requestReauth(): Promise<RequestReauthResult> {
   if (response.status === 429) return 'rate_limited';
   return 'unavailable';
 }
+
+/**
+ * Encerra a sessão deste aparelho (`POST /api/auth/sign-out`, a única rota nativa do Better Auth
+ * exposta). Devolve `true` quando o servidor confirmou; o cookie some na resposta.
+ */
+export async function signOut(): Promise<boolean> {
+  const response = await postJson('/api/auth/sign-out', {});
+  return response?.ok ?? false;
+}
