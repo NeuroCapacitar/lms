@@ -16,8 +16,16 @@ export interface OpenDatabase {
  * Um cliente `pg` POR REQUISIÇÃO, fechado no fim (o pool fica no Hyperdrive; um pool global
  * quebra com "Cannot perform I/O on behalf of a different request"). Hyperdrive sem cache.
  */
-export async function openDatabase(connectionString: string): Promise<OpenDatabase> {
-  const client = new pg.Client({ connectionString });
+export async function openDatabase(
+  connectionString: string,
+  options: { connectionTimeoutMillis?: number } = {},
+): Promise<OpenDatabase> {
+  // `connectionTimeoutMillis`: sem ele um Neon acordando devagar prende a conexão sem limite (o Cron
+  // define um teto para terminar com erro em vez de pendurar).
+  const client = new pg.Client({
+    connectionString,
+    connectionTimeoutMillis: options.connectionTimeoutMillis,
+  });
   // Sem ouvinte, um 'error' do cliente vira exceção não tratada. O pg-cloudflare emite um erro
   // ("This socket has been closed") quando o leitor do socket é cancelado ao fechar a conexão; a
   // resposta não é afetada, mas o erro poluiria os logs. Erros reais de consulta chegam pelo `await`.

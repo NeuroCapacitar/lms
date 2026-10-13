@@ -83,6 +83,15 @@ describe('checkArtifact', () => {
     expect(queue.join('\n')).toMatch(/queue_producers/);
   });
 
+  it('aceita só o cron de reconciliação a cada 30 min (M4-03)', () => {
+    const withCron = (crons: unknown) =>
+      checkArtifact(artifact({ triggers: { crons } }), staging, 'staging');
+    expect(withCron(['*/30 * * * *'])).toEqual([]);
+    expect(withCron(['*/5 * * * *']).join('\n')).toMatch(/cron não permitido/);
+    expect(withCron(['*/30 * * * *', '* * * * *']).join('\n')).toMatch(/cron não permitido/);
+    expect(withCron([42]).join('\n')).toMatch(/cron não permitido/);
+  });
+
   it('rejeita binding de categoria desconhecida e variáveis não previstas', () => {
     expect(
       checkArtifact(

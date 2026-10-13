@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import type { ZodType } from 'zod';
 
 import type { Database } from '../../db/client';
@@ -125,7 +125,7 @@ export async function claimOutboxById(
   owner: string,
   leaseSeconds: number = DEFAULT_LEASE_SECONDS,
 ): Promise<ClaimedRow | undefined> {
-  const [claimed] = await claimRows(db, 'outbox_message', 1, owner, leaseSeconds, id);
+  const [claimed] = await claimRows(db, 'outbox_message', 1, owner, leaseSeconds, { id });
   return claimed;
 }
 
@@ -168,4 +168,53 @@ export function purgeOutbox(db: Database): Promise<number> {
     doneDays: RETENTION_DAYS.done,
     problemDays: RETENTION_DAYS.problem,
   });
+}
+
+/** Quanto tempo uma intenção `pending` já disponível espera antes de o Cron presumir a mensagem perdida. */
+const REPUBLISH_AFTER_SECONDS = 300;
+
+const republishable = or(
+  and(
+    eq(outboxMessage.state, 'pending'),
+    sql`${outboxMessage.availableAt} <= now() - make_interval(secs => ${REPUBLISH_AFTER_SECONDS})`,
+  ),
+  and(eq(outboxMessage.state, 'leased'), sql`${outboxMessage.leaseUntil} < now()`),
+);
+
+export interface RepublishableIntent {
+  id: string;
+  kind: string;
+  correlationId: string;
+}
+
+/** Há algo que o Cron deva republicar? (uma consulta barata: o Cron sai cedo se não houver) */
+export async function hasRepublishable(db: Database): Promise<boolean> {
+  const [found] = await db
+    .select({ id: outboxMessage.id })
+    .from(outboxMessage)
+    .where(republishable)
+    .limit(1);
+  return found !== undefined;
+}
+
+/**
+ * As intenções cuja mensagem presumivelmente se perdeu (publish que falhou, consumidor morto, mensagem
+ * descartada da Queue): `pending` disponíveis há mais de 5 min e `leased` com lease vencido. Só as
+ * lanes pedidas (a pausada fica de fora). Não reivindica: quem reivindica é o consumidor, ao receber.
+ */
+export function listRepublishable(
+  db: Database,
+  options: { lanes: readonly ('finance' | 'general')[]; limit: number },
+): Promise<RepublishableIntent[]> {
+  if (options.lanes.length === 0) return Promise.resolve([]);
+  return db
+    .select({
+      id: outboxMessage.id,
+      kind: outboxMessage.kind,
+      correlationId: outboxMessage.correlationId,
+    })
+    .from(outboxMessage)
+    .where(and(republishable, inArray(outboxMessage.queue, [...options.lanes])))
+    .orderBy(outboxMessage.priority, outboxMessage.availableAt, outboxMessage.id)
+    .limit(options.limit);
 }

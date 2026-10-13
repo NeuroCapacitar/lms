@@ -27,7 +27,7 @@
 
 ### M4-02 — Duas Queues por ambiente, DLQs e consumers tipados
 
-**Dependências:** M4-01, M0-03 · **Estado:** `implemented` (2026-10-12; Queue real só no Staging, ver STATUS)
+**Dependências:** M4-01, M0-03 · **Estado:** `verified` no CI (2026-10-12; Queue real só no Staging, ver STATUS)
 
 **Objetivo:** acelerar a entrega do outbox via `hub-finance` (webhooks Asaas, pagamento, reembolso, reconciliação) e `hub-general` (e-mail, interesse, limpeza, certificado no M7), cada uma com DLQ, em Dev/Staging/Production isolados.
 **Passos:**
@@ -43,7 +43,7 @@
 
 ### M4-03 — Cron de reconciliação a cada 30 minutos
 
-**Dependências:** M4-01, M4-02 (spike M0-12 para o orçamento) · **Estado:** `not_started`
+**Dependências:** M4-01, M4-02 (spike M0-12 para o orçamento) · **Estado:** `implemented` (2026-10-13; Cron real e soak de CU-h só no Staging, ver STATUS)
 
 **Objetivo:** toda intenção pendente avança ou chega a estado investigável sem ação manual, acordando o Neon Free o mínimo possível.
 **Passos:**

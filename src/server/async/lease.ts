@@ -39,9 +39,22 @@ function rowsOf(result: unknown): Record<string, unknown>[] {
 }
 
 /**
+ * O que perdeu o lease depois de esgotar as tentativas (consumidor que morre sempre no mesmo item)
+ * vai para `dead`, em vez de ser reexecutado para sempre. Devolve quantas linhas encerrou.
+ */
+export async function deadLetterExhausted(db: Database, name: LeasedTable): Promise<number> {
+  const result = await db.execute(sql`
+    update ${table(name)}
+       set state = 'dead', lease_owner = null, lease_until = null, finished_at = now(),
+           updated_at = now(), last_error_code = 'lease_expired_attempts_exhausted'
+     where state = 'leased' and lease_until < now() and attempts >= ${MAX_ATTEMPTS}
+    returning id`);
+  return rowsOf(result).length;
+}
+
+/**
  * Reivindica até `limit` linhas: `pending` com `available_at <= now()` e `leased` com lease vencido.
- * Antes, o que já esgotou as tentativas e perdeu o lease (consumidor que morre sempre no mesmo item)
- * vai para `dead`, em vez de ser reexecutado para sempre.
+ * Antes, o que esgotou as tentativas e perdeu o lease vai para `dead` (`deadLetterExhausted`).
  */
 export async function claimRows(
   db: Database,
@@ -49,7 +62,7 @@ export async function claimRows(
   limit: number,
   owner: string,
   leaseSeconds: number,
-  onlyId?: string,
+  filter: { id?: string; providers?: readonly string[] } = {},
 ): Promise<ClaimedRow[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
     throw new RangeError('claim_limit_invalid');
@@ -64,14 +77,18 @@ export async function claimRows(
   const identity = outbox
     ? sql`target.kind, null::text as provider, target.dedupe_key`
     : sql`null::text as kind, target.provider, null::text as dedupe_key`;
-  const only = onlyId === undefined ? sql`true` : sql`id = ${onlyId}`;
+  const only = filter.id === undefined ? sql`true` : sql`id = ${filter.id}`;
+  // Só a inbox filtra por provider (o Cron só reivindica os providers que têm handler).
+  const byProvider =
+    !outbox && filter.providers
+      ? sql`and provider in (${sql.join(
+          filter.providers.map((provider) => sql`${provider}`),
+          sql`, `,
+        )})`
+      : sql``;
 
   return db.transaction(async (tx) => {
-    await tx.execute(sql`
-      update ${table(name)}
-         set state = 'dead', lease_owner = null, lease_until = null, finished_at = now(),
-             updated_at = now(), last_error_code = 'lease_expired_attempts_exhausted'
-       where state = 'leased' and lease_until < now() and attempts >= ${MAX_ATTEMPTS}`);
+    await deadLetterExhausted(tx, name);
     const result = await tx.execute(sql`
       with claimed as (
       update ${table(name)} as target
@@ -83,7 +100,7 @@ export async function claimRows(
          select id from ${table(name)}
           where ((state = 'pending' and available_at <= now())
              or (state = 'leased' and lease_until < now()))
-            and ${only}
+            and ${only} ${byProvider}
           order by ${orderBy}
           for update skip locked
           limit ${limit})
@@ -239,5 +256,21 @@ export async function markRowDead(
            updated_at = now(), last_error_code = ${code.slice(0, 100)}
      where id = ${id} and state in ('pending', 'leased')
     returning id`);
+  return rowsOf(result).length === 1;
+}
+
+/** Há algo além da retenção? Mesma regra de `purgeRows`, sem apagar (o Cron só apaga se houver). */
+export async function hasPurgeableRows(
+  db: Database,
+  name: LeasedTable,
+  retention: { doneDays: number; problemDays: number },
+): Promise<boolean> {
+  const result = await db.execute(sql`
+    select 1 from ${table(name)}
+     where (state in ('delivered', 'superseded')
+            and finished_at < now() - make_interval(days => ${retention.doneDays}))
+        or (state in ('failed', 'dead')
+            and finished_at < now() - make_interval(days => ${retention.problemDays}))
+     limit 1`);
   return rowsOf(result).length === 1;
 }

@@ -19,8 +19,8 @@ export async function publishIntents(
   env: QueueBindings,
   intents: readonly PublishableIntent[],
   alert: Alert = logAlert,
-): Promise<void> {
-  await Promise.all(
+): Promise<{ sent: number; failed: number }> {
+  const results = await Promise.all(
     intents.map(async (intent) => {
       const queue = queueOfKind(intent.kind);
       const binding = queue === 'finance' ? env.QUEUE_FINANCE : env.QUEUE_GENERAL;
@@ -33,6 +33,7 @@ export async function publishIntents(
           }),
           { contentType: 'json' },
         );
+        return true;
       } catch {
         alert({
           code: 'publish_failed',
@@ -40,9 +41,12 @@ export async function publishIntents(
           intentId: intent.id,
           correlationId: intent.correlationId,
         });
+        return false;
       }
     }),
   );
+  const sent = results.filter(Boolean).length;
+  return { sent, failed: results.length - sent };
 }
 
 /** Atalho para o handler HTTP: `publishAfterCommit(c.env, c.executionCtx, [intent])` depois do commit. */
