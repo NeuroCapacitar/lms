@@ -36,6 +36,9 @@ import { courseAccessRoutes } from '../access/routes';
 import { enrollmentStaffRoutes } from '../access/staff-routes';
 import { discussionRoutes, discussionStaffRoutes } from '../discussion/routes';
 import { interestRoutes, interestStaffRoutes } from '../interest/routes';
+import { createR2Storage } from '../media/r2-storage';
+import { mediaRoutes } from '../media/routes';
+import type { ObjectStorage } from '../media/storage';
 import { operationsRoutes } from '../ops/routes';
 import { videoRoutes } from '../video/routes';
 import { emailQuotaExhausted } from '../email/quota-store';
@@ -71,6 +74,8 @@ export interface AuthRouteOverrides {
   limits?: LinkLimits;
   /** Relógio das rotas de estudo (drip), só nos testes. */
   clock?: () => Date;
+  /** Armazenamento de mídia nos testes; em produção vem do R2 do ambiente (`undefined` = mídia desligada). */
+  mediaStorage?: ObjectStorage;
 }
 
 type Vars = AuthVars;
@@ -204,6 +209,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   routes.use('/catalog/*', withDatabase, requireAcceptedTerms());
   routes.use('/courses/*', withDatabase, requireAcceptedTerms());
   routes.use('/lessons/*', withDatabase, requireAcceptedTerms());
+  routes.use('/media/*', withDatabase, requireAcceptedTerms());
 
   routes.post('/auth/link/request', async (c) => {
     c.header('Cache-Control', 'no-store');
@@ -390,7 +396,13 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   );
 
   // Catálogo da Staff (M2-01): /api/staff/courses/*.
-  routes.route('/staff', catalogRoutes({ withDatabase }));
+  routes.route(
+    '/staff',
+    catalogRoutes({
+      withDatabase,
+      storage: (c) => overrides.mediaStorage ?? createR2Storage(c.env),
+    }),
+  );
 
   // Operations Center (M4-05): /api/staff/operations (leitura da Staff; ações com grant e reautenticação).
   routes.route('/staff', operationsRoutes({ withDatabase }));
@@ -403,6 +415,16 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
 
   // Moderação e resposta da equipe nas discussões (M5-05): /api/staff/discussions (grant discussion.moderate).
   routes.route('/staff', discussionStaffRoutes({ withDatabase }));
+
+  // Mídia (M5-07): /api/media/intents, /:id/confirm e /:id/content (sessão e termos; R2 do ambiente).
+  routes.route(
+    '/',
+    mediaRoutes({
+      withDatabase,
+      storage: (c) => overrides.mediaStorage ?? createR2Storage(c.env),
+      ...(overrides.clock ? { clock: overrides.clock } : {}),
+    }),
+  );
 
   // Interesse em cursos ainda não abertos (M5-06): /api/me/course-interests (sessão e termos).
   routes.route(

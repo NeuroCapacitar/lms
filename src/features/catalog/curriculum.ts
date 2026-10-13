@@ -28,6 +28,9 @@ export const saveDraftSchema = z.strictObject({
     displayTitle: z.string().max(200),
     description: richOrNull,
     workloadHours: z.number().int().min(1).max(10_000).nullable(),
+    /** M5-07: capa e banner (`media_asset` prontos). AUSENTE = mantém; `null` = remove. */
+    coverMediaId: uuid.nullable().optional(),
+    bannerMediaId: uuid.nullable().optional(),
   }),
   modules: z
     .array(
@@ -74,6 +77,9 @@ export interface CurriculumDetails {
   displayTitle: string;
   description: RichText | null;
   workloadHours: number | null;
+  /** Capa e banner (M5-07). Ausente = sem imagem (telas e testes anteriores). */
+  coverMediaId?: string | null;
+  bannerMediaId?: string | null;
 }
 
 export interface LessonNode {

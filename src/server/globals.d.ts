@@ -32,4 +32,18 @@ interface Env {
    * Perdida = as conexões precisam ser recadastradas.
    */
   VIDEO_SECRETS_MASTER_KEY?: string;
+  /**
+   * Mídia (M5-07). Os dois buckets do R2 e as credenciais do token de API do R2 (para o PUT pré-assinado).
+   * TODOS opcionais: sem qualquer um deles a mídia fica desligada (503 `media_not_configured`). Os bindings só
+   * entram no `wrangler.jsonc` depois que os buckets existirem (ver docs/operations/media.md).
+   */
+  MEDIA_PRIVATE?: R2Bucket;
+  MEDIA_PUBLIC?: R2Bucket;
+  R2_ACCOUNT_ID?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  /** Nome do bucket PRIVADO no endpoint S3 (o nome, não o binding). */
+  R2_PRIVATE_BUCKET_NAME?: string;
+  /** Domínio público da mídia (capa e banner), na zona Cloudflare; ausente = sem imagem pública. Variável, não segredo. */
+  MEDIA_PUBLIC_BASE_URL?: string;
 }

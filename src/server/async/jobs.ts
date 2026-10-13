@@ -8,12 +8,23 @@ import { acquireJob, finishJob, type JobResult } from './job-store';
 import { deadLetterExhausted, hasPurgeableRows } from './lease';
 import { hasRepublishable, listRepublishable, markOutboxDead, purgeOutbox } from './outbox-store';
 import { evaluateAlerts } from '../../features/ops/operations';
+import { createR2Storage } from '../media/r2-storage';
+import { cleanupMedia, hasMediaWork } from '../media/store';
 import { loadOperationsSnapshot } from '../ops/operations-store';
 import { publishIntents, type PublishableIntent } from './publisher';
 
 export interface JobContext {
   db: Database;
-  env: Pick<Env, 'QUEUE_FINANCE' | 'QUEUE_GENERAL'>;
+  env: Pick<Env, 'QUEUE_FINANCE' | 'QUEUE_GENERAL'> &
+    Pick<
+      Env,
+      | 'MEDIA_PRIVATE'
+      | 'MEDIA_PUBLIC'
+      | 'R2_ACCOUNT_ID'
+      | 'R2_ACCESS_KEY_ID'
+      | 'R2_SECRET_ACCESS_KEY'
+      | 'R2_PRIVATE_BUCKET_NAME'
+    >;
   alert: Alert;
   /** Identifica esta execução do Cron (dono dos leases). */
   owner: string;
@@ -107,9 +118,28 @@ export const alertsJob: CronJob = {
   },
 };
 
-/** Os jobs do Cron, na ordem. M5-07 e M6-04 registram os seus aqui; `handlers` são os dos eventos da inbox. */
+/**
+ * Limpeza de mídia (M5-07): upload pendente vencido (>24 h), objeto sem referência há mais de 24 h (relendo a
+ * contagem sob trava) e a purga dos objetos no R2, fora de transação. Sem R2 configurado a mídia nem existe,
+ * então o job não acorda (a sonda devolve falso). Falha do R2 fica para o próximo ciclo.
+ */
+const mediaCleanupJob: CronJob = {
+  name: 'media.cleanup',
+  async probe({ db, env }) {
+    return createR2Storage(env) !== undefined && (await hasMediaWork(db));
+  },
+  async run({ db, env }) {
+    const storage = createR2Storage(env);
+    if (!storage) return { count: 0 };
+    const result = await cleanupMedia(db, storage);
+    const count = result.expired + result.orphaned + result.purged;
+    return result.failed > 0 ? { count, errorCode: 'purge_failed' } : { count };
+  },
+};
+
+/** Os jobs do Cron, na ordem. M6-04 registra o seu aqui; `handlers` são os dos eventos da inbox. */
 export function createCronJobs(handlers: InboxHandlers): readonly CronJob[] {
-  return [republishJob, inboxJob(handlers), purgeJob, alertsJob];
+  return [republishJob, inboxJob(handlers), purgeJob, mediaCleanupJob, alertsJob];
 }
 
 export interface CycleSummary {

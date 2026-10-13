@@ -13,6 +13,13 @@ import { saveDraftSchema } from '../../features/catalog/curriculum';
 import { requireCapability } from '../auth/authorization';
 import type { AuthVars } from '../auth/types';
 import {
+  MediaNotPublishedError,
+  MediaNotReadyError,
+  MediaPurposeMismatchError,
+} from '../media/references';
+import type { ObjectStorage } from '../media/storage';
+import { MediaNotFoundError, UploadMissingError, publishPublicMedia } from '../media/store';
+import {
   CourseArchivedError,
   CourseNotFoundError,
   InvalidOfferTermsError,
@@ -48,12 +55,27 @@ type CatalogContext = Context<{ Bindings: Env; Variables: AuthVars }>;
 interface CatalogRouteDeps {
   /** Abre o banco e monta o Better Auth (o mesmo das demais rotas autenticadas). */
   withDatabase: MiddlewareHandler<{ Bindings: Env; Variables: AuthVars }>;
+  /** O R2 do ambiente (M5-07); `undefined` = mídia desligada (publicar curso com imagem dá 503). */
+  storage?: (c: CatalogContext) => ObjectStorage | undefined;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Erros de domínio do catálogo viram respostas com código próprio; o resto é erro do servidor. */
 function domainError(c: CatalogContext, error: unknown): Response {
+  if (error instanceof MediaNotReadyError) {
+    return c.json({ error: { code: 'media_not_ready' } }, 400);
+  }
+  if (error instanceof MediaPurposeMismatchError) {
+    return c.json({ error: { code: 'media_purpose_mismatch' } }, 400);
+  }
+  // Capa ou banner trocados entre a cópia para o bucket público e a publicação: tentar de novo resolve.
+  if (error instanceof MediaNotPublishedError) {
+    return c.json({ error: { code: 'media_not_published' } }, 409);
+  }
+  if (error instanceof MediaNotFoundError) return c.json({ error: { code: 'not_found' } }, 404);
+  if (error instanceof UploadMissingError)
+    return c.json({ error: { code: 'upload_missing' } }, 409);
   if (error instanceof UnknownVideoAssetError) {
     return c.json({ error: { code: 'video_asset_not_found' } }, 400);
   }
@@ -277,6 +299,16 @@ export function catalogRoutes(deps: CatalogRouteDeps) {
       const found = ids(c, 'id');
       if (!found) return c.json({ error: { code: 'not_found' } }, 404);
       try {
+        // M5-07: capa e banner são copiados para o bucket PÚBLICO antes do ponteiro mudar (fora da transação).
+        const draft = await getDraft(c.var.db, found[0]!);
+        const mediaIds = [draft?.details.coverMediaId, draft?.details.bannerMediaId].filter(
+          (id): id is string => typeof id === 'string',
+        );
+        if (mediaIds.length > 0) {
+          const storage = deps.storage?.(c);
+          if (!storage) return c.json({ error: { code: 'media_not_configured' } }, 503);
+          for (const mediaId of mediaIds) await publishPublicMedia(c.var.db, storage, mediaId);
+        }
         return c.json(
           await publishCurriculum(c.var.db, { actorId: actor(c), courseId: found[0]! }),
         );

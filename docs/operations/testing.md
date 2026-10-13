@@ -296,3 +296,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Unit: `src/features/interest/interest.test.ts`. Servidor: `test/pg/interest.pg.test.ts` (ciclo abre/fecha/não cria, aberturas simultâneas, registro e retirada, aviso por (interesse, ciclo), repetição e paralelismo do fan-out, conversão, ciclo fechado, 120 interessadas em lotes, constraints). Telas: `e2e/interesse.spec.ts`.
 - O fan-out se testa chamando `createInterestFanoutHandler()` direto (como o consumidor faria): `DeferError` significa "lote cheio, rode de novo". Todo `HandlerRegistry` de teste precisa da chave `interest.fanout` (o tipo obriga).
 - O curso demonstrativo (`createDemoCourse`) já nasce ABERTO (o seed publica, cria e ativa a oferta): para testar interesse, pause a oferta com `setOfferStatus` antes.
+
+## Mídia no R2 (M5-07)
+
+- Unit: `src/features/media/media.test.ts` (assinatura mágica, dimensões de PNG/JPEG/WebP, conferência dos bytes, SigV4 contra o exemplo da AWS, variantes) e `crop.test.ts` (recorte e escada de qualidade). Servidor: `test/pg/media.pg.test.ts` com o armazenamento EM MEMÓRIA (`createMemoryStorage`, injetado por `mediaStorage` no `apiApp`): o teste "sobe" o objeto com `storage.upload(key, bytes)` como o navegador faria. Bytes sintéticos em `test/helpers/media-bytes.ts` (só cabeçalhos; nenhuma imagem real). Telas: `e2e/cursos.spec.ts` (campos de capa e banner; PNG real gerado em `e2e/support/png.ts`) e `e2e/curso-publico.spec.ts` (imagens e fallback).
+- O armazenamento em memória NÃO prova o R2: cabeçalhos assinados, CORS, limites e Images só se provam com o roteiro de `docs/operations/media.md`. Concorrência de transações em teste usa conexões separadas (`openDatabase`).
+- No e2e a CSP real vale: hosts de teste precisam caber nela (`*.r2.cloudflarestorage.com` no PUT; caminho local para as imagens públicas, já que o domínio da mídia ainda não está no `img-src`).

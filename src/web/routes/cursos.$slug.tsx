@@ -11,6 +11,7 @@ import { ForbiddenError } from '../api/staff';
 import { AccessStatus, EnrollControl } from '../components/enroll-control';
 import { RichTextView } from '../components/rich-text/rich-text-view';
 import { Button } from '../components/ui/button';
+import { PublicImage } from '../components/public-image';
 
 export const Route = createFileRoute('/cursos/$slug')({ component: CoursePage });
 
@@ -77,6 +78,9 @@ function CoursePage() {
   const data = course.data;
   return (
     <article className="grid max-w-prose gap-8">
+      {data.banner ? (
+        <PublicImage image={data.banner} className="h-auto w-full rounded-lg object-cover" />
+      ) : null}
       <header className="grid gap-2">
         <h1 className="text-3xl font-semibold">{data.title}</h1>
         <p className="text-sm text-[var(--text-muted)]">
@@ -84,6 +88,10 @@ function CoursePage() {
           {data.sequenceMode === 'guided' ? 'Sequência guiada' : 'Sequência livre'}
         </p>
       </header>
+
+      {data.cover ? (
+        <PublicImage image={data.cover} className="h-auto w-full rounded-lg object-cover" />
+      ) : null}
 
       <RichTextView value={data.description} />
 

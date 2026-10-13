@@ -46,7 +46,9 @@ export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
   app.get('/cursos/*', (c) =>
     serveCoursePage(c.req.raw, c.env, {
       loadCourse: (env, slug) =>
-        withDatabase(env.HYPERDRIVE, (db) => loadPublicCoursePage(db, slug)),
+        withDatabase(env.HYPERDRIVE, (db) =>
+          loadPublicCoursePage(db, slug, env.MEDIA_PUBLIC_BASE_URL),
+        ),
       inject: injectMeta,
       onError: (error) =>
         c.get('log')?.error(error instanceof Error ? error : new Error('course_page_failed')),

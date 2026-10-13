@@ -267,3 +267,80 @@ test.describe('meta tags servidas pelo Worker (HTMLRewriter de verdade)', () => 
     expect(response.headers()['content-type']).toContain('image/png');
   });
 });
+
+test.describe('imagens públicas do curso (M5-07)', () => {
+  const image = (name: string, width: number, height: number) => ({
+    src: `/midia-teste/cdn-cgi/image/width=640,quality=80,format=auto/${name}.webp`,
+    fallbackSrc: `/midia-teste/${name}.webp`,
+    width,
+    height,
+  });
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAhBZwgAAAAABJRU5ErkJggg==',
+    'base64',
+  );
+
+  test('mostra capa e banner decorativos (alt vazio) com as dimensões do master', async ({
+    page,
+  }) => {
+    await page.route('**/midia-teste/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/png', body: png }),
+    );
+    await stubCourse(page, {
+      ...FREE,
+      cover: image('capa', 1280, 720),
+      banner: image('banner', 1680, 420),
+    });
+    await page.goto('/cursos/demo');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Curso Demonstrativo' }),
+    ).toBeVisible();
+    const images = page.locator('article img');
+    await expect(images).toHaveCount(2);
+    await expect(images.first()).toHaveAttribute('alt', '');
+    await expect(images.first()).toHaveAttribute('width', '1680');
+    await expect(images.first()).toHaveAttribute('height', '420');
+    await expectNoViolations(page, 'página com capa e banner');
+  });
+
+  test('a variante falha (cota do Images): cai no master estático, sem erro visível', async ({
+    page,
+  }) => {
+    const requests: string[] = [];
+    await page.route('**/midia-teste/**', (route) => {
+      const url = route.request().url();
+      requests.push(url);
+      if (url.includes('/cdn-cgi/image/')) return route.fulfill({ status: 502, body: 'erro 9422' });
+      return route.fulfill({ status: 200, contentType: 'image/png', body: png });
+    });
+    await stubCourse(page, { ...FREE, cover: image('capa', 1280, 720) });
+    await page.goto('/cursos/demo');
+    const cover = page.locator('article img');
+    await expect(cover).toHaveAttribute('src', '/midia-teste/capa.webp');
+    await expect
+      .poll(() => cover.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0))
+      .toBe(true);
+    expect(requests.some((url) => url.includes('/cdn-cgi/image/'))).toBe(true);
+  });
+
+  test('variante E master falham: a imagem some, sem ícone quebrado e sem barulho', async ({
+    page,
+  }) => {
+    await page.route('**/midia-teste/**', (route) => route.fulfill({ status: 404, body: '' }));
+    await stubCourse(page, { ...FREE, banner: image('banner', 1680, 420) });
+    await page.goto('/cursos/demo');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Curso Demonstrativo' }),
+    ).toBeVisible();
+    await expect(page.locator('article img')).toHaveCount(0);
+  });
+
+  test('curso sem imagens (ou resposta antiga sem os campos) segue normal', async ({ page }) => {
+    await stubCourse(page, FREE);
+    await page.goto('/cursos/demo');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Curso Demonstrativo' }),
+    ).toBeVisible();
+    await expect(page.locator('article img')).toHaveCount(0);
+  });
+});
