@@ -12,7 +12,7 @@
 
 ### M4-01 — Núcleo Postgres de outbox e inbox com lease por linha
 
-**Dependências:** M0-04, M1-03 · **Estado:** `not_started`
+**Dependências:** M0-04, M1-03 · **Estado:** `implemented` (2026-10-12; CI e Staging pendentes, ver STATUS)
 
 **Objetivo:** gravar uma "intenção" (e-mail, chamada a provider, tarefa) na **mesma transação** da mudança de domínio e poder reivindicá-la com segurança por vários workers, sem perder nem duplicar o efeito além do at-least-once. O inbox guarda eventos externos (Asaas, Resend) antes de qualquer processamento.
 **Passos:**

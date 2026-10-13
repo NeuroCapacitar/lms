@@ -743,3 +743,119 @@ export const courseCompletion = pgTable(
     check('course_completion_total_check', sql`${table.requiredTotal} > 0`),
   ],
 );
+
+/**
+ * Outbox (M4-01): a FONTE DA VERDADE das intenções (e-mail, chamada a provider, tarefa). Nasce na MESMA
+ * transação da mudança de domínio; a Queue só acelera (ADR 0006). O payload leva só IDs. A linha é
+ * reivindicada com `FOR UPDATE SKIP LOCKED` e um LEASE cujo tempo vem do `now()` do banco; cada claim
+ * incrementa `lease_version` (fencing): quem perdeu o lease não conclui nada.
+ * Estados: `pending` (aguarda `available_at`), `leased`, `delivered` (concluída), `failed` (falha
+ * permanente, à espera de decisão humana), `dead` (tentativas esgotadas) e `superseded` (substituída).
+ */
+export const outboxMessage = pgTable(
+  'outbox_message',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    kind: text().notNull(),
+    queue: text().notNull(),
+    dedupeKey: text().notNull(),
+    payload: jsonb().notNull(),
+    /** Menor vai primeiro: link de login < transacional < marketing (usado pelo e-mail, M4-05/08). */
+    priority: integer().notNull().default(100),
+    state: text().notNull().default('pending'),
+    attempts: integer().notNull().default(0),
+    availableAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    leaseOwner: text(),
+    leaseUntil: timestamp({ withTimezone: true }),
+    leaseVersion: integer().notNull().default(0),
+    correlationId: text().notNull(),
+    lastErrorCode: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** Quando entrou em estado final (`delivered`, `failed`, `dead`, `superseded`): base da retenção. */
+    finishedAt: timestamp({ withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('outbox_message_dedupe_key_idx').on(table.dedupeKey),
+    index('outbox_message_claimable_idx')
+      .on(table.priority, table.availableAt)
+      .where(sql`${table.state} in ('pending', 'leased')`),
+    index('outbox_message_finished_idx')
+      .on(table.state, table.finishedAt)
+      .where(sql`${table.finishedAt} is not null`),
+    check('outbox_message_kind_check', sql`length(${table.kind}) between 1 and 100`),
+    check('outbox_message_queue_check', sql`${table.queue} in ('finance', 'general')`),
+    check('outbox_message_dedupe_key_check', sql`length(${table.dedupeKey}) between 1 and 200`),
+    check(
+      'outbox_message_state_check',
+      sql`${table.state} in ('pending', 'leased', 'delivered', 'failed', 'dead', 'superseded')`,
+    ),
+    check('outbox_message_attempts_check', sql`${table.attempts} >= 0`),
+    check(
+      'outbox_message_correlation_check',
+      sql`length(${table.correlationId}) between 1 and 100`,
+    ),
+    check(
+      'outbox_message_lease_check',
+      sql`(${table.state} = 'leased') = (${table.leaseOwner} is not null and ${table.leaseUntil} is not null)`,
+    ),
+    check(
+      'outbox_message_finished_check',
+      sql`(${table.state} in ('delivered', 'failed', 'dead', 'superseded')) = (${table.finishedAt} is not null)`,
+    ),
+    check('outbox_message_payload_check', sql`jsonb_typeof(${table.payload}) = 'object'`),
+  ],
+);
+
+/**
+ * Inbox (M4-01): eventos EXTERNOS (Asaas, Resend) persistidos ANTES do ACK e deduplicados por
+ * `(provider, event_id)`. O payload é limitado (64 KiB) e a retenção é de 30 dias depois de concluído.
+ * Mesmo esquema de estados e de lease da outbox.
+ */
+export const inboxEvent = pgTable(
+  'inbox_event',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    provider: text().notNull(),
+    eventId: text().notNull(),
+    payload: jsonb().notNull(),
+    state: text().notNull().default('pending'),
+    attempts: integer().notNull().default(0),
+    availableAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    leaseOwner: text(),
+    leaseUntil: timestamp({ withTimezone: true }),
+    leaseVersion: integer().notNull().default(0),
+    correlationId: text().notNull(),
+    lastErrorCode: text(),
+    receivedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp({ withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('inbox_event_provider_event_idx').on(table.provider, table.eventId),
+    index('inbox_event_claimable_idx')
+      .on(table.availableAt)
+      .where(sql`${table.state} in ('pending', 'leased')`),
+    index('inbox_event_finished_idx')
+      .on(table.state, table.finishedAt)
+      .where(sql`${table.finishedAt} is not null`),
+    check('inbox_event_provider_check', sql`${table.provider} in ('asaas', 'resend')`),
+    check('inbox_event_event_id_check', sql`length(${table.eventId}) between 1 and 200`),
+    check(
+      'inbox_event_state_check',
+      sql`${table.state} in ('pending', 'leased', 'delivered', 'failed', 'dead', 'superseded')`,
+    ),
+    check('inbox_event_attempts_check', sql`${table.attempts} >= 0`),
+    check('inbox_event_correlation_check', sql`length(${table.correlationId}) between 1 and 100`),
+    check(
+      'inbox_event_lease_check',
+      sql`(${table.state} = 'leased') = (${table.leaseOwner} is not null and ${table.leaseUntil} is not null)`,
+    ),
+    check(
+      'inbox_event_finished_check',
+      sql`(${table.state} in ('delivered', 'failed', 'dead', 'superseded')) = (${table.finishedAt} is not null)`,
+    ),
+    check('inbox_event_payload_check', sql`jsonb_typeof(${table.payload}) = 'object'`),
+    check('inbox_event_payload_size_check', sql`octet_length(${table.payload}::text) <= 65536`),
+  ],
+);
