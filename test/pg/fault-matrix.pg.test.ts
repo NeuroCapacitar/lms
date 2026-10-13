@@ -9,6 +9,7 @@ import { processDeadLetters } from '../../src/server/async/consumer.ts';
 import { pauseFlagKey } from '../../src/server/async/flags.ts';
 import { TransientError, type HandlerRegistry } from '../../src/server/async/handlers.ts';
 import { queueEmail } from '../../src/server/email/email-store.ts';
+import { createQuotaGate } from '../../src/server/email/quota-store.ts';
 import { createEmailHandler } from '../../src/server/email/send-handler.ts';
 import type { MailRequest, MailResult, Mailer } from '../../src/server/email/mailer.ts';
 import { resendEventHandler } from '../../src/server/email/resend-events.ts';
@@ -57,7 +58,9 @@ afterAll(async () => {
   await database.drop();
 });
 beforeEach(async () => {
-  await main.db.execute(sql`truncate table outbox_message, inbox_event, system_flag, job_run`);
+  await main.db.execute(
+    sql`truncate table email_send_ledger, email_message, outbox_message, inbox_event, system_flag, job_run`,
+  );
 });
 
 async function row(id: string) {
@@ -432,6 +435,7 @@ describe('Fault matrix (M4-06)', () => {
     };
     const emailDeps = {
       getMailer: () => mailer,
+      quota: createQuotaGate(),
       from: 'NeuroCapacitar <acesso@neurocapacitar.example>',
       appUrl: 'https://hub.example',
       allowlist: [],
@@ -534,5 +538,79 @@ describe('Fault matrix (M4-06)', () => {
       .from(schema.emailMessage)
       .where(eq(schema.emailMessage.id, created!.id));
     expect(saved!.state).toBe('bounced'); // delivered depois de bounced não desfaz
+  });
+
+  it('F15 cota do Resend (M4-08): o excedente é adiado (nunca failed nem perdido) e o Cron o entrega na janela seguinte', async () => {
+    const accepted: string[] = [];
+    const mailer: Mailer = {
+      async send(request: MailRequest): Promise<MailResult> {
+        accepted.push(request.idempotencyKey);
+        return { ok: true, providerMessageId: `re_${accepted.length}` };
+      },
+    };
+    const policy = { dailyLimit: 3, monthlyLimit: 30, loginReserve: 0 };
+    const userId = uuid();
+    await main.db
+      .insert(schema.user)
+      .values({ id: userId, name: 'Ana', email: `f15-${uuid()}@example.com` });
+    const ids: string[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      const { emailMessageId } = await main.db.transaction((tx) =>
+        queueEmail(tx, {
+          template: 'course-available',
+          recipientUserId: userId,
+          variables: { COURSE_TITLE: 'Curso' },
+          dedupeKey: `f15:${uuid()}`,
+          correlationId: 'corr-f15',
+        }),
+      );
+      ids.push(emailMessageId);
+    }
+    const h = createHarness();
+    const handlers = () => ({
+      'system.demo': async () => {},
+      'email.send': createEmailHandler({
+        getMailer: () => mailer,
+        quota: createQuotaGate(policy),
+        from: 'NeuroCapacitar <acesso@neurocapacitar.example>',
+        appUrl: 'https://hub.example',
+        allowlist: [],
+      }),
+    });
+    const intents = await main.db.select().from(schema.outboxMessage);
+    const queue = new SimQueue();
+    for (const intent of intents) {
+      await queue.bindings.send({
+        v: 1,
+        kind: 'email.send',
+        intentId: intent.id,
+        correlationId: intent.correlationId,
+      });
+    }
+    const first = await queue.deliver(h.consumerDeps(main.db, handlers()));
+    expect(first.every((message) => message.acked)).toBe(true);
+    expect(accepted).toHaveLength(3); // o teto do dia
+    const states = await main.db
+      .select({ state: schema.emailMessage.state })
+      .from(schema.emailMessage);
+    expect(states.filter((item) => item.state === 'accepted')).toHaveLength(3);
+    expect(states.filter((item) => item.state === 'queued')).toHaveLength(2); // adiados, não failed
+    expect(h.alerts).toEqual([]); // adiar não é alarme
+
+    // Virou o dia: o livro-razão de ontem não conta mais e o atraso das duas linhas venceu.
+    await main.db.execute(sql`update email_send_ledger set day = day - 1`);
+    await main.db.execute(
+      sql`update outbox_message set available_at = now() - interval '10 minutes' where state = 'pending'`,
+    );
+    await runCycle(cronContext(queue), [republishJob]);
+    expect(queue.pending).toHaveLength(2); // o Cron republica só o que ficou para trás
+    await queue.deliver(h.consumerDeps(main.db, handlers()));
+    expect(accepted).toHaveLength(5);
+    expect(new Set(accepted).size).toBe(5); // cada e-mail uma vez, com a sua chave
+    const final = await main.db
+      .select({ state: schema.emailMessage.state })
+      .from(schema.emailMessage);
+    expect(final.every((item) => item.state === 'accepted')).toBe(true);
+    void ids;
   });
 });

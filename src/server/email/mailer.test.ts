@@ -71,6 +71,28 @@ describe('ResendMailer', () => {
     expect(await failing.send(request)).toEqual({ ok: false, kind: 'timeout' });
   });
 
+  it('429 distingue cota do dia, cota do mês e taxa pelo NOME do erro (M4-08)', async () => {
+    const respond = (name?: string) =>
+      mailerWith(() => new Response(name ? JSON.stringify({ name }) : '{}', { status: 429 }))
+        .mailer;
+    expect(await respond('daily_quota_exceeded').send(request)).toEqual({
+      ok: false,
+      kind: 'rate_limited',
+      status: 429,
+      quota: 'daily',
+    });
+    expect(await respond('monthly_quota_exceeded').send(request)).toMatchObject({
+      quota: 'monthly',
+    });
+    const rate = await respond('rate_limit_exceeded').send(request);
+    expect(rate).toEqual({ ok: false, kind: 'rate_limited', status: 429 });
+    expect('quota' in rate).toBe(false);
+    const unreadable = await mailerWith(() => new Response('<html>', { status: 429 })).mailer.send(
+      request,
+    );
+    expect('quota' in unreadable).toBe(false);
+  });
+
   it('o resultado de falha nunca carrega destinatário nem corpo da resposta', async () => {
     const { mailer } = mailerWith(
       () => new Response('{"message":"ana@example.com"}', { status: 422 }),

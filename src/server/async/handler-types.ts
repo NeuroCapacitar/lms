@@ -24,6 +24,21 @@ export class PermanentError extends Error {
   }
 }
 
+/**
+ * Adiamento que NÃO é falha (cota esgotada, 429 por taxa): a intenção volta a `pending` para daqui a
+ * `delaySeconds`, SEM gastar tentativa, e a mensagem da Queue é confirmada (o Cron a republica quando a
+ * linha ficar disponível). Devolver à Queue gastaria `max_retries` e mandaria o excedente à DLQ.
+ */
+export class DeferError extends Error {
+  readonly code: string;
+  readonly delaySeconds: number;
+  constructor(code: string, delaySeconds: number) {
+    super(code);
+    this.code = code;
+    this.delaySeconds = delaySeconds;
+  }
+}
+
 export interface HandlerContext<Kind extends IntentKind> {
   db: Database;
   /** Payload JÁ validado contra o contrato do `kind` (só IDs). */

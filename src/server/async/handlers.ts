@@ -2,6 +2,7 @@ import { createEmailHandler, type EmailHandlerDeps } from '../email/send-handler
 import { type HandlerRegistry } from './handler-types';
 
 export {
+  DeferError,
   PermanentError,
   TransientError,
   type HandlerContext,

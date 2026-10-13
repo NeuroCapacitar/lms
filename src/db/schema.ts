@@ -2,6 +2,7 @@ import {
   bigint,
   boolean,
   check,
+  date,
   foreignKey,
   index,
   integer,
@@ -928,6 +929,8 @@ export const emailMessage = pgTable(
     variables: jsonb().notNull().default({}),
     state: text().notNull().default('queued'),
     providerMessageId: text(),
+    /** Dia (UTC) da cota reservada para este envio; vazio = nada reservado. Evita contar duas vezes na repetição. */
+    quotaReservedDay: date(),
     /** Início da janela de idempotência do Resend (a primeira tentativa de envio). */
     firstAttemptAt: timestamp({ withTimezone: true }),
     acceptedAt: timestamp({ withTimezone: true }),
@@ -977,4 +980,19 @@ export const emailRecipientState = pgTable(
       sql`${table.reason} in ('hard_bounce', 'complaint')`,
     ),
   ],
+);
+
+/**
+ * Livro-razão da cota do Resend (M4-08): quantos e-mails FORAM RESERVADOS ou aceitos por dia (UTC; o Resend
+ * Free zera à meia-noite UTC e conta 100 por dia e 3.000 por mês). A reserva é feita ANTES do envio, de
+ * forma atômica, e devolvida se o provider não aceitou. Só contagem: sem endereço, sem conteúdo.
+ */
+export const emailSendLedger = pgTable(
+  'email_send_ledger',
+  {
+    day: date().primaryKey(),
+    count: integer().notNull().default(0),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('email_send_ledger_count_check', sql`${table.count} >= 0`)],
 );

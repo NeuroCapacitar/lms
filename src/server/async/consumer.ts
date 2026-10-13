@@ -3,7 +3,7 @@ import { parseEnvelope, queueOfKind } from '../../features/async/envelope';
 import { INTENT_KINDS, retryDelayMs, type QueueName } from '../../features/async/intents';
 import type { Alert } from './alerts';
 import { isQueuePaused } from './flags';
-import { PermanentError, TransientError, type HandlerRegistry } from './handlers';
+import { DeferError, PermanentError, TransientError, type HandlerRegistry } from './handlers';
 import {
   DEFAULT_LEASE_SECONDS,
   claimOutboxById,
@@ -11,6 +11,7 @@ import {
   failOutbox,
   markOutboxDead,
   peekOutbox,
+  requeueOutbox,
 } from './outbox-store';
 
 /** O que o consumidor precisa de uma mensagem da Queue (o `Message` do Workers cabe aqui). */
@@ -169,6 +170,13 @@ async function runIntent(
       attempt: claimed.attempts,
     });
   } catch (error) {
+    if (error instanceof DeferError) {
+      // Adiamento sem falha: a linha volta a pending para a janela certa, a tentativa é devolvida e a
+      // mensagem é confirmada (o Cron republica quando a linha ficar disponível).
+      await requeueOutbox(db, claimed.id, claimed.leaseVersion, error.delaySeconds);
+      message.ack();
+      return;
+    }
     await fail(
       error instanceof PermanentError
         ? { kind: 'permanent', code: error.code }

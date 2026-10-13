@@ -99,7 +99,7 @@
 
 ### M4-07 — Webhook Resend (Svix) e supressão
 
-**Dependências:** M4-04, M4-01 · **Estado:** `implemented` (2026-10-13; CI pendente; webhook real não exercitado, ver STATUS)
+**Dependências:** M4-04, M4-01 · **Estado:** `verified` no CI (2026-10-13; webhook real não exercitado, ver STATUS)
 
 **Objetivo:** refletir entrega/bounce/complaint em `email_messages` e impedir novos envios a endereços problemáticos.
 **Passos:**
@@ -114,7 +114,7 @@
 
 ### M4-08 — Cota do Resend Free: adiar o excedente
 
-**Dependências:** M4-04 · **Estado:** `not_started`
+**Dependências:** M4-04 · **Estado:** `implemented` (2026-10-13; CI pendente; cota real não exercitada, ver STATUS)
 
 **Objetivo:** nunca estourar 100 e-mails/dia (3.000/mês) nem deixar e-mail de baixa prioridade bloquear login/pagamento.
 **Passos:**
