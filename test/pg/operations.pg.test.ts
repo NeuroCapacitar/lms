@@ -467,6 +467,7 @@ describe('correlação de ponta a ponta (HTTP → outbox → Queue → handler �
       sendToDeadLetter: async () => {},
       handlers: {
         'system.demo': async () => {},
+        'interest.fanout': async () => {},
         'email.send': createEmailHandler({
           getMailer: () => mailer,
           quota: createQuotaGate(),

@@ -19,6 +19,7 @@ import {
 } from '../../features/catalog/catalog';
 import type { RichText } from '../../features/content/rich-text';
 import { auditEvent } from '../auth/access-store';
+import { openAvailabilityCycleIfNeeded } from '../interest/store';
 import { coursesWithPublishedCurriculum } from './curriculum-store';
 
 /** Outro curso já usa este slug. */
@@ -201,6 +202,8 @@ export async function setCourseStatus(
       targetId: input.id,
       details: { from: current.status, to: input.status },
     });
+    // M5-06: publicar ou arquivar o curso pode abrir ou fechar a disponibilidade (ciclo do aviso).
+    await openAvailabilityCycleIfNeeded(tx, input.id);
   });
 }
 
@@ -324,6 +327,8 @@ export async function setOfferStatus(
       targetId: current.id,
       details: { from: current.status, to: input.status },
     });
+    // M5-06: ativar, pausar ou arquivar a oferta pode abrir ou fechar a disponibilidade.
+    await openAvailabilityCycleIfNeeded(tx, input.courseId);
   });
 }
 

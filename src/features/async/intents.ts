@@ -19,6 +19,8 @@ export const INTENT_KINDS = {
   'system.demo': { queue: 'general', payload: intentPayload({ subjectId: id }) },
   /** E-mail transacional (M4-04): o payload é só o id da `email_message`; destinatário e variáveis ficam no banco. */
   'email.send': { queue: 'general', payload: intentPayload({ emailMessageId: id }) },
+  /** Aviso de abertura de vendas (M5-06): o payload é só o id do ciclo; os interessados vêm do banco, em lotes. */
+  'interest.fanout': { queue: 'general', payload: intentPayload({ cycleId: id }) },
 } as const satisfies Record<string, { queue: QueueName; payload: z.ZodType }>;
 
 export type IntentKind = keyof typeof INTENT_KINDS;

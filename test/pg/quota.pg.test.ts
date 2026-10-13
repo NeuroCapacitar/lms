@@ -218,6 +218,7 @@ async function deliver(emailMessageId: string, mailer: Mailer, policy: QuotaPoli
     sendToDeadLetter: async () => {},
     handlers: {
       'system.demo': async () => {},
+      'interest.fanout': async () => {},
       'email.send': createEmailHandler({
         getMailer: () => mailer,
         quota: createQuotaGate(policy),

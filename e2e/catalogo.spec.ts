@@ -105,7 +105,11 @@ test.describe('estados da tela', () => {
     await expect(page.getByText('12 h · Sequência guiada')).toBeVisible();
     const closed = page.getByRole('listitem').filter({ hasText: 'Introdução antiga' });
     await expect(closed).toContainText('Inscrições encerradas');
-    await expect(closed.getByRole('button')).toHaveCount(0);
+    // M5-06: o curso encerrado só oferece o aviso de abertura (nenhuma ação de inscrição)
+    await expect(closed.getByRole('button')).toHaveCount(1);
+    await expect(
+      closed.getByRole('button', { name: 'Avisar-me quando abrir: Introdução antiga' }),
+    ).toBeVisible();
     // só o título leva à página do curso; nenhuma ação de inscrição
     await expect(closed.getByRole('link')).toHaveCount(1);
     await expect(closed.getByRole('link', { name: 'Introdução antiga' })).toHaveAttribute(

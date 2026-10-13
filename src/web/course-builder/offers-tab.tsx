@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -16,6 +17,7 @@ import {
 } from '../../features/catalog/forms';
 import { centsToInput, formatBrl } from '../../features/catalog/money';
 import { createOffer, setOfferStatus, updateOffer } from '../api/catalog';
+import { fetchInterestStats } from '../api/interest';
 import { ConfirmButton } from '../components/confirm-button';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
@@ -179,6 +181,43 @@ function OfferForm({
  * Preço, prazo, parcelas e disponibilidade. Toda oferta tem prazo em meses; o preço é digitado em
  * reais e vai em centavos inteiros.
  */
+/** Interessados em ser avisados quando as vendas abrirem (M5-06): só contagens, nunca pessoas nem e-mails. */
+function InterestStats({ courseId }: { courseId: string }) {
+  const stats = useQuery({
+    queryKey: ['interest-stats', courseId],
+    queryFn: () => fetchInterestStats(courseId),
+    retry: false,
+  });
+  if (!stats.data) return null;
+  const { active, withdrawn, converted, cycles } = stats.data;
+  if (active + withdrawn + converted === 0 && cycles.length === 0) return null;
+  return (
+    <section aria-labelledby="interessados-titulo" className="grid gap-3">
+      <h2 id="interessados-titulo" className="text-xl font-semibold">
+        Interessados em ser avisados
+      </h2>
+      <p>
+        {active} {active === 1 ? 'pessoa quer' : 'pessoas querem'} ser avisadas · {converted} já
+        entraram no curso · {withdrawn} retiraram o aviso.
+      </p>
+      {cycles.length > 0 ? (
+        <ul
+          className="grid gap-1 text-sm text-[var(--text-muted)]"
+          aria-label="Aberturas de vendas"
+        >
+          {cycles.map((cycle) => (
+            <li key={cycle.number}>
+              Abertura {cycle.number}: {cycle.notified}{' '}
+              {cycle.notified === 1 ? 'aviso enviado' : 'avisos enviados'}
+              {cycle.closedAt ? ' (encerrada)' : ' (em andamento)'}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
 export function OffersTab({
   course,
   onChanged,
@@ -297,6 +336,8 @@ export function OffersTab({
           ))}
         </ul>
       </section>
+
+      <InterestStats courseId={course.id} />
 
       <section aria-labelledby="nova-oferta-titulo" className="grid gap-4">
         <h2 id="nova-oferta-titulo" className="text-xl font-semibold">

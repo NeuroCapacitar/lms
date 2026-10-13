@@ -202,6 +202,7 @@ describe('o que aparece', () => {
         maxInstallments: 12,
       },
       access: { hasAccess: false, reason: 'no_access', expiresAt: null },
+      interested: false,
     });
     expect(free.offer).toEqual({
       id: expect.any(String),

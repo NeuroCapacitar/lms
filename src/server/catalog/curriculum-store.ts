@@ -28,6 +28,7 @@ import { diffCurriculum, type PublishPreview } from '../../features/catalog/curr
 import { isProviderUsable } from '../../features/video/verification';
 import type { VideoProvider } from '../../features/video/providers';
 import { auditEvent } from '../auth/access-store';
+import { openAvailabilityCycleIfNeeded } from '../interest/store';
 import { APP_ENV } from '../release';
 
 export class CurriculumCourseNotFoundError extends Error {
@@ -532,6 +533,8 @@ export async function publishCurriculum(
         retiredLessons: retiredLessons.length,
       },
     });
+    // M5-06: a primeira publicação do currículo pode tornar o curso adquirível (abre o ciclo do aviso).
+    await openAvailabilityCycleIfNeeded(tx, input.courseId);
     return { status: 'published', version };
   });
 }

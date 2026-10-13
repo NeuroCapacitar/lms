@@ -35,6 +35,7 @@ import { studentCatalogRoutes } from '../catalog/student-routes';
 import { courseAccessRoutes } from '../access/routes';
 import { enrollmentStaffRoutes } from '../access/staff-routes';
 import { discussionRoutes, discussionStaffRoutes } from '../discussion/routes';
+import { interestRoutes, interestStaffRoutes } from '../interest/routes';
 import { operationsRoutes } from '../ops/routes';
 import { videoRoutes } from '../video/routes';
 import { emailQuotaExhausted } from '../email/quota-store';
@@ -397,8 +398,17 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   // Conexões com providers de vídeo (M5-01): /api/staff/video/* (só Admin; segredo nunca volta).
   routes.route('/staff', videoRoutes({ withDatabase }));
 
+  // Contagens de interessados por curso e ciclo (M5-06): /api/staff/courses/:id/interests (staff.read).
+  routes.route('/staff', interestStaffRoutes({ withDatabase }));
+
   // Moderação e resposta da equipe nas discussões (M5-05): /api/staff/discussions (grant discussion.moderate).
   routes.route('/staff', discussionStaffRoutes({ withDatabase }));
+
+  // Interesse em cursos ainda não abertos (M5-06): /api/me/course-interests (sessão e termos).
+  routes.route(
+    '/',
+    interestRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
+  );
 
   // Catálogo do aluno (M2-04): /api/catalog/courses (com sessão e termos aceitos).
   routes.route('/catalog', studentCatalogRoutes({ withDatabase }));

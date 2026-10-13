@@ -1277,3 +1277,76 @@ export const discussionReport = pgTable(
     ),
   ],
 );
+
+/**
+ * Interesse em um curso que ainda não pode ser adquirido (M5-06). UM por (curso, pessoa); o estado vai de
+ * `active` (quer ser avisada) para `withdrawn` (retirou na conta) ou `converted` (já tem direito efetivo). Só a
+ * pessoa autenticada registra, nunca uma lista externa.
+ */
+export const courseInterest = pgTable(
+  'course_interest',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    courseId: uuid()
+      .notNull()
+      .references(() => course.id, { onDelete: 'restrict' }),
+    status: text().notNull().default('active'),
+    ...stamps,
+  },
+  (table) => [
+    unique('course_interest_course_user_unique').on(table.courseId, table.userId),
+    index('course_interest_course_status_idx').on(table.courseId, table.status),
+    check(
+      'course_interest_status_check',
+      sql`${table.status} in ('active', 'withdrawn', 'converted')`,
+    ),
+  ],
+);
+
+/**
+ * Ciclo de disponibilidade do curso (M5-06): nasce na transição "não adquirível → adquirível" e fecha na volta.
+ * No máximo UM ciclo aberto por curso (índice único parcial). Acrescentar oferta a curso já adquirível NÃO cria
+ * ciclo; fechar e reabrir cria outro (o aviso se repete a cada reabertura).
+ */
+export const courseAvailabilityCycle = pgTable(
+  'course_availability_cycle',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    courseId: uuid()
+      .notNull()
+      .references(() => course.id, { onDelete: 'restrict' }),
+    number: integer().notNull(),
+    openedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    closedAt: timestamp({ withTimezone: true }),
+  },
+  (table) => [
+    unique('course_availability_cycle_number_unique').on(table.courseId, table.number),
+    uniqueIndex('course_availability_cycle_open_idx')
+      .on(table.courseId)
+      .where(sql`${table.closedAt} is null`),
+    check('course_availability_cycle_number_check', sql`${table.number} >= 1`),
+  ],
+);
+
+/** Quem já foi avisado em qual ciclo: a garantia de NO MÁXIMO um aviso por (interesse, ciclo). */
+export const courseInterestNotification = pgTable(
+  'course_interest_notification',
+  {
+    interestId: uuid()
+      .notNull()
+      .references(() => courseInterest.id, { onDelete: 'restrict' }),
+    cycleId: uuid()
+      .notNull()
+      .references(() => courseAvailabilityCycle.id, { onDelete: 'restrict' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: 'course_interest_notification_pk',
+      columns: [table.interestId, table.cycleId],
+    }),
+  ],
+);
