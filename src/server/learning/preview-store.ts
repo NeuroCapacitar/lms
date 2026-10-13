@@ -6,6 +6,7 @@ import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outl
 import { computeProgress } from '../../features/access/progress';
 import type { SequenceMode } from '../../features/catalog/catalog';
 import { getPublishedCurriculum } from '../catalog/curriculum-store';
+import { quizPart } from './quiz-attempts';
 import { loadVideoView } from './video-progress';
 
 /**
@@ -85,6 +86,7 @@ export async function getPreviewLesson(
       isOptional: current.isOptional,
       body: current.body,
       kind: current.kind ?? 'text',
+      ...(current.kind === 'quiz' ? await quizPart(db, { rawQuiz: current.quiz, lessonId }) : {}),
       // Prévia: o mesmo vídeo, mas SEM progresso (nada é lido nem gravado da pessoa).
       ...(current.kind === 'video' && current.videoAssetId
         ? { video: await loadVideoView(db, { assetId: current.videoAssetId, courseId }) }

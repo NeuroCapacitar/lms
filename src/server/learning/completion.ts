@@ -70,7 +70,7 @@ export interface LessonContext {
  */
 export async function loadLessonContext(
   tx: Tx,
-  input: { userId: string; lessonId: string; kind: 'text' | 'video'; clock?: () => Date },
+  input: { userId: string; lessonId: string; kind: 'text' | 'video' | 'quiz'; clock?: () => Date },
 ): Promise<LessonContext> {
   const clock = input.clock ?? (() => new Date());
   const [row] = await tx
@@ -131,12 +131,12 @@ export async function loadLessonContext(
 /**
  * Grava a conclusão da aula (única por pessoa e aula; repetir é no-op) e, se com ela todas as obrigatórias
  * estão concluídas, cria a conclusão do curso UMA vez (única por pessoa e curso). O progresso conta só as
- * obrigatórias publicadas e não retiradas. `method`: `manual` (aula de texto) ou `video` (limiar do player).
+ * obrigatórias publicadas e não retiradas. `method`: `manual` (aula de texto), `video` (limiar do player) ou `quiz` (aprovação, M5-04).
  */
 export async function recordCompletion(
   tx: Tx,
   context: LessonContext,
-  input: { userId: string; lessonId: string; method: 'manual' | 'video' },
+  input: { userId: string; lessonId: string; method: 'manual' | 'video' | 'quiz' },
 ): Promise<CompleteResult> {
   const { courseId, now, tree, completed } = context;
   const inserted = await tx

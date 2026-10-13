@@ -5,6 +5,7 @@ import {
   type SaveDraftBody,
 } from './curriculum';
 import type { RichText } from '../content/rich-text';
+import type { Quiz } from '../quiz/quiz';
 
 /**
  * Edição do rascunho no navegador (M2-03). O editor mantém uma árvore EDITÁVEL: item que já existe no
@@ -19,6 +20,10 @@ export interface EditableLesson {
   title: string;
   isOptional: boolean;
   body: RichText | null;
+  /** Tipo da aula (M5-04). Ausente = texto. A aula de vídeo só é lida aqui (o vídeo não se edita nesta tela). */
+  kind?: 'text' | 'video' | 'quiz';
+  /** Só na aula de quiz: o quiz inteiro, com gabarito. */
+  quiz?: Quiz | null;
 }
 
 export interface EditableModule {
@@ -51,6 +56,8 @@ export function toEditable(tree: CurriculumTree): EditableDraft {
         title: lesson.title,
         isOptional: lesson.isOptional,
         body: lesson.body,
+        ...(lesson.kind ? { kind: lesson.kind } : {}),
+        ...(lesson.kind === 'quiz' ? { quiz: lesson.quiz ?? null } : {}),
       })),
     })),
   };
@@ -70,6 +77,9 @@ export function toPayload(draft: EditableDraft, expectedRev: number): SaveDraftB
         title: lesson.title,
         isOptional: lesson.isOptional,
         body: lesson.body,
+        // Texto e quiz são editados aqui; a aula de VÍDEO não manda `kind` (o servidor mantém o vídeo dela).
+        ...(lesson.kind === 'quiz' ? { kind: 'quiz' as const, quiz: lesson.quiz ?? null } : {}),
+        ...(lesson.kind === 'text' ? { kind: 'text' as const } : {}),
       })),
     })),
   };
@@ -198,7 +208,7 @@ export function updateLesson(
   draft: EditableDraft,
   moduleIndex: number,
   lessonIndex: number,
-  patch: Partial<Pick<EditableLesson, 'title' | 'isOptional' | 'body'>>,
+  patch: Partial<Pick<EditableLesson, 'title' | 'isOptional' | 'body' | 'kind' | 'quiz'>>,
 ): EditableDraft {
   const module = draft.modules[moduleIndex];
   if (!module?.lessons[lessonIndex]) return draft;

@@ -9,7 +9,14 @@ import {
   completeLesson,
 } from './completion';
 import { videoProgressSchema } from '../../features/video/progress';
+import { attemptBodySchema } from '../../features/quiz/grading';
 import { getCourseOutline, getLesson } from './learning-store';
+import {
+  InvalidAnswersError,
+  QuizAlreadyPassedError,
+  QuizAttemptsExhaustedError,
+  submitQuizAttempt,
+} from './quiz-attempts';
 import {
   VideoAssetMismatchError,
   VideoNotMeasurableError,
@@ -177,6 +184,79 @@ export function learningRoutes(deps: {
       }
       if (error instanceof VideoNotMeasurableError) {
         return c.json({ error: { code: 'video_not_measurable', reason: error.reason } }, 409);
+      }
+      throw error;
+    }
+  });
+
+  /**
+   * Tentativa de QUIZ (M5-04): só online, corrigida AQUI. O corpo traz só as opções marcadas por questão (DTO
+   * estrito); a nota e a aprovação nunca vêm do cliente. A cada chamada o servidor reverifica acesso, drip e
+   * sequência, trava a matrícula (tentativas simultâneas entram em fila) e respeita o máximo de tentativas.
+   * 201 com a nota; o gabarito só volta se o quiz tem feedback `immediate`. Staff sem matrícula recebe 403: a
+   * prévia não grava.
+   */
+  routes.post('/lessons/:id/quiz-attempts', deps.withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const lessonId = c.req.param('id');
+    if (!UUID.test(lessonId)) return c.json({ error: { code: 'not_found' } }, 404);
+    const parsed = attemptBodySchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    c.header('Cache-Control', 'no-store');
+    try {
+      const result = await submitQuizAttempt(c.var.db, {
+        userId: session.user.id,
+        lessonId,
+        answers: parsed.data.answers,
+        ...(deps.clock ? { clock: deps.clock } : {}),
+      });
+      return c.json(
+        {
+          attempt: result.attempt,
+          attemptsUsed: result.attemptsUsed,
+          attemptsLeft: result.attemptsLeft,
+          ...(result.review ? { review: result.review } : {}),
+          ...(result.completion
+            ? {
+                completion: {
+                  status: result.completion.status,
+                  progress: result.completion.progress,
+                  courseCompleted: result.completion.courseCompleted,
+                  courseJustCompleted: result.completion.courseJustCompleted,
+                },
+              }
+            : {}),
+        },
+        201,
+      );
+    } catch (error) {
+      if (error instanceof LessonNotFoundError) {
+        return c.json({ error: { code: 'not_found' } }, 404);
+      }
+      if (error instanceof CompletionAccessDeniedError) {
+        return c.json({ error: { code: 'access_denied', reason: error.reason } }, 403);
+      }
+      if (error instanceof LessonLockedError) {
+        return c.json(
+          {
+            error: {
+              code: 'lesson_locked',
+              reason: error.reason,
+              releasesAt: error.releasesAt ? error.releasesAt.toISOString() : null,
+            },
+          },
+          403,
+        );
+      }
+      if (error instanceof InvalidAnswersError) {
+        return c.json({ error: { code: 'invalid_answers' } }, 400);
+      }
+      if (error instanceof QuizAlreadyPassedError) {
+        return c.json({ error: { code: 'quiz_already_passed' } }, 409);
+      }
+      if (error instanceof QuizAttemptsExhaustedError) {
+        return c.json({ error: { code: 'attempts_exhausted' } }, 409);
       }
       throw error;
     }

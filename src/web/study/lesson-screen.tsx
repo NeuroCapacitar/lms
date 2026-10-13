@@ -8,6 +8,7 @@ import { RichTextView } from '../components/rich-text/rich-text-view';
 import { StudyNotice, lockMessage } from '../components/study-notice';
 import { Button } from '../components/ui/button';
 import { VideoPlayer } from '../video/video-player';
+import { QuizPanel } from './quiz-panel';
 import { LessonLink, OutlineLink, PreviewBanner, type StudyMode } from './study-links';
 
 /**
@@ -137,7 +138,26 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
       <article className="mb-8 max-w-prose">
         <RichTextView value={current.body} />
       </article>
-      {current.kind === 'video' && current.video ? (
+      {current.kind === 'quiz' && current.quiz ? (
+        <div className="mb-10 grid gap-3">
+          <QuizPanel
+            lessonId={lessonId}
+            view={current.quiz}
+            preview={preview}
+            onSubmitted={() => {
+              void Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] }),
+                queryClient.invalidateQueries({ queryKey: ['outline', courseId] }),
+              ]);
+            }}
+          />
+          {completed && !preview ? (
+            <p role="status" className="font-medium text-[var(--text-success)]">
+              Aula concluída.
+            </p>
+          ) : null}
+        </div>
+      ) : current.kind === 'video' && current.video ? (
         <div className="mb-10 grid gap-3">
           <VideoPlayer
             key={current.id}

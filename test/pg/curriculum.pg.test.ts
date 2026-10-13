@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { openDatabase } from '../../src/db/client.ts';
 import * as schema from '../../src/db/schema.ts';
 import { richTextFromParagraph, type RichText } from '../../src/features/content/rich-text.ts';
+import type { Quiz } from '../../src/features/quiz/quiz.ts';
 import { grantCapability, grantRole } from '../../src/server/auth/access-store.ts';
 import {
   CurriculumInvalidError,
@@ -92,8 +93,9 @@ type L = {
   title: string;
   isOptional?: boolean;
   body?: RichText | null;
-  kind?: 'text' | 'video';
+  kind?: 'text' | 'video' | 'quiz';
   videoAssetId?: string | null;
+  quiz?: Quiz | null;
 };
 type M = { id?: string; title: string; dripDays?: number; lessons: L[] };
 const details = {
@@ -217,8 +219,8 @@ describe('rascunho', () => {
       payload(1, [
         { title: 'x', lessons: [{ title: 'y', body: { a: 'x'.repeat(200_001) } as never }] },
       ]),
-      // M5-02: video passou a existir; tipo desconhecido (quiz so no M5-04) segue recusado.
-      payload(1, [{ title: 'x', lessons: [{ title: 'y', kind: 'quiz' } as never] }]),
+      // M5-02 e M5-04: video e quiz existem; tipo desconhecido segue recusado.
+      payload(1, [{ title: 'x', lessons: [{ title: 'y', kind: 'enquete' } as never] }]),
     ]) {
       expect(
         (await call('PUT', `/courses/${courseId}/draft`, admin.headers, body)).status,
@@ -991,6 +993,142 @@ describe('aula de vídeo no currículo (M5-02)', () => {
     await expectViolation(
       tools.db.execute(sql`update lesson_draft set kind = 'text' where kind = 'video'`),
       /lesson_draft_video_asset_check/i,
+    );
+  });
+});
+
+describe('aula de quiz no currículo (M5-04)', () => {
+  const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+  const goodQuiz = (): Quiz => ({
+    minScorePercent: 70,
+    maxAttempts: 3,
+    feedback: 'immediate',
+    shuffle: true,
+    questions: [
+      {
+        id: id(1),
+        prompt: 'Pergunta',
+        kind: 'single',
+        points: 1,
+        options: [
+          { id: id(11), text: 'Sim', correct: true },
+          { id: id(12), text: 'Não', correct: false },
+        ],
+      },
+    ],
+  });
+  const quizLesson = (quiz: Quiz | null | undefined, extra: Partial<L> = {}) =>
+    ({
+      title: 'Quiz',
+      kind: 'quiz' as const,
+      ...(quiz === undefined ? {} : { quiz }),
+      ...extra,
+    }) as L;
+
+  it('salva o quiz no rascunho, devolve kind e quiz e publica copiando o documento inteiro', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const { response, body } = await save(admin, courseId, 0, [
+      { title: 'Módulo A', lessons: [quizLesson(goodQuiz()), { title: 'Texto' }] },
+    ]);
+    expect(response.status).toBe(200);
+    expect(body.modules[0].lessons[0]).toMatchObject({ kind: 'quiz', quiz: goodQuiz() });
+    expect(body.modules[0].lessons[1]).toMatchObject({ kind: 'text', quiz: null });
+
+    expect((await publish(admin, courseId)).status).toBe(200);
+    const [live] = await tools.db
+      .select()
+      .from(schema.lesson)
+      .where(eq(schema.lesson.title, 'Quiz'));
+    expect(live).toMatchObject({ kind: 'quiz', quiz: goodQuiz() });
+    const published = (await getPublishedCurriculum(tools.db, courseId))!;
+    expect(published.modules[0]!.lessons[0]).toMatchObject({ kind: 'quiz', quiz: goodQuiz() });
+  });
+
+  it('o rascunho aceita quiz incompleto, mas a PUBLICAÇÃO exige coerência e lista onde está o problema', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const broken = goodQuiz();
+    broken.questions[0]!.options[0]!.correct = false; // escolha única sem a certa
+    broken.questions.push({ id: id(2), prompt: '', kind: 'multiple', points: 1, options: [] });
+    expect(
+      (
+        await save(admin, courseId, 0, [
+          {
+            title: 'Módulo A',
+            lessons: [quizLesson(broken), quizLesson(null, { title: 'Sem quiz' })],
+          },
+        ])
+      ).response.status,
+    ).toBe(200);
+    const result = await publish(admin, courseId);
+    expect(result.status).toBe(422);
+    const problems = (await json(result)).error.problems as { code: string; path: string }[];
+    expect(problems).toEqual(
+      expect.arrayContaining([
+        { code: 'quiz_incomplete', path: 'modules[0].lessons[0].quiz.questions[0].options' },
+        { code: 'quiz_incomplete', path: 'modules[0].lessons[0].quiz.questions[1].prompt' },
+        { code: 'quiz_incomplete', path: 'modules[0].lessons[0].quiz.questions[1].options' },
+        { code: 'quiz_missing', path: 'modules[0].lessons[1].quiz' },
+      ]),
+    );
+    expect(await getPublishedCurriculum(tools.db, courseId)).toBeNull();
+  });
+
+  it('sem quiz no corpo mantém o do rascunho; kind text apaga o quiz; quiz em aula que não é de quiz é 400', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const first = await save(admin, courseId, 0, [
+      { title: 'Módulo A', lessons: [quizLesson(goodQuiz())] },
+    ]);
+    const lessonId = first.body.modules[0].lessons[0].id as string;
+    const moduleId = first.body.modules[0].id as string;
+    // corpo SEM kind nem quiz (a tela antiga): mantém o quiz
+    const kept = await save(admin, courseId, 1, [
+      { id: moduleId, title: 'Módulo A', lessons: [{ id: lessonId, title: 'Renomeada' }] },
+    ]);
+    expect(kept.body.modules[0].lessons[0]).toMatchObject({ kind: 'quiz', quiz: goodQuiz() });
+    // kind quiz sem o campo quiz: mantém também
+    const sameKind = await save(admin, courseId, 2, [
+      {
+        id: moduleId,
+        title: 'Módulo A',
+        lessons: [{ id: lessonId, title: 'Renomeada', kind: 'quiz' }],
+      },
+    ]);
+    expect(sameKind.body.modules[0].lessons[0].quiz).toEqual(goodQuiz());
+    // quiz numa aula de texto ou de vídeo: recusado
+    for (const lessons of [
+      [{ title: 'T', kind: 'text', quiz: goodQuiz() }],
+      [{ title: 'T', quiz: goodQuiz() }],
+    ]) {
+      const bad = await save(admin, courseId, 3, [{ title: 'M', lessons: lessons as L[] }]);
+      expect(bad.response.status).toBe(400);
+    }
+    // converter em texto apaga o quiz
+    const toText = await save(admin, courseId, 3, [
+      {
+        id: moduleId,
+        title: 'Módulo A',
+        lessons: [{ id: lessonId, title: 'Renomeada', kind: 'text' }],
+      },
+    ]);
+    expect(toText.body.modules[0].lessons[0]).toMatchObject({ kind: 'text', quiz: null });
+  });
+
+  it('o quiz do rascunho tem teto de tamanho e o banco guarda o tipo coerente com o documento', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    await save(admin, courseId, 0, [{ title: 'Módulo A', lessons: [quizLesson(goodQuiz())] }]);
+    await expectViolation(
+      tools.db.execute(sql`update lesson_draft set kind = 'text' where kind = 'quiz'`),
+      /lesson_draft_quiz_check/i,
+    );
+    await expectViolation(
+      tools.db.execute(
+        sql`update lesson_draft set quiz = ('{"x":"' || repeat('a', 210000) || '"}')::jsonb where kind = 'quiz'`,
+      ),
+      /lesson_draft_quiz_size_check/i,
     );
   });
 });

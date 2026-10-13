@@ -13,10 +13,12 @@ import {
   type Direction,
   type EditableDraft,
 } from '../../features/catalog/draft-edit';
+import { emptyQuiz } from '../../features/quiz/quiz';
 import { ConfirmButton } from '../components/confirm-button';
 import { RichTextView } from '../components/rich-text/rich-text-view';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
+import { QuizEditor } from './quiz-editor';
 
 // O editor (Tiptap) só carrega quando alguém abre o texto de uma aula.
 const RichTextEditor = lazy(() =>
@@ -259,6 +261,57 @@ export function CurriculumTab({ draft, onChange, readOnly, announce }: Curriculu
                           );
                         }}
                       />
+                    </div>
+                  ) : null}
+                  {lesson.kind === 'quiz' ? (
+                    <div className="grid gap-3">
+                      <QuizEditor
+                        value={lesson.quiz ?? emptyQuiz()}
+                        readOnly={readOnly}
+                        where={`aula ${lessonIndex + 1} do módulo ${moduleIndex + 1}`}
+                        announce={announce}
+                        onChange={(quiz) =>
+                          onChange(updateLesson(draft, moduleIndex, lessonIndex, { quiz }))
+                        }
+                      />
+                      {!readOnly ? (
+                        <div>
+                          <ConfirmButton
+                            label={`Converter a aula ${lessonIndex + 1} do módulo ${moduleIndex + 1} em texto`}
+                            confirmLabel="Confirmar: apagar o quiz e virar aula de texto"
+                            disabled={false}
+                            onConfirm={() => {
+                              onChange(
+                                updateLesson(draft, moduleIndex, lessonIndex, {
+                                  kind: 'text',
+                                  quiz: null,
+                                }),
+                              );
+                              announce(`Aula ${lessonIndex + 1} convertida em aula de texto.`);
+                            }}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : lesson.kind === 'video' ? (
+                    <p className="text-sm text-[var(--text-muted)]">Aula de vídeo.</p>
+                  ) : !readOnly ? (
+                    <div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          onChange(
+                            updateLesson(draft, moduleIndex, lessonIndex, {
+                              kind: 'quiz',
+                              quiz: emptyQuiz(),
+                            }),
+                          );
+                          announce(`Aula ${lessonIndex + 1} agora é uma aula de quiz.`);
+                        }}
+                      >
+                        {`Transformar a aula ${lessonIndex + 1} do módulo ${moduleIndex + 1} em quiz`}
+                      </Button>
                     </div>
                   ) : null}
                   <div className="grid gap-3">

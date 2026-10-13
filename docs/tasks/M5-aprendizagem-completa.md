@@ -55,7 +55,7 @@
 
 ### M5-04 — Quiz simples como Lesson
 
-**Dependências:** M2-02, M3-04 · **Estado:** `not_started`
+**Dependências:** M2-02, M3-04 · **Estado:** `implemented` (2026-10-13; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** aula do tipo quiz com questões de escolha única ou múltipla, nota mínima e tentativas; o resultado é calculado só no servidor.
 **Passos:**
