@@ -328,6 +328,7 @@ describe('supressão por bounce permanente e reclamação', () => {
       .where(sql`payload->>'emailMessageId' = ${emailMessageId}`);
     const handlers = {
       'system.demo': async () => {},
+      'interest.fanout': async () => {},
       'email.send': createEmailHandler(emailDeps()),
     };
     await processBatch(

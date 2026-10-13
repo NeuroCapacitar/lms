@@ -9,6 +9,7 @@ import {
   type AccessResult,
 } from '../../features/access/access';
 import { auditEvent } from '../auth/access-store';
+import { markInterestConvertedIn } from '../interest/conversion';
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
@@ -133,6 +134,8 @@ export async function grantEntitlementIn(tx: Tx, input: GrantInput): Promise<Gra
   }
 
   const effectiveExpiresAt = await recompute(tx, input.userId, input.courseId);
+  // M5-06: com direito efetivo, o interesse em ser avisada deixa de valer (vira `converted`).
+  await markInterestConvertedIn(tx, input.userId, input.courseId);
   if (created) {
     await auditEvent(tx, {
       actorId: input.grantedBy,

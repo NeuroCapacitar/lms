@@ -84,7 +84,7 @@
 
 ### M5-06 — CourseInterest e notificação por abertura
 
-**Dependências:** M2-01, M4-04, M3-01 · **Estado:** `not_started`
+**Dependências:** M2-01, M4-04, M3-01 · **Estado:** `implemented` (2026-10-13; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** usuária autenticada registra interesse num curso ainda não adquirível e recebe **um** e-mail a cada abertura de vendas, até retirar o interesse ou comprar.
 **Passos:**

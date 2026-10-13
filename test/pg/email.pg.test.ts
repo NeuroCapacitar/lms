@@ -52,7 +52,11 @@ function deps(mailer: Mailer, overrides: Partial<EmailHandlerDeps> = {}): EmailH
 }
 
 function registry(handlerDeps: EmailHandlerDeps): HandlerRegistry {
-  return { 'system.demo': async () => {}, 'email.send': createEmailHandler(handlerDeps) };
+  return {
+    'system.demo': async () => {},
+    'email.send': createEmailHandler(handlerDeps),
+    'interest.fanout': async () => {},
+  };
 }
 
 async function createUser(email = ADDRESS, name = 'Ana Souza') {

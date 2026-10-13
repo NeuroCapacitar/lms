@@ -60,6 +60,7 @@
     "test/pg/video-progress.pg.test.ts",
     "test/pg/quiz.pg.test.ts",
     "test/pg/discussion.pg.test.ts",
+    "test/pg/interest.pg.test.ts",
     "test/pg/video-connections.pg.test.ts",
     "test/pg/operations.pg.test.ts",
     "test/pg/quota.pg.test.ts",

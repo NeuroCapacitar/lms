@@ -13,6 +13,7 @@ import { fetchCatalog } from '../api/courses';
 import { ForbiddenError } from '../api/staff';
 import { UnauthenticatedError } from '../api/profile';
 import { AccessStatus, EnrollControl } from '../components/enroll-control';
+import { InterestControl } from '../components/interest-control';
 import { RequireTerms } from '../components/require-terms';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
@@ -172,6 +173,12 @@ function Catalog() {
                       offerId={course.offer.id}
                       access={course.access}
                       returnTo="/cursos"
+                    />
+                  ) : course.availability === 'closed' && course.access.reason !== 'suspended' ? (
+                    <InterestControl
+                      courseId={course.id}
+                      courseTitle={course.title}
+                      interested={course.interested}
                     />
                   ) : null}
                 </li>

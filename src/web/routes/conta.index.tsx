@@ -12,6 +12,7 @@ import {
   type Theme,
 } from '../../features/identity/profile';
 import { signOut } from '../api/auth';
+import { fetchMyInterests, withdrawCourseInterest } from '../api/interest';
 import { fetchProfile, saveProfile, UnauthenticatedError } from '../api/profile';
 import { Button } from '../components/ui/button';
 import { RequireTerms } from '../components/require-terms';
@@ -193,6 +194,8 @@ function Account() {
         </div>
       </form>
 
+      <CourseNotices />
+
       <section aria-labelledby="sessao-titulo" className="mt-12 grid max-w-md gap-3">
         <h2 id="sessao-titulo" className="text-xl font-semibold">
           Sessão
@@ -210,5 +213,58 @@ function Account() {
         </div>
       </section>
     </>
+  );
+}
+
+/** "Avisos de cursos" (M5-06): os cursos em que a pessoa pediu aviso de abertura, com a retirada na própria conta. */
+function CourseNotices() {
+  const queryClient = useQueryClient();
+  const interests = useQuery({
+    queryKey: ['interests'],
+    queryFn: fetchMyInterests,
+    retry: false,
+  });
+  const [failed, setFailed] = useState(false);
+  const active = (interests.data ?? []).filter((item) => item.status === 'active');
+  if (interests.isPending || interests.isError || active.length === 0) return null;
+
+  return (
+    <section aria-labelledby="avisos-titulo" className="mt-12 grid max-w-md gap-3">
+      <h2 id="avisos-titulo" className="text-xl font-semibold">
+        Avisos de cursos
+      </h2>
+      <p className="text-[var(--text-muted)]">
+        Você receberá um e-mail quando as inscrições destes cursos abrirem.
+      </p>
+      {failed ? (
+        <p role="alert" className="font-medium text-[var(--text-danger)]">
+          Não foi possível retirar o aviso agora. Tente novamente.
+        </p>
+      ) : null}
+      <ul className="grid gap-3" aria-label="Cursos com aviso">
+        {active.map((item) => (
+          <li key={item.courseId} className="flex flex-wrap items-center justify-between gap-3">
+            <span className="font-medium">{item.title}</span>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setFailed(false);
+                void withdrawCourseInterest(item.courseId).then(async (outcome) => {
+                  if (outcome.result === 'ok') {
+                    await Promise.all([
+                      queryClient.invalidateQueries({ queryKey: ['interests'] }),
+                      queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+                    ]);
+                  } else setFailed(true);
+                });
+              }}
+            >
+              Retirar o aviso de {item.title}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

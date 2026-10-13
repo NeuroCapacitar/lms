@@ -101,6 +101,7 @@ export class FakeProvider {
 export function demoHandlers(provider: FakeProvider): HandlerRegistry {
   return {
     'email.send': async () => {},
+    'interest.fanout': async () => {},
     'system.demo': async ({ idempotencyKey }) => {
       if (await provider.lookup(idempotencyKey)) return;
       try {

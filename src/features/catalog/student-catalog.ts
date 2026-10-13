@@ -103,7 +103,11 @@ export function toCatalogCourse(course: PublicCourseDto): CatalogCourseDto | nul
 }
 
 /** Um item do catálogo do aluno: o curso e o ACESSO da própria pessoa a ele (M3-02). */
-export type StudentCatalogItem = CatalogCourseDto & { access: AccessDto };
+export type StudentCatalogItem = CatalogCourseDto & {
+  access: AccessDto;
+  /** A pessoa pediu para ser avisada quando as inscrições abrirem (M5-06). */
+  interested: boolean;
+};
 
 export const CATALOG_FILTERS = ['todos', 'abertos', 'encerrados'] as const;
 export type CatalogFilter = (typeof CATALOG_FILTERS)[number];

@@ -89,6 +89,7 @@ function harness(
   const deadLetters: unknown[] = [];
   const handlers: HandlerRegistry = {
     'email.send': async () => {},
+    'interest.fanout': async () => {},
     'system.demo': async (context) => {
       calls.push(context);
       await behavior(context);

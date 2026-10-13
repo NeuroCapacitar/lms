@@ -9,6 +9,7 @@ import {
 } from '../../features/catalog/student-catalog';
 import { resolveAccess } from '../access/entitlement-store';
 import type { AuthVars } from '../auth/types';
+import { listMyInterests } from '../interest/store';
 import { listPublicCourses } from './catalog-store';
 
 /**
@@ -30,11 +31,17 @@ export function studentCatalogRoutes(deps: {
     const visible = (await listPublicCourses(c.var.db))
       .map(toCatalogCourse)
       .filter((item): item is CatalogCourseDto => item !== null);
+    const interests = new Set(
+      (await listMyInterests(c.var.db, session.user.id))
+        .filter((item) => item.status === 'active')
+        .map((item) => item.courseId),
+    );
     const courses: StudentCatalogItem[] = [];
     for (const item of visible) {
       courses.push({
         ...item,
         access: toAccessDto(await resolveAccess(c.var.db, session.user.id, item.id, now)),
+        interested: interests.has(item.id),
       });
     }
     return c.json({ courses });

@@ -1,4 +1,5 @@
 import { createEmailHandler, type EmailHandlerDeps } from '../email/send-handler';
+import { createInterestFanoutHandler } from '../interest/fanout';
 import { type HandlerRegistry } from './handler-types';
 
 export {
@@ -24,5 +25,6 @@ export function createHandlers(deps: HandlerDeps): HandlerRegistry {
   return {
     'system.demo': async () => {},
     'email.send': createEmailHandler(deps.email),
+    'interest.fanout': createInterestFanoutHandler(),
   };
 }

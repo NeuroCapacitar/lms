@@ -290,3 +290,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Unit: `src/features/discussion/discussion.test.ts` (normalização do texto, schemas, transições da moderação). Servidor: `test/pg/discussion.pg.test.ts` (acesso cruzado direto pela API, drip/sequência/expiração/aula retirada, limites de frequência e concorrência, edição e exclusão, denúncia, moderação com grant, motivo e auditoria, resposta da equipe, gatilho e CHECKs do banco). Telas: `e2e/discussao.spec.ts` (aluno e Staff).
 - O perfil de teste nasce com o usuário (gancho do cadastro): para fixar o nome de exibição use `insert ... onConflictDoUpdate`, não `insert` puro.
 - Regra para texto de usuário em qualquer tela nova: mostrar como texto (React escapa), nunca `dangerouslySetInnerHTML`; há teste de que `<img onerror>` não vira elemento nem dispara diálogo.
+
+## Interesse em cursos e aviso de abertura (M5-06)
+
+- Unit: `src/features/interest/interest.test.ts`. Servidor: `test/pg/interest.pg.test.ts` (ciclo abre/fecha/não cria, aberturas simultâneas, registro e retirada, aviso por (interesse, ciclo), repetição e paralelismo do fan-out, conversão, ciclo fechado, 120 interessadas em lotes, constraints). Telas: `e2e/interesse.spec.ts`.
+- O fan-out se testa chamando `createInterestFanoutHandler()` direto (como o consumidor faria): `DeferError` significa "lote cheio, rode de novo". Todo `HandlerRegistry` de teste precisa da chave `interest.fanout` (o tipo obriga).
+- O curso demonstrativo (`createDemoCourse`) já nasce ABERTO (o seed publica, cria e ativa a oferta): para testar interesse, pause a oferta com `setOfferStatus` antes.
