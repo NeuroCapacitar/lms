@@ -70,14 +70,15 @@ export interface LessonContext {
  */
 export async function loadLessonContext(
   tx: Tx,
-  input: { userId: string; lessonId: string; kind: 'text' | 'video' | 'quiz'; clock?: () => Date },
+  input: { userId: string; lessonId: string; kind?: 'text' | 'video' | 'quiz'; clock?: () => Date },
 ): Promise<LessonContext> {
   const clock = input.clock ?? (() => new Date());
   const [row] = await tx
     .select({ courseId: lesson.courseId, retiredAt: lesson.retiredAt, kind: lesson.kind })
     .from(lesson)
     .where(eq(lesson.id, input.lessonId));
-  if (!row || row.retiredAt !== null || row.kind !== input.kind) throw new LessonNotFoundError();
+  if (!row || row.retiredAt !== null || (input.kind !== undefined && row.kind !== input.kind))
+    throw new LessonNotFoundError();
   const { courseId } = row;
 
   // A fila: a matrícula trava ANTES de ler as conclusões e o relógio (quem espera vê o que o outro gravou).

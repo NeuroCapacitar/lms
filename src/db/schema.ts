@@ -1201,3 +1201,79 @@ export const quizAttempt = pgTable(
     ),
   ],
 );
+
+/**
+ * Discussão por aula (M5-05): perguntas e respostas assíncronas, texto simples, com UM nível de resposta. O
+ * post referencia a aula ESTÁVEL; aula retirada do currículo só some da tela (o post é preservado). Moderação
+ * muda o `state` (nunca apaga a linha) e fica na auditoria com o motivo. `author_role` guarda se o post veio da
+ * Staff (resposta da equipe) no momento em que foi escrito. Um nível: a resposta aponta para um post de topo da
+ * MESMA aula (FK composta + gatilho que recusa resposta de resposta).
+ */
+export const discussionPost = pgTable(
+  'discussion_post',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    courseId: uuid().notNull(),
+    lessonId: uuid().notNull(),
+    parentId: uuid(),
+    authorId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    authorRole: text().notNull().default('student'),
+    body: text().notNull(),
+    state: text().notNull().default('visible'),
+    editedAt: timestamp({ withTimezone: true }),
+    ...stamps,
+  },
+  (table) => [
+    unique('discussion_post_id_lesson_unique').on(table.id, table.lessonId),
+    foreignKey({
+      name: 'discussion_post_lesson_fk',
+      columns: [table.lessonId, table.courseId],
+      foreignColumns: [lesson.id, lesson.courseId],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'discussion_post_parent_fk',
+      columns: [table.parentId, table.lessonId],
+      foreignColumns: [table.id, table.lessonId],
+    }).onDelete('restrict'),
+    index('discussion_post_lesson_idx').on(table.lessonId, table.createdAt),
+    index('discussion_post_author_idx').on(table.authorId, table.createdAt),
+    check('discussion_post_state_check', sql`${table.state} in ('visible', 'hidden', 'deleted')`),
+    check('discussion_post_role_check', sql`${table.authorRole} in ('student', 'staff')`),
+    check(
+      'discussion_post_body_check',
+      sql`char_length(${table.body}) between 1 and 2000 and ${table.body} = btrim(${table.body})`,
+    ),
+    check(
+      'discussion_post_not_own_parent_check',
+      sql`${table.parentId} is distinct from ${table.id}`,
+    ),
+  ],
+);
+
+/** Denúncia de um post: UMA por pessoa e post. `resolved_at` fecha a denúncia (a Staff agiu ou descartou). */
+export const discussionReport = pgTable(
+  'discussion_report',
+  {
+    postId: uuid()
+      .notNull()
+      .references(() => discussionPost.id, { onDelete: 'restrict' }),
+    reporterId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    reason: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp({ withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ name: 'discussion_report_pk', columns: [table.postId, table.reporterId] }),
+    index('discussion_report_open_idx')
+      .on(table.postId)
+      .where(sql`${table.resolvedAt} is null`),
+    check(
+      'discussion_report_reason_check',
+      sql`${table.reason} is null or char_length(${table.reason}) <= 300`,
+    ),
+  ],
+);

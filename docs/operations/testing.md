@@ -284,3 +284,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 
 - Unit: `src/features/quiz/grading.test.ts` (correção, limite exato, coerência, projeção sem gabarito, embaralhamento determinístico) e `quiz-edit.test.ts` (edição pura). Servidor: `test/pg/quiz.pg.test.ts` (nota só no servidor, gabarito, tentativas e concorrência no limite, acesso/drip/sequência/expiração, histórico append-only e cópia do quiz, conclusão do curso) e o bloco M5-04 de `test/pg/curriculum.pg.test.ts`. Telas: `e2e/quiz.spec.ts` (aluno) e os testes de quiz em `e2e/cursos.spec.ts` (Staff).
 - Regra para qualquer teste ou resposta nova: o aluno NUNCA recebe `correct` (a única projeção é `toStudentQuiz`); há teste que varre o JSON da aula e o DOM.
+
+## Discussões por aula (M5-05)
+
+- Unit: `src/features/discussion/discussion.test.ts` (normalização do texto, schemas, transições da moderação). Servidor: `test/pg/discussion.pg.test.ts` (acesso cruzado direto pela API, drip/sequência/expiração/aula retirada, limites de frequência e concorrência, edição e exclusão, denúncia, moderação com grant, motivo e auditoria, resposta da equipe, gatilho e CHECKs do banco). Telas: `e2e/discussao.spec.ts` (aluno e Staff).
+- O perfil de teste nasce com o usuário (gancho do cadastro): para fixar o nome de exibição use `insert ... onConflictDoUpdate`, não `insert` puro.
+- Regra para texto de usuário em qualquer tela nova: mostrar como texto (React escapa), nunca `dangerouslySetInnerHTML`; há teste de que `<img onerror>` não vira elemento nem dispara diálogo.

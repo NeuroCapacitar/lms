@@ -211,3 +211,40 @@ export async function getLesson(
     },
   };
 }
+
+export type LessonGate =
+  | { kind: 'ok'; courseId: string }
+  | { kind: 'denied'; reason: 'no_access' | 'expired' | 'suspended' }
+  | { kind: 'locked'; reason: NonNullable<LessonDecision['reason']>; releasesAt: string | null }
+  | { kind: 'not_found' };
+
+/**
+ * A pessoa pode abrir esta aula AGORA? A mesma decisão de `getLesson` (acesso, expiração, drip e
+ * sequência), sem montar o conteúdo. Serve a quem lê algo que pertence à aula (a discussão, M5-05): o que
+ * é da aula só sai se a aula abre. Aula inexistente ou retirada é `not_found`.
+ */
+export async function checkLessonAccess(
+  db: Database,
+  userId: string,
+  lessonId: string,
+  now: Date,
+): Promise<LessonGate> {
+  const [row] = await db
+    .select({ courseId: lesson.courseId, retiredAt: lesson.retiredAt })
+    .from(lesson)
+    .where(eq(lesson.id, lessonId));
+  if (!row || row.retiredAt !== null) return { kind: 'not_found' };
+  const loaded = await loadStudentCourse(db, userId, row.courseId, now);
+  if (loaded.kind === 'denied') return { kind: 'denied', reason: deniedReason(loaded.access) };
+  if (loaded.kind === 'not_found') return { kind: 'not_found' };
+  const decision = loaded.data.decisions.find((item) => item.lessonId === lessonId);
+  if (!decision) return { kind: 'not_found' };
+  if (!decision.allowed) {
+    return {
+      kind: 'locked',
+      reason: decision.reason!,
+      releasesAt: decision.releasesAt ? decision.releasesAt.toISOString() : null,
+    };
+  }
+  return { kind: 'ok', courseId: row.courseId };
+}
