@@ -10,7 +10,7 @@ const ADMIN = {
 };
 const SUPPORT = { roles: ['student', 'support'], capabilities: ['staff.read'], recentAuth: false };
 
-const SECRET = 'tok_live_SEGREDO_QUE_NUNCA_PODE_VOLTAR';
+const SECRET = 'segredo falso que nunca pode voltar';
 
 const connection = (overrides: Record<string, unknown> = {}) => ({
   id: '3f0c7a52-8d1b-4c63-9b1e-6a3f5d2c9e10',
@@ -98,7 +98,7 @@ test.describe('Vídeo (Admin)', () => {
     await expect(table.getByText('Panda Video')).toBeVisible();
     // Nenhum campo traz valor de segredo.
     const text = await page.locator('main').innerText();
-    expect(text).not.toContain('tok_');
+    expect(text).not.toContain('segredo falso');
     for (const input of await page.locator('input[type="password"]').all()) {
       await expect(input).toHaveValue('');
     }

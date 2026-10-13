@@ -12,7 +12,7 @@ import {
 const key = (seed: number) => btoa(String.fromCharCode(...new Uint8Array(32).fill(seed)));
 const RING = `1:${key(1)},2:${key(2)}`;
 const AAD = '3f0c7a52-8d1b-4c63-9b1e-6a3f5d2c9e10:panda';
-const SECRET = 'tok_live_segredo_da_conta_do_cliente_123';
+const SECRET = 'segredo falso da conta 1';
 
 describe('cofre AES-GCM', () => {
   it('cifra e abre (ida e volta) com a chave corrente, a mais alta', async () => {
@@ -27,7 +27,7 @@ describe('cofre AES-GCM', () => {
     const ring = await parseKeyring(RING);
     const sealed = await sealSecret(ring, SECRET, AAD);
     expect(JSON.stringify(sealed)).not.toContain(SECRET);
-    expect(atob(sealed.ciphertext)).not.toContain('tok_live');
+    expect(atob(sealed.ciphertext)).not.toContain('segredo falso');
   });
 
   it('o nonce NUNCA repete em 1.000 cifragens (nonce aleatório de 96 bits) e o texto cifrado também muda', async () => {

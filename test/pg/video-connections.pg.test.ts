@@ -21,8 +21,8 @@ const BASE_URL = 'https://app.example.test';
 const key = (seed: number) => btoa(String.fromCharCode(...new Uint8Array(32).fill(seed)));
 const KEYS_V1 = `1:${key(1)}`;
 const KEYS_V1_V2 = `1:${key(1)},2:${key(2)}`;
-const PROVIDER_TOKEN = 'tok_live_SEGREDO_DA_CONTA_DO_CLIENTE_9f8e7d';
-const NEW_TOKEN = 'tok_live_NOVO_SEGREDO_ROTACIONADO_1a2b3c';
+const PROVIDER_TOKEN = 'segredo falso do cliente 1';
+const NEW_TOKEN = 'segredo falso rotacionado 2';
 
 let database: TestSchema;
 let tools: Awaited<ReturnType<typeof createTestAuth>>;
@@ -200,7 +200,7 @@ describe('cadastro e segredo cifrado', () => {
 
     const [row] = await tools.db.select().from(schema.videoProviderConnection);
     expect(JSON.stringify(row)).not.toContain(PROVIDER_TOKEN);
-    expect(JSON.stringify(row)).not.toContain('SEGREDO_DA_CONTA');
+    expect(JSON.stringify(row)).not.toContain('segredo falso');
     expect(row!.nonce).toHaveLength(16); // 12 bytes em base64
     // O AAD é id + provider: só abre com os dois.
     const ring = await parseKeyring(KEYS_V1);
@@ -236,8 +236,8 @@ describe('cadastro e segredo cifrado', () => {
     for (const leaked of [
       PROVIDER_TOKEN,
       NEW_TOKEN,
-      'SEGREDO_DA_CONTA',
-      'NOVO_SEGREDO',
+      'segredo falso',
+      'segredo falso rotacionado',
       'ciphertext',
       'nonce',
     ]) {
