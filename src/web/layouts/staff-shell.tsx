@@ -16,6 +16,7 @@ interface NavItem {
     | '/staff/cursos'
     | '/staff/operacao'
     | '/staff/discussoes'
+    | '/staff/ajuda'
     | '/staff/videos'
     | '/staff/equipe';
   label: string;
@@ -28,6 +29,7 @@ const NAV: NavItem[] = [
   { to: '/staff/cursos', label: 'Cursos', needs: 'staff.read' },
   { to: '/staff/operacao', label: 'Operação', needs: 'staff.read' },
   { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
+  { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },
   { to: '/staff/videos', label: 'Vídeo', needs: 'integration.credentials' },
   { to: '/staff/equipe', label: 'Equipe', needs: 'staff.manage' },
 ];

@@ -36,6 +36,7 @@ import { courseAccessRoutes } from '../access/routes';
 import { enrollmentStaffRoutes } from '../access/staff-routes';
 import { discussionRoutes, discussionStaffRoutes } from '../discussion/routes';
 import { interestRoutes, interestStaffRoutes } from '../interest/routes';
+import { helpRoutes, helpStaffRoutes } from '../help/routes';
 import { createR2Storage } from '../media/r2-storage';
 import { mediaRoutes } from '../media/routes';
 import type { ObjectStorage } from '../media/storage';
@@ -413,6 +414,9 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   // Contagens de interessados por curso e ciclo (M5-06): /api/staff/courses/:id/interests (staff.read).
   routes.route('/staff', interestStaffRoutes({ withDatabase }));
 
+  // Ajuda da Staff (M5-14): /api/staff/help (FAQ com help.edit; pedidos com staff.read).
+  routes.route('/staff', helpStaffRoutes({ withDatabase }));
+
   // Moderação e resposta da equipe nas discussões (M5-05): /api/staff/discussions (grant discussion.moderate).
   routes.route('/staff', discussionStaffRoutes({ withDatabase }));
 
@@ -424,6 +428,12 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       storage: (c) => overrides.mediaStorage ?? createR2Storage(c.env),
       ...(overrides.clock ? { clock: overrides.clock } : {}),
     }),
+  );
+
+  // Ajuda do aluno (M5-14): /api/me/help/faq e /api/me/help/requests (sessão e termos).
+  routes.route(
+    '/',
+    helpRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
   );
 
   // Interesse em cursos ainda não abertos (M5-06): /api/me/course-interests (sessão e termos).

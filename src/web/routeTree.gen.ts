@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as BaseVisualRouteImport } from './routes/base-visual'
 import { Route as ConviteRouteImport } from './routes/convite'
 import { Route as SobreRouteImport } from './routes/sobre'
@@ -22,6 +23,7 @@ import { Route as CursosSlugRouteImport } from './routes/cursos.$slug'
 import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
 import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
+import { Route as StaffAjudaRouteImport } from './routes/staff.ajuda'
 import { Route as StaffDiscussoesRouteImport } from './routes/staff.discussoes'
 import { Route as StaffEquipeRouteImport } from './routes/staff.equipe'
 import { Route as StaffOperacaoRouteImport } from './routes/staff.operacao'
@@ -36,6 +38,11 @@ import { Route as StaffPreviaCourseIdAulasLessonIdRouteImport } from './routes/s
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AjudaRoute = AjudaRouteImport.update({
+  id: '/ajuda',
+  path: '/ajuda',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BaseVisualRoute = BaseVisualRouteImport.update({
@@ -98,6 +105,11 @@ const StaffIndexRoute = StaffIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffAjudaRoute = StaffAjudaRouteImport.update({
+  id: '/ajuda',
+  path: '/ajuda',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffDiscussoesRoute = StaffDiscussoesRouteImport.update({
   id: '/discussoes',
   path: '/discussoes',
@@ -154,6 +166,7 @@ const StaffPreviaCourseIdAulasLessonIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
@@ -162,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/operacao': typeof StaffOperacaoRoute
@@ -179,6 +193,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
@@ -186,6 +201,7 @@ export interface FileRoutesByTo {
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/operacao': typeof StaffOperacaoRoute
@@ -204,6 +220,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
@@ -212,6 +229,7 @@ export interface FileRoutesById {
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
+  '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/operacao': typeof StaffOperacaoRoute
@@ -231,6 +249,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ajuda'
     | '/base-visual'
     | '/convite'
     | '/sobre'
@@ -239,6 +258,7 @@ export interface FileRouteTypes {
     | '/conta/seguranca'
     | '/cursos/$slug'
     | '/entrar/confirmar'
+    | '/staff/ajuda'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/operacao'
@@ -256,6 +276,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ajuda'
     | '/base-visual'
     | '/convite'
     | '/sobre'
@@ -263,6 +284,7 @@ export interface FileRouteTypes {
     | '/conta/seguranca'
     | '/cursos/$slug'
     | '/entrar/confirmar'
+    | '/staff/ajuda'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/operacao'
@@ -280,6 +302,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/ajuda'
     | '/base-visual'
     | '/convite'
     | '/sobre'
@@ -288,6 +311,7 @@ export interface FileRouteTypes {
     | '/conta/seguranca'
     | '/cursos/$slug'
     | '/entrar/confirmar'
+    | '/staff/ajuda'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/operacao'
@@ -306,6 +330,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AjudaRoute: typeof AjudaRoute
   BaseVisualRoute: typeof BaseVisualRoute
   ConviteRoute: typeof ConviteRoute
   SobreRoute: typeof SobreRoute
@@ -328,6 +353,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ajuda': {
+      id: '/ajuda'
+      path: '/ajuda'
+      fullPath: '/ajuda'
+      preLoaderRoute: typeof AjudaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/base-visual': {
@@ -414,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffIndexRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/ajuda': {
+      id: '/staff/ajuda'
+      path: '/ajuda'
+      fullPath: '/staff/ajuda'
+      preLoaderRoute: typeof StaffAjudaRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/discussoes': {
       id: '/staff/discussoes'
       path: '/discussoes'
@@ -488,6 +527,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface StaffRouteChildren {
+  StaffAjudaRoute: typeof StaffAjudaRoute
   StaffDiscussoesRoute: typeof StaffDiscussoesRoute
   StaffEquipeRoute: typeof StaffEquipeRoute
   StaffOperacaoRoute: typeof StaffOperacaoRoute
@@ -500,6 +540,7 @@ interface StaffRouteChildren {
 }
 
 const StaffRouteChildren: StaffRouteChildren = {
+  StaffAjudaRoute: StaffAjudaRoute,
   StaffDiscussoesRoute: StaffDiscussoesRoute,
   StaffEquipeRoute: StaffEquipeRoute,
   StaffOperacaoRoute: StaffOperacaoRoute,
@@ -515,6 +556,7 @@ const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AjudaRoute: AjudaRoute,
   BaseVisualRoute: BaseVisualRoute,
   ConviteRoute: ConviteRoute,
   SobreRoute: SobreRoute,

@@ -196,7 +196,7 @@
 
 ### M5-14 — Ajuda, FAQ e pedido de suporte por e-mail
 
-**Dependências:** M4-04, M2-03, M1-03 · **Estado:** `not_started`
+**Dependências:** M4-04, M2-03, M1-03 · **Estado:** `implemented` (2026-10-13; evidência e limites em `docs/implementation/STATUS.md`)
 
 **Objetivo:** uma única entrada "Ajuda" com FAQ editável e formulário que envia o pedido ao suporte por e-mail.
 **Passos:**

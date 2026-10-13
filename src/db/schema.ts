@@ -1449,3 +1449,67 @@ export const mediaReference = pgTable(
     ),
   ],
 );
+
+/**
+ * Item da FAQ da Ajuda (M5-14): pergunta curta e resposta em texto rico (Tiptap JSON validado por allowlist),
+ * numa categoria fixa. `draft` só a Staff vê; `published` aparece para quem está logado. A ordem é por
+ * `position` (botões de subir e descer, sem arrastar).
+ */
+export const helpFaqItem = pgTable(
+  'help_faq_item',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    category: text().notNull(),
+    question: text().notNull(),
+    answer: jsonb().notNull(),
+    position: integer().notNull(),
+    state: text().notNull().default('draft'),
+    ...stamps,
+  },
+  (table) => [
+    index('help_faq_item_state_idx').on(table.state, table.position),
+    check(
+      'help_faq_item_category_check',
+      sql`${table.category} in ('conta', 'acesso', 'curso', 'certificado', 'pagamento', 'outro')`,
+    ),
+    check('help_faq_item_state_check', sql`${table.state} in ('draft', 'published')`),
+    check(
+      'help_faq_item_question_check',
+      sql`char_length(${table.question}) between 1 and 300 and ${table.question} = btrim(${table.question})`,
+    ),
+    check('help_faq_item_answer_size_check', sql`octet_length(${table.answer}::text) <= 100000`),
+    check('help_faq_item_position_check', sql`${table.position} >= 0`),
+  ],
+);
+
+/**
+ * Pedido de suporte (M5-14): o texto fica guardado AQUI (a Staff o lê na página de pedidos) e o e-mail ao
+ * suporte leva só o id e a categoria, com o `Reply-To` da pessoa. A resposta humana acontece fora do Hub (sem
+ * helpdesk). Gravado na mesma transação da intenção do e-mail: falha do Resend nunca perde o pedido.
+ */
+export const supportRequest = pgTable(
+  'support_request',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    category: text().notNull(),
+    message: text().notNull(),
+    /** Contexto opcional: o curso a que o pedido se refere. */
+    courseId: uuid().references(() => course.id, { onDelete: 'restrict' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('support_request_user_idx').on(table.userId, table.createdAt),
+    index('support_request_created_idx').on(table.createdAt),
+    check(
+      'support_request_category_check',
+      sql`${table.category} in ('conta', 'acesso', 'curso', 'certificado', 'pagamento', 'outro')`,
+    ),
+    check(
+      'support_request_message_check',
+      sql`char_length(${table.message}) between 1 and 2000 and ${table.message} = btrim(${table.message})`,
+    ),
+  ],
+);

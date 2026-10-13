@@ -5,6 +5,7 @@ import { withDatabase } from '../db/client';
 import { authRoutes, type AuthRouteOverrides } from './auth/routes';
 import { injectMeta, serveCoursePage } from './catalog/course-page';
 import { loadPublicCoursePage } from './catalog/public-page';
+import { publicHelpRoutes } from './help/routes';
 import { publicCourseRoutes } from './catalog/public-routes';
 import { loggingMiddleware, type LogVariables } from './logging';
 import { RELEASE_ID } from './release';
@@ -43,6 +44,8 @@ export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
 
   // Curso público (M2-06): a API sem sessão e a página `/cursos/:slug` com meta tags (HTMLRewriter).
   app.route('/api/public', publicCourseRoutes());
+  // Endereço de suporte para quem não consegue entrar (M5-14).
+  app.route('/api/public', publicHelpRoutes());
   app.get('/cursos/*', (c) =>
     serveCoursePage(c.req.raw, c.env, {
       loadCourse: (env, slug) =>
