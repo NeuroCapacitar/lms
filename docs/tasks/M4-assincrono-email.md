@@ -43,7 +43,7 @@
 
 ### M4-03 — Cron de reconciliação a cada 30 minutos
 
-**Dependências:** M4-01, M4-02 (spike M0-12 para o orçamento) · **Estado:** `implemented` (2026-10-13; Cron real e soak de CU-h só no Staging, ver STATUS)
+**Dependências:** M4-01, M4-02 (spike M0-12 para o orçamento) · **Estado:** `verified` no CI (2026-10-13; Cron real e soak de CU-h só no Staging, ver STATUS)
 
 **Objetivo:** toda intenção pendente avança ou chega a estado investigável sem ação manual, acordando o Neon Free o mínimo possível.
 **Passos:**
@@ -89,7 +89,7 @@
 
 ### M4-06 — Fault matrix executável
 
-**Dependências:** M4-01, M4-02, M4-03 · **Estado:** `not_started`
+**Dependências:** M4-01, M4-02, M4-03 · **Estado:** `implemented` (2026-10-13; CI pendente, ver STATUS)
 
 **Objetivo:** provar, linha a linha, que o desenho tolera as falhas previstas.
 **Passos:** criar suíte tabular (um teste nomeado por linha) com: (1) publish perdido; (2) Queue entrega duplicada; (3) payload de versão anterior; (4) claim concorrente; (5) consumer morre entre "provider aceitou" e "gravei no banco"; (6) lease perdido; (7) mensagem vai à DLQ; (8) backlog sem jobs novos (só o Cron resolve); (9) provider 429/5xx; (10) poison event; (11) kill switch ativado. Para (5), o handler demonstrativo deve reler o estado do provider antes de repetir (sem retry cego).

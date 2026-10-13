@@ -29,7 +29,7 @@ async function deliver(queue: string, bodies: unknown[]) {
 }
 
 describe('queue() do Worker', () => {
-  it('envelope inválido na fila de trabalho: vai para a DLQ e a mensagem é confirmada', async () => {
+  it('F03 (workerd, fault matrix) versão/kind desconhecido: envelope inválido na fila de trabalho: vai para a DLQ e a mensagem é confirmada', async () => {
     const result = await deliver('hub-general', ['lixo', { v: 9 }, { v: 1, kind: 'nao.existe' }]);
     expect(result.explicitAcks.sort()).toEqual(['msg-0', 'msg-1', 'msg-2']);
     expect(result.retryMessages).toEqual([]);
@@ -42,7 +42,7 @@ describe('queue() do Worker', () => {
     expect(result.explicitAcks).toEqual(['msg-0']);
   });
 
-  it('mensagem ilegível na DLQ é confirmada (só alerta, não há linha para marcar)', async () => {
+  it('F07 (workerd, fault matrix) DLQ: mensagem ilegível na DLQ é confirmada (só alerta, não há linha para marcar)', async () => {
     const result = await deliver('hub-general-dlq', ['lixo']);
     expect(result.explicitAcks).toEqual(['msg-0']);
     expect(result.retryMessages).toEqual([]);
