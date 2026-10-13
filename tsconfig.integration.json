@@ -53,6 +53,8 @@
     "test/pg/rich-text.pg.test.ts",
     "test/pg/outbox.pg.test.ts",
     "test/pg/consumer.pg.test.ts",
-    "test/pg/cron.pg.test.ts"
+    "test/pg/cron.pg.test.ts",
+    "test/pg/fault-matrix.pg.test.ts",
+    "test/helpers/async-harness.ts"
   ]
 }

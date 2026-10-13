@@ -216,3 +216,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Ao registrar um job novo (M4-08, M5-07, M6-04): adicione-o a `CRON_JOBS` com uma `probe` barata (uma consulta `exists`) e teste: sem trabalho (pula), com trabalho (roda e grava `job_run`), lança (não derruba os outros) e sobreposição.
 - O preflight recusa qualquer cron diferente de `*/30 * * * *`. Aumentar a frequência exige decisão (custo de CU-h do Neon Free), não um ajuste do `wrangler.jsonc`.
 - Ainda NÃO medido: o consumo de CU-h do Neon pelo Cron. Roteiro no Staging, com autorização: aplicar as migrations 0015 a 0017, criar as filas, publicar o Worker, descartar a mensagem de uma intenção (ou deixar o publish falhar) e conferir que o Cron a conclui em até 2 ciclos e que `job_run` mostra a última execução; observar o painel Neon durante a soak.
+
+## Fault matrix (M4-06)
+
+- `test/pg/fault-matrix.pg.test.ts`: um teste por linha, nomeado `F01…F12`. Usa o código real contra o Postgres real; só a Queue (`SimQueue`) e o provider (`FakeProvider`) são simulados. A falha é injetada pelo `plan` do provider (`429`, `500`, `timeout`, `400`, `accept_then_lose_response`) ou por falha de publish.
+- **Nova categoria (M5, M6, M7) = novas linhas aqui**, com o próximo número, e a linha no mapa de concorrência da spec. Não crie outra matriz.
+- O handler demonstrativo RELÊ o provider antes de repetir: é o padrão que todo handler com efeito externo deve seguir (chave de idempotência = `idempotencyKey` do contexto).
+- A matriz NÃO prova exactly-once nem a idempotência de um provider real: isso é teste de contrato com conta real.
