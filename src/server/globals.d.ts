@@ -22,4 +22,8 @@ interface Env {
   EMAIL_ALLOWLIST?: string;
   /** Caixa de suporte (destino do modelo `support-request`). Endereço de equipe, não de aluno; Worker Secret. */
   SUPPORT_INBOX_EMAIL?: string;
+  /** Segredo do endpoint do webhook do Resend (`whsec_…`, Svix). Worker Secret por ambiente; ausente = o webhook recusa tudo. */
+  RESEND_WEBHOOK_SECRET?: string;
+  /** Chave do HMAC que identifica o destinatário na supressão (M4-07). Worker Secret por ambiente, mín. 32 caracteres. */
+  EMAIL_HASH_KEY?: string;
 }

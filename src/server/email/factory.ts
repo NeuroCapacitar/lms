@@ -1,6 +1,10 @@
 import type { EmailSender } from '../../features/identity/link-policy';
 import { createFakeEmailSender } from './fake';
+import { eq } from 'drizzle-orm';
+
+import { emailRecipientState } from '../../db/schema';
 import { createFakeMailer, createResendMailer, type Mailer } from './mailer';
+import { hashRecipient } from './recipient-hash';
 import { createResendSender } from './resend';
 import type { EmailHandlerDeps } from './send-handler';
 
@@ -73,5 +77,16 @@ export function emailHandlerDeps(env: Env): EmailHandlerDeps {
       .map((item) => item.trim().toLowerCase())
       .filter(Boolean),
     supportInbox: env.SUPPORT_INBOX_EMAIL,
+    // Supressão por bounce permanente ou reclamação (M4-07). Sem a chave do HMAC não há como consultar.
+    isSuppressed: env.EMAIL_HASH_KEY
+      ? async (db, address) => {
+          const hash = await hashRecipient(env.EMAIL_HASH_KEY ?? '', address);
+          const [found] = await db
+            .select({ hash: emailRecipientState.recipientHash })
+            .from(emailRecipientState)
+            .where(eq(emailRecipientState.recipientHash, hash));
+          return found !== undefined;
+        }
+      : undefined,
   };
 }

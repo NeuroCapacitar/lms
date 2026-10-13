@@ -13,7 +13,7 @@ interface InboxEventContext {
   attempt: number;
 }
 
-type InboxHandler = (context: InboxEventContext) => Promise<void>;
+export type InboxHandler = (context: InboxEventContext) => Promise<void>;
 
 /**
  * Handlers por provider. Um provider SEM handler não é reivindicado (o evento fica `pending`, sem gastar
@@ -22,8 +22,6 @@ type InboxHandler = (context: InboxEventContext) => Promise<void>;
  * a provider dentro de transação PG.
  */
 export type InboxHandlers = Partial<Record<InboxProvider, InboxHandler>>;
-
-export const INBOX_HANDLERS: InboxHandlers = {};
 
 const BATCH_SIZE = 10;
 /** Teto por execução do Cron: o excedente fica para o próximo ciclo (protege o tempo do Worker e o Neon). */

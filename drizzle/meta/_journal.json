@@ -134,6 +134,13 @@
       "when": 1791902551544,
       "tag": "0018_email_message",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791904297129,
+      "tag": "0019_email_recipient_state",
+      "breakpoints": true
     }
   ]
 }
