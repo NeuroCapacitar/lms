@@ -1,0 +1,70 @@
+[
+  {
+    "name": "access-granted",
+    "subject": "Seu acesso ao curso foi liberado",
+    "vars": [
+      "COURSE_TITLE",
+      "EXPIRES_AT",
+      "NAME",
+      "APP_URL"
+    ]
+  },
+  {
+    "name": "access-expiry-warning",
+    "subject": "Seu acesso ao curso está perto de terminar",
+    "vars": [
+      "COURSE_TITLE",
+      "EXPIRES_AT",
+      "NAME",
+      "APP_URL"
+    ]
+  },
+  {
+    "name": "course-available",
+    "subject": "Um curso do seu interesse está disponível",
+    "vars": [
+      "COURSE_TITLE",
+      "NAME",
+      "APP_URL"
+    ]
+  },
+  {
+    "name": "purchase-confirmed",
+    "subject": "Pagamento confirmado",
+    "vars": [
+      "COURSE_TITLE",
+      "AMOUNT_BRL",
+      "NAME",
+      "APP_URL"
+    ]
+  },
+  {
+    "name": "refund-completed",
+    "subject": "Reembolso concluído",
+    "vars": [
+      "COURSE_TITLE",
+      "AMOUNT_BRL",
+      "NAME",
+      "APP_URL"
+    ]
+  },
+  {
+    "name": "certificate-issued",
+    "subject": "Seu certificado está disponível",
+    "vars": [
+      "COURSE_TITLE",
+      "CERTIFICATE_ID",
+      "NAME",
+      "APP_URL"
+    ]
+  },
+  {
+    "name": "support-request",
+    "subject": "Novo pedido de suporte",
+    "vars": [
+      "REQUEST_ID",
+      "CATEGORY",
+      "APP_URL"
+    ]
+  }
+]

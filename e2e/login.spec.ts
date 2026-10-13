@@ -52,6 +52,34 @@ test.describe('pedido de link (/entrar)', () => {
     await expect(page.getByLabel('E-mail')).toBeVisible();
   });
 
+  test('cota de e-mail do dia esgotada: avisa com clareza, sem prometer o link, e mantém o formulário', async ({
+    page,
+  }) => {
+    await stubTurnstile(page);
+    await page.route('**/api/auth/link/request', (route) =>
+      route.fulfill({ status: 503, json: { error: { code: 'email_unavailable' } } }),
+    );
+    await page.goto('/entrar');
+    await page.getByLabel('E-mail').fill('pessoa@example.com');
+    await page.getByRole('button', { name: 'Enviar link de acesso' }).click();
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText('limite de e-mails de hoje');
+    await expect(alert).toContainText('21h (horário de Brasília)');
+    await expect(page.getByRole('status')).toHaveCount(0);
+    await expect(page.getByLabel('E-mail')).toBeVisible();
+  });
+
+  test('503 sem o código de cota continua sendo a falha genérica', async ({ page }) => {
+    await stubTurnstile(page);
+    await page.route('**/api/auth/link/request', (route) =>
+      route.fulfill({ status: 503, json: { error: { code: 'internal_error' } } }),
+    );
+    await page.goto('/entrar');
+    await page.getByLabel('E-mail').fill('pessoa@example.com');
+    await page.getByRole('button', { name: 'Enviar link de acesso' }).click();
+    await expect(page.getByRole('alert')).toContainText('Não foi possível enviar agora');
+  });
+
   test('só com teclado: digitar o e-mail e Enter envia o pedido', async ({ page }) => {
     await stubTurnstile(page);
     await page.route('**/api/auth/link/request', (route) =>

@@ -44,7 +44,9 @@ Cloudflare (`cf`, `wrangler`) e Neon (`neon`) só podem ser usados com o perfil 
 | `RESEND_API_KEY` | Worker Secret por ambiente. Staging: chave `vnext-hub-staging`, **só envio**, restrita ao domínio, criada em 2026-10-10 (as chaves `hub-*` e `Vercel staging` são do legado) | responsável | M1-06 |
 | `EMAIL_ALLOWLIST` | Worker Secret (Staging): destinatários permitidos, separados por vírgula; são e-mails de pessoas e não entram no repositório. Hoje `neurocapacitar.projetos@gmail.com` e os aliases de teste `neurocapacitar.projetos+aluna-m3@gmail.com` e `neurocapacitar.projetos+suporte-m3@gmail.com` (2026-10-12, jornada do M3-05; chegam à mesma caixa). Ausente = sem filtro | responsável | M1-06 |
 | `RESEND_API_KEY` | Worker Secret, por ambiente (Production fora do CI comum) | responsável | M4-04 |
-| `RESEND_WEBHOOK_SECRET` | Worker Secret, por ambiente | responsável | M4-07 |
+| `RESEND_WEBHOOK_SECRET` | Worker Secret, por ambiente. Staging: criado em 2026-10-13 com o endpoint `https://hub-staging.neurocapacitar-projetos.workers.dev/api/webhooks/resend` | responsável | M4-07 |
+| `EMAIL_HASH_KEY` | Worker Secret, por ambiente (≥ 32 caracteres aleatórios; identifica o destinatário na supressão; trocá-la invalida as supressões). Staging: criado em 2026-10-13 | responsável | M4-07 |
+| `SUPPORT_INBOX_EMAIL` | Worker Secret (destino do modelo `vnext-support-request`; endereço da equipe). Staging: `neurocapacitar.projetos@gmail.com` desde 2026-10-13 | responsável | M4-04 |
 | `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN` | Worker Secret; sandbox em Staging, conta real só em Production | cliente (conta Asaas) | M6-02, M6-03 |
 | `VIDEO_SECRETS_MASTER_KEY` | Worker Secret, por ambiente (chave de cifra AES-GCM das credenciais de vídeo) | responsável | M5-01 |
 | `SENTRY_DSN` (Worker) | **Worker Secret** por ambiente (criado no Staging em 2026-10-10 com `wrangler secret put`); ausente = Sentry desligado | responsável | M0-08 |

@@ -1,0 +1,7 @@
+Seu acesso ao curso está perto de terminar
+
+Olá, {{{NAME}}}. Seu acesso ao curso {{{COURSE_TITLE}}} termina em {{{EXPIRES_AT}}}.
+
+Continue estudando: {{{APP_URL}}}/cursos
+
+NeuroCapacitar

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as schema from '../../src/db/schema.ts';
@@ -386,5 +386,51 @@ describe('registros', () => {
     expect(text).toContain('link_delivery_failed');
     expect(text).not.toContain('quem@example.test');
     expect(text).not.toContain('segredo');
+  });
+});
+
+describe('cota de e-mail esgotada (M4-08): aviso global, sem revelar quem tem conta', () => {
+  const fillQuota = async (count: number) => {
+    await tools.db.execute(
+      sql`insert into email_send_ledger (day, count) values ((now() at time zone 'utc')::date, ${count})
+          on conflict (day) do update set count = ${count}`,
+    );
+  };
+  afterEach(async () => {
+    await tools.db.execute(sql`truncate table email_send_ledger`);
+  });
+
+  it('com o dia cheio (100) o pedido responde 503 email_unavailable para QUALQUER e-mail e não envia nada', async () => {
+    await tools.db
+      .insert(schema.user)
+      .values({ id: 'u-existente', name: 'Ana', email: 'ana@example.test' });
+    staffEmails.add('equipe@example.test');
+    await fillQuota(100);
+    const app = appWith();
+    const bodies: unknown[] = [];
+    for (const email of ['ana@example.test', 'desconhecida@example.test', 'equipe@example.test']) {
+      const response = await requestLink(app, email);
+      expect(response.status, email).toBe(503);
+      bodies.push(await response.json());
+    }
+    // A mesma resposta para quem tem conta, quem não tem e a equipe: não vaza cadastro.
+    expect(new Set(bodies.map((body) => JSON.stringify(body))).size).toBe(1);
+    expect(bodies[0]).toEqual({ error: { code: 'email_unavailable' } });
+    expect(sender.sent).toHaveLength(0);
+  });
+
+  it('com folga (99 de 100) o pedido segue normal e envia o link', async () => {
+    await fillQuota(99);
+    const response = await requestLink(appWith(), 'ana2@example.test');
+    expect(response.status).toBe(200);
+  });
+
+  it('o aviso vem ANTES de consultar quem é a pessoa: pedido inválido e captcha falho continuam com os mesmos códigos', async () => {
+    await fillQuota(100);
+    const app = appWith();
+    expect((await requestLink(app, 'ana@example.test', { captcha: 'robo' })).status).toBe(403);
+    expect(
+      (await post(app, '/auth/link/request', { email: 'nao-e-email', captchaToken: HUMAN })).status,
+    ).toBe(400);
   });
 });

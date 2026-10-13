@@ -1,0 +1,7 @@
+Seu acesso ao curso foi liberado
+
+Olá, {{{NAME}}}. Seu acesso ao curso {{{COURSE_TITLE}}} está liberado até {{{EXPIRES_AT}}}.
+
+Acesse: {{{APP_URL}}}/cursos
+
+NeuroCapacitar

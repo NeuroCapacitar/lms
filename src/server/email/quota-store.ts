@@ -110,6 +110,20 @@ export async function recordDirectSend(
   return { overDailyLimit: count > policy.dailyLimit };
 }
 
+/**
+ * A cota diária de e-mail do dia (UTC) já foi toda usada? Só o link de acesso (classe 1) usa o limite
+ * inteiro, então este é o teste de "o link de acesso pode não chegar". Uma consulta barata.
+ */
+export async function emailQuotaExhausted(
+  db: Database,
+  policy: QuotaPolicy = FREE_PLAN_QUOTA,
+): Promise<boolean> {
+  const result = await db.execute(
+    sql`select coalesce(sum(count), 0)::int as today from email_send_ledger where day = ${TODAY}`,
+  );
+  return ((rowsOf(result)[0]?.today as number | undefined) ?? 0) >= policy.dailyLimit;
+}
+
 /** Uso atual (para a tela de Operação, M4-09, e para o sinal de upgrade). */
 export async function quotaSummary(
   db: Database,

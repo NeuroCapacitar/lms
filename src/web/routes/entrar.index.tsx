@@ -29,6 +29,8 @@ export const Route = createFileRoute('/entrar/')({
 const MESSAGES: Record<Exclude<RequestLinkResult, 'sent'>, string> = {
   captcha_failed: 'Não foi possível confirmar a verificação de segurança. Tente de novo.',
   invalid_email: 'Informe um e-mail válido.',
+  email_limit:
+    'Atingimos o limite de e-mails de hoje e não conseguimos enviar o seu link agora. Tente de novo a partir das 21h (horário de Brasília) ou fale com o suporte.',
   unavailable: 'Não foi possível enviar agora. Tente novamente em instantes.',
 };
 

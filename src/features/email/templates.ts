@@ -25,7 +25,11 @@ const text = (max: number) => z.string().min(1).max(max);
 const course = z.strictObject({ COURSE_TITLE: text(200) });
 
 interface BaseContract {
-  /** Alias do modelo no Resend (o modelo precisa estar PUBLICADO com este alias). */
+  /**
+   * Alias do modelo no Resend (o modelo precisa estar PUBLICADO com este alias). SEMPRE com o prefixo
+   * `vnext-`: a conta do Resend é compartilhada com o legado, que já usa os nomes sem prefixo
+   * (`purchase-confirmed`, `staff-invitation`, `support-request`...). Nunca reaproveite nem edite os do legado.
+   */
   alias: string;
   priorityClass: PriorityClass;
   /** Crítico: a falha de envio é prioridade de alerta alta (P1), pois bloqueia algo que a pessoa espera. */
@@ -48,6 +52,8 @@ interface QueuedContract extends BaseContract {
 interface DirectContract extends BaseContract {
   delivery: 'direct';
   variableNames: readonly string[];
+  /** Reservado, ainda sem uso (o modelo não precisa existir; o verificador o ignora). */
+  deferred?: boolean;
 }
 
 type TemplateContract = QueuedContract | DirectContract;
@@ -55,42 +61,44 @@ type TemplateContract = QueuedContract | DirectContract;
 export const EMAIL_TEMPLATES = {
   'magic-link': {
     delivery: 'direct',
-    alias: 'magic-link',
+    alias: 'vnext-magic-link',
     priorityClass: 1,
     critical: true,
     variableNames: ['LINK_URL'],
   },
   'reauth-link': {
     delivery: 'direct',
-    alias: 'reauth-link',
+    alias: 'vnext-reauth-link',
     priorityClass: 1,
     critical: true,
     variableNames: ['LINK_URL'],
   },
   'staff-invitation': {
     delivery: 'direct',
-    alias: 'staff-invitation',
+    alias: 'vnext-staff-invitation',
     priorityClass: 1,
     critical: true,
     variableNames: ['LINK_URL'],
   },
   'email-verification': {
     delivery: 'direct',
-    alias: 'email-verification',
+    alias: 'vnext-email-verification',
     priorityClass: 1,
     critical: true,
     variableNames: ['LINK_URL'],
+    deferred: true,
   },
   'password-reset': {
     delivery: 'direct',
-    alias: 'password-reset',
+    alias: 'vnext-password-reset',
     priorityClass: 1,
     critical: true,
     variableNames: ['LINK_URL'],
+    deferred: true,
   },
   'purchase-confirmed': {
     delivery: 'queued',
-    alias: 'purchase-confirmed',
+    alias: 'vnext-purchase-confirmed',
     recipient: 'user',
     priorityClass: 2,
     critical: true,
@@ -99,7 +107,7 @@ export const EMAIL_TEMPLATES = {
   },
   'refund-completed': {
     delivery: 'queued',
-    alias: 'refund-completed',
+    alias: 'vnext-refund-completed',
     recipient: 'user',
     priorityClass: 2,
     critical: true,
@@ -108,7 +116,7 @@ export const EMAIL_TEMPLATES = {
   },
   'access-granted': {
     delivery: 'queued',
-    alias: 'access-granted',
+    alias: 'vnext-access-granted',
     recipient: 'user',
     priorityClass: 3,
     critical: false,
@@ -117,7 +125,7 @@ export const EMAIL_TEMPLATES = {
   },
   'certificate-issued': {
     delivery: 'queued',
-    alias: 'certificate-issued',
+    alias: 'vnext-certificate-issued',
     recipient: 'user',
     priorityClass: 3,
     critical: false,
@@ -126,7 +134,7 @@ export const EMAIL_TEMPLATES = {
   },
   'support-request': {
     delivery: 'queued',
-    alias: 'support-request',
+    alias: 'vnext-support-request',
     recipient: 'support_inbox',
     priorityClass: 3,
     critical: false,
@@ -135,7 +143,7 @@ export const EMAIL_TEMPLATES = {
   },
   'access-expiry-warning': {
     delivery: 'queued',
-    alias: 'access-expiry-warning',
+    alias: 'vnext-access-expiry-warning',
     recipient: 'user',
     priorityClass: 4,
     critical: false,
@@ -144,7 +152,7 @@ export const EMAIL_TEMPLATES = {
   },
   'course-available': {
     delivery: 'queued',
-    alias: 'course-available',
+    alias: 'vnext-course-available',
     recipient: 'user',
     priorityClass: 4,
     critical: false,
@@ -175,4 +183,12 @@ export function expectedVariableNames(name: EmailTemplateName): string[] {
   if (contract.usesName) names.push('NAME');
   names.push('APP_URL');
   return names;
+}
+
+/** Os templates que o código USA hoje (os adiados não precisam existir no Resend). */
+export function activeTemplateNames(): EmailTemplateName[] {
+  return (Object.keys(EMAIL_TEMPLATES) as EmailTemplateName[]).filter((name) => {
+    const contract: TemplateContract = EMAIL_TEMPLATES[name];
+    return !(contract.delivery === 'direct' && contract.deferred);
+  });
 }

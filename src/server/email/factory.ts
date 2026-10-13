@@ -57,6 +57,10 @@ export function createEmailSender(env: Env): EmailSender {
  * convite), que não passam pela outbox: assim a cota que a outbox enxerga é a real. Conta DEPOIS de o
  * Resend aceitar e NUNCA recusa nem atrasa o envio (login vem primeiro); se o dia já passou do limite, só
  * alerta (P1). Falha ao contar não derruba o envio.
+ *
+ * DECISÃO (2026-10-13): o caminho direto NÃO consulta a supressão local (`email_recipient_state`). O link de
+ * acesso é o método base de TODOS; bloquear por reclamação trancaria a pessoa fora da conta, e o Resend já
+ * decide a entrega dele. Só o e-mail enfileirado (não crítico) respeita a supressão local.
  */
 function countedSender(inner: EmailSender, env: Env): EmailSender {
   return {

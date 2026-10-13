@@ -1,0 +1,7 @@
+Seu certificado está disponível
+
+Parabéns, {{{NAME}}}. O certificado do curso {{{COURSE_TITLE}}} está disponível. Identificador: {{{CERTIFICATE_ID}}}.
+
+Sua conta: {{{APP_URL}}}/conta
+
+NeuroCapacitar

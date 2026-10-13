@@ -244,7 +244,7 @@ describe('envio pelo handler', () => {
     expect(mailer.calls).toHaveLength(1);
     expect(mailer.calls[0]).toMatchObject({
       to: ADDRESS,
-      templateAlias: 'access-granted',
+      templateAlias: 'vnext-access-granted',
       variables: {
         COURSE_TITLE: 'Curso de Teste',
         EXPIRES_AT: '12/01/2027',
@@ -275,7 +275,7 @@ describe('envio pelo handler', () => {
       variables: { REQUEST_ID: uuid(), CATEGORY: 'acesso' },
     });
     await deliver(emailMessageId, deps(mailer));
-    expect(mailer.calls[0]).toMatchObject({ to: SUPPORT, templateAlias: 'support-request' });
+    expect(mailer.calls[0]).toMatchObject({ to: SUPPORT, templateAlias: 'vnext-support-request' });
     expect(mailer.calls[0]!.variables.NAME).toBeUndefined();
 
     const other = await queue({

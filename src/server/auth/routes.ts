@@ -35,6 +35,7 @@ import { studentCatalogRoutes } from '../catalog/student-routes';
 import { courseAccessRoutes } from '../access/routes';
 import { enrollmentStaffRoutes } from '../access/staff-routes';
 import { operationsRoutes } from '../ops/routes';
+import { emailQuotaExhausted } from '../email/quota-store';
 import { previewRoutes } from '../learning/preview-routes';
 import { learningRoutes } from '../learning/routes';
 import { methodRoutes } from './method-routes';
@@ -236,6 +237,13 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       const today = new Date().toISOString().slice(0, 10);
       const global = await hitThrottle(db, `link:global:${today}`, 24 * 60 * 60);
       if (global > limits.globalPerDay) return c.json(GENERIC_LINK_RESPONSE);
+
+      // Cota de e-mail do dia esgotada (M4-08): avisa em vez de prometer um link que não vai chegar. O
+      // aviso é GLOBAL (vale para qualquer e-mail, antes de olhar quem é a pessoa), então não revela se
+      // o e-mail tem conta nem se é da equipe. Depois da meia-noite UTC (21h em Brasília) volta ao normal.
+      if (await emailQuotaExhausted(db)) {
+        return c.json({ error: { code: 'email_unavailable' } }, 503);
+      }
 
       const [existing] = await db.select({ id: user.id }).from(user).where(eq(user.email, email));
       const staff = await (

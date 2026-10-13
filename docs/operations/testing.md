@@ -235,7 +235,7 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 ## E-mail transacional (M4-04)
 
 - `test/pg/email.pg.test.ts` usa um `ScriptedMailer` (resultado por chamada: aceito, 429, 5xx, timeout, 4xx) e o consumidor REAL; `src/server/email/mailer.test.ts` cobre o `fetch` do Resend por mock. Nenhum teste envia e-mail de verdade.
-- Ao criar um template novo: acrescente-o a `EMAIL_TEMPLATES` (alias, variáveis estritas, classe, destinatário), crie e PUBLIQUE o modelo no Resend com o MESMO alias e as variáveis de `expectedVariableNames` (as do contrato mais `NAME`, se usa, e `APP_URL`), e rode `RESEND_API_KEY=<chave do ambiente> bun run email:verify-templates`. Link com token nunca é `queued`.
+- Ao criar um template novo: acrescente-o a `EMAIL_TEMPLATES` (alias, variáveis estritas, classe, destinatário), crie e PUBLIQUE o modelo no Resend com o alias `vnext-<nome>` (NUNCA sem o prefixo: a conta do Resend é compartilhada com o legado, que usa os nomes sem prefixo) e as variáveis de `expectedVariableNames` (as do contrato mais `NAME`, se usa, e `APP_URL`), e rode `RESEND_API_KEY=<chave do ambiente> bun run email:verify-templates`. Link com token nunca é `queued`.
 - Roteiro EM STAGING (com autorização e a chave do Resend do ambiente; só destinatários da `EMAIL_ALLOWLIST`): criar os modelos, aplicar a migration 0018, rodar o verificador, enfileirar um `access-granted` para uma conta de teste e conferir `email_message.state = 'accepted'` e o e-mail na caixa; depois repetir com um endereço fora da lista (deve ficar `blocked`) e conferir que nenhum log contém o endereço.
 
 ## Webhook do Resend e supressão (M4-07)
@@ -255,3 +255,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `test/pg/operations.pg.test.ts` (foto do estado, autorização de cada rota, auditoria, alertas do Cron e correlação) e `e2e/operacao.spec.ts` (a tela com rotas simuladas e axe). A auditoria é append-only: não dá para truncar; os testes olham só as linhas do próprio alvo (`targetId`).
 - Toda ação nova da tela exige: capability conferida no servidor, `requireRecentAuth`, motivo obrigatório e `auditEvent` na MESMA transação da mudança. A tela nunca devolve payload, endereço nem nome: o teste varre o JSON e a página.
 - Roteiro EM STAGING (com autorização, depois das migrations 0018 a 0020 e do deploy): (1) abrir `/staff/operacao` como Suporte e como Admin; (2) derrubar um handler (ex.: um `kind` que sempre falha) e ver o item chegar a `dead` e o alerta `dead_letter` no log do Cron; (3) reenfileirar com motivo e conferir a linha em `audit_log`; (4) pausar a fila, ver o alerta de pausa, retomar; (5) esperar o Cron e conferir `ops_alert` no Workers Logs.
+
+## Modelos do Resend e o gate do M4 (2026-10-13)
+
+- Criar um modelo vNext (só `vnext-*`; nunca editar nem apagar os do legado): gerar o HTML em `docs/operations/email-templates/vnext-<nome>.html`, `resend templates create --name vnext-<nome> --alias vnext-<nome> --subject … --from … --html-file … --text-file … --var CHAVE:string …` e `resend templates publish <id>`. Toda variável declarada precisa aparecer no HTML.
+- Verificar com o Resend REAL: criar uma chave temporária de acesso total `vnext-hub-verify-temp`, rodar `RESEND_API_KEY=… bun run email:verify-templates` e APAGAR a chave. O token nunca vai para arquivo nem log.
+- Resend sem webhook do Hub no ambiente = rota responde 500 e nada é aceito; com o endpoint criado, o segredo do endpoint (`whsec_…`) vai para `RESEND_WEBHOOK_SECRET` por `wrangler secret put … --name hub-<ambiente> --profile neurocapacitar`, lido da resposta do comando, sem imprimir.

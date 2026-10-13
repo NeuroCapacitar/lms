@@ -1,0 +1,7 @@
+Novo pedido de suporte
+
+Novo pedido de suporte, categoria {{{CATEGORY}}}. Identificador: {{{REQUEST_ID}}}.
+
+Área da equipe: {{{APP_URL}}}/staff
+
+NeuroCapacitar

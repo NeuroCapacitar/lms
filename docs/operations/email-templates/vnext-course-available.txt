@@ -1,0 +1,7 @@
+Um curso do seu interesse está disponível
+
+Olá, {{{NAME}}}. O curso {{{COURSE_TITLE}}}, do seu interesse, já está disponível.
+
+Veja: {{{APP_URL}}}/cursos
+
+NeuroCapacitar

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   EMAIL_TEMPLATES,
+  activeTemplateNames,
   OUTBOX_PRIORITY_BY_CLASS,
   expectedVariableNames,
   isEmailTemplate,
@@ -89,5 +90,43 @@ describe('contrato dos templates de e-mail', () => {
   it('reconhece só templates próprios (não os herdados do Object)', () => {
     expect(isEmailTemplate('course-available')).toBe(true);
     expect(isEmailTemplate('toString')).toBe(false);
+  });
+});
+
+describe('aliases no Resend (conta compartilhada com o legado)', () => {
+  it('todo alias leva o prefixo vnext-, é único e não colide com os nomes do legado', () => {
+    const legacy = new Set([
+      'staff-invitation',
+      'email-change-notice',
+      'email-change-confirmation',
+      'purchase-confirmed',
+      'support-request',
+      'course-sales-opened',
+      'certificate-issued',
+      'access-expiry-warning',
+      'access-released',
+      'auth-password-reset',
+      'access-granted',
+      'refund-completed',
+      'course-available',
+      'magic-link',
+      'reauth-link',
+      'email-verification',
+      'password-reset',
+    ]);
+    const aliases = Object.values(EMAIL_TEMPLATES).map((contract) => contract.alias);
+    expect(new Set(aliases).size).toBe(aliases.length);
+    for (const alias of aliases) {
+      expect(alias.startsWith('vnext-'), alias).toBe(true);
+      expect(legacy.has(alias), alias).toBe(false);
+    }
+  });
+
+  it('os modelos adiados (sem uso) ficam fora da verificação', () => {
+    const active = activeTemplateNames();
+    expect(active).not.toContain('email-verification');
+    expect(active).not.toContain('password-reset');
+    expect(active).toContain('magic-link');
+    expect(active).toContain('course-available');
   });
 });
