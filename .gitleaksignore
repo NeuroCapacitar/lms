@@ -14,3 +14,7 @@ d0e22873425c83d93a8d90fe06b4035f86af6066:docs/review/evidencias/m0-18/worker-ind
 # Token fictício de teste (e2e/convite.spec.ts, M1-04): não é segredo. O commit que o introduziu
 # continua no histórico; a versão atual usa o mesmo valor sem entropia de e2e/login.spec.ts.
 a2144d8a3642b2c14bf9223722fbedcdcada5da0:e2e/convite.spec.ts:generic-api-key:5
+
+# Token fictício de teste (test/pg/video-connections.pg.test.ts, M5-01): não é segredo. O commit que o
+# introduziu continua no histórico; a versão atual usa valores sem formato de chave.
+fb78d2c9492ae28e5318dff4a9b4b8082eda65b4:test/pg/video-connections.pg.test.ts:generic-api-key:25
