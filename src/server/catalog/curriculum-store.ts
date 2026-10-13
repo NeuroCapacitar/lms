@@ -24,7 +24,10 @@ import {
 } from '../../features/catalog/curriculum';
 import type { RichText } from '../../features/content/rich-text';
 import { diffCurriculum, type PublishPreview } from '../../features/catalog/curriculum-diff';
+import { isProviderUsable } from '../../features/video/verification';
+import type { VideoProvider } from '../../features/video/providers';
 import { auditEvent } from '../auth/access-store';
+import { APP_ENV } from '../release';
 
 export class CurriculumCourseNotFoundError extends Error {
   constructor() {
@@ -47,6 +50,13 @@ export class UnknownDraftIdError extends Error {
 export class UnknownVideoAssetError extends Error {
   constructor() {
     super('unknown_video_asset');
+  }
+}
+
+/** O asset do corpo é de um provider ainda NÃO verificado, e este ambiente é Production (M5-03). */
+export class VideoProviderNotVerifiedError extends Error {
+  constructor() {
+    super('video_provider_not_verified');
   }
 }
 
@@ -196,7 +206,7 @@ export interface DraftInput {
  */
 export async function saveDraft(
   db: Database,
-  input: { courseId: string; expectedRev: number } & DraftInput,
+  input: { courseId: string; expectedRev: number; environment?: string } & DraftInput,
 ): Promise<DraftDto> {
   return db.transaction(async (tx) => {
     const [courseRow] = await tx
@@ -265,10 +275,15 @@ export async function saveDraft(
     ];
     if (assetIds.length > 0) {
       const found = await tx
-        .select({ id: videoAsset.id })
+        .select({ id: videoAsset.id, provider: videoAsset.provider })
         .from(videoAsset)
         .where(inArray(videoAsset.id, assetIds));
       if (found.length !== assetIds.length) throw new UnknownVideoAssetError();
+      // Trava de ativação: em Production só se anexa vídeo de provider verificado.
+      const environment = input.environment ?? APP_ENV;
+      if (found.some((asset) => !isProviderUsable(environment, asset.provider as VideoProvider))) {
+        throw new VideoProviderNotVerifiedError();
+      }
     }
 
     await tx

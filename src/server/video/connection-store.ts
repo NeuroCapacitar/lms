@@ -8,7 +8,9 @@ import {
   type VideoConnectionStatus,
   type VideoProvider,
 } from '../../features/video/providers';
+import { isProviderUsable } from '../../features/video/verification';
 import { auditEvent } from '../auth/access-store';
+import { APP_ENV } from '../release';
 import {
   DecryptionError,
   UnknownKeyVersionError,
@@ -21,6 +23,13 @@ import {
 export class SecretRequiredError extends Error {
   constructor() {
     super('secret_required');
+  }
+}
+
+/** Trava de ativação (M5-03): em Production só providers verificados podem ser usados. */
+export class ProviderNotVerifiedError extends Error {
+  constructor() {
+    super('provider_not_verified');
   }
 }
 
@@ -95,8 +104,17 @@ export async function listConnections(db: Database): Promise<VideoConnectionDto[
 export async function createConnection(
   db: Database,
   keyring: Keyring | undefined,
-  input: { provider: VideoProvider; label: string; secret?: string; actorId: string },
+  input: {
+    provider: VideoProvider;
+    label: string;
+    secret?: string;
+    actorId: string;
+    environment?: string;
+  },
 ): Promise<VideoConnectionDto> {
+  if (!isProviderUsable(input.environment ?? APP_ENV, input.provider)) {
+    throw new ProviderNotVerifiedError();
+  }
   if (input.secret === undefined && secretRequired(input.provider)) throw new SecretRequiredError();
   const id = crypto.randomUUID();
   const sealed =
@@ -175,9 +193,20 @@ export async function rotateSecret(
 /** Ativa ou desativa. Desativar NÃO apaga o segredo nem altera assets e histórico de progresso. */
 export async function setConnectionStatus(
   db: Database,
-  input: { id: string; status: VideoConnectionStatus; actorId: string },
+  input: { id: string; status: VideoConnectionStatus; actorId: string; environment?: string },
 ): Promise<VideoConnectionDto> {
   return db.transaction(async (tx) => {
+    if (input.status === 'active') {
+      // Reativar, em Production, uma conexão de provider NÃO verificado também é bloqueado.
+      const [current] = await tx
+        .select({ provider: videoProviderConnection.provider })
+        .from(videoProviderConnection)
+        .where(eq(videoProviderConnection.id, input.id));
+      const provider = current?.provider as VideoProvider | undefined;
+      if (provider && !isProviderUsable(input.environment ?? APP_ENV, provider)) {
+        throw new ProviderNotVerifiedError();
+      }
+    }
     const [row] = await tx
       .update(videoProviderConnection)
       .set({ status: input.status, updatedAt: sql`now()` })

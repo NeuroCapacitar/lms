@@ -12,6 +12,17 @@ const SUPPORT = { roles: ['student', 'support'], capabilities: ['staff.read'], r
 
 const SECRET = 'segredo falso que nunca pode voltar';
 
+const PROVIDERS = ['jmvstream', 'panda', 'cloudflare_stream', 'mux', 'youtube', 'vimeo'];
+/** O que `GET /api/staff/video/providers` devolve: em Staging todos selecionáveis e "não verificados". */
+const availability = (environment: string, verified: string[] = []) => ({
+  environment,
+  providers: PROVIDERS.map((provider) => ({
+    provider,
+    verified: verified.includes(provider),
+    selectable: environment !== 'production' || verified.includes(provider),
+  })),
+});
+
 const connection = (overrides: Record<string, unknown> = {}) => ({
   id: '3f0c7a52-8d1b-4c63-9b1e-6a3f5d2c9e10',
   provider: 'panda',
@@ -32,6 +43,7 @@ async function stub(page: Page, access: unknown) {
   const state = {
     connections: [connection()] as ReturnType<typeof connection>[],
     reauthDone: false,
+    providers: availability('staging'),
     calls: [] as { method: string; path: string; body: unknown }[],
   };
   const guard = (route: Route) => {
@@ -78,6 +90,9 @@ async function stub(page: Page, access: unknown) {
     state.connections[0]!.status = 'disabled';
     await route.fulfill({ json: { connection: state.connections[0] } });
   });
+  await page.route('**/api/staff/video/providers', (route) =>
+    route.fulfill({ json: state.providers }),
+  );
   await page.route('**/api/staff/video/rekey', async (route) => {
     if (!guard(route)) return;
     await route.fulfill({ json: { rekeyed: 1, alreadyCurrent: 0, failed: 0 } });
@@ -171,6 +186,33 @@ test.describe('Vídeo (Admin)', () => {
     await expect(page.getByRole('status').filter({ hasText: 'Conexão cadastrada.' })).toBeVisible();
     expect(state.calls[0]!.body).toEqual({ provider: 'youtube', label: 'YouTube público' });
     await expect(page.getByRole('cell', { name: 'sem credenciais' })).toBeVisible();
+  });
+
+  test('trava de ativação: Staging mostra todos com aviso "não verificado"; Production só os verificados', async ({
+    page,
+  }) => {
+    await stub(page, ADMIN);
+    await page.goto('/staff/videos');
+    await expect(page.getByRole('option', { name: 'Panda Video (não verificado)' })).toBeAttached();
+    await expect(page.getByText('ainda não passaram no teste com conta real')).toBeVisible();
+
+    const production = await stub(page, ADMIN);
+    production.providers = availability('production', ['vimeo']);
+    await page.goto('/staff/videos');
+    await expect(page.getByLabel('Provedor').locator('option')).toHaveText(['Vimeo']);
+    await expect(page.getByText('(não verificado)')).toHaveCount(0);
+  });
+
+  test('Production sem nenhum provider verificado: aviso claro e cadastro desabilitado', async ({
+    page,
+  }) => {
+    const state = await stub(page, ADMIN);
+    state.providers = availability('production');
+    await page.goto('/staff/videos');
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Nenhum provedor foi ativado' }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cadastrar conexão' })).toBeDisabled();
   });
 
   test('trocar o segredo e desativar (com confirmação) usam a API certa e mantêm a tela sem o valor', async ({

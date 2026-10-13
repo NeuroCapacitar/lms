@@ -43,11 +43,14 @@ export function createFakeAdapter(
         case 'play':
         case 'pause':
         case 'ratechange':
-        case 'ended':
         case 'error':
           return { type: data.type };
+        case 'ended':
+          // Só emite o que DECLARA: sem `reportsEnded` o fim do vídeo não é um sinal confiável.
+          return reportsEnded ? { type: 'ended' } : undefined;
         case 'timeupdate':
         case 'seeked':
+          if (data.type === 'timeupdate' && !reportsTime) return undefined;
           return typeof data.t === 'number' && Number.isFinite(data.t)
             ? { type: data.type, t: data.t }
             : undefined;

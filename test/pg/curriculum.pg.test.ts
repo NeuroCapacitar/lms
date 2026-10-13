@@ -12,6 +12,7 @@ import {
   getPublishedCurriculum,
   publishCurriculum,
   saveDraft,
+  VideoProviderNotVerifiedError,
 } from '../../src/server/catalog/curriculum-store.ts';
 import { createFakeEmailSender } from '../../src/server/email/fake.ts';
 import { apiApp } from '../helpers/api-app.ts';
@@ -850,6 +851,42 @@ describe('aula de vídeo no currículo (M5-02)', () => {
       ]),
     );
     expect(await getPublishedCurriculum(tools.db, courseId)).toBeNull();
+  });
+
+  it('trava de ativação (M5-03): em Production o vídeo de provider NÃO verificado não é anexado; em Staging é', async () => {
+    const courseId = await newCourse();
+    const assetId = await newAsset();
+    const input = (environment: string, expectedRev: number) => ({
+      courseId,
+      expectedRev,
+      environment,
+      details,
+      modules: [
+        {
+          title: 'Módulo A',
+          dripDays: 0,
+          lessons: [
+            {
+              title: 'Em vídeo',
+              kind: 'video' as const,
+              videoAssetId: assetId,
+              isOptional: false,
+              body: null,
+            },
+          ],
+        },
+      ],
+    });
+    await expect(saveDraft(tools.db, input('production', 0))).rejects.toBeInstanceOf(
+      VideoProviderNotVerifiedError,
+    );
+    expect(await tools.db.select().from(schema.lessonDraft)).toHaveLength(0);
+    // ambiente desconhecido também é Production (falha fechada)
+    await expect(saveDraft(tools.db, input('', 0))).rejects.toBeInstanceOf(
+      VideoProviderNotVerifiedError,
+    );
+    const saved = await saveDraft(tools.db, input('staging', 0));
+    expect(saved.modules[0]!.lessons[0]).toMatchObject({ kind: 'video', videoAssetId: assetId });
   });
 
   it('vídeo inexistente: 400 video_asset_not_found e nada é gravado', async () => {

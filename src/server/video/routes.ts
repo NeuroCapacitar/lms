@@ -2,13 +2,16 @@ import type { Context, MiddlewareHandler } from 'hono';
 import { Hono } from 'hono';
 
 import { createConnectionSchema, rotateSecretSchema } from '../../features/video/providers';
+import { providerAvailability, verificationEnvironment } from '../../features/video/verification';
 import { requireCapability } from '../auth/authorization';
 import { requireRecentAuth } from '../auth/reauth';
 import type { AuthVars } from '../auth/types';
+import { APP_ENV } from '../release';
 import { SecretBoxConfigError, parseKeyring, type Keyring } from '../security/secret-box';
 import {
   ConnectionNotFoundError,
   KeyringMissingError,
+  ProviderNotVerifiedError,
   SecretRequiredError,
   createConnection,
   listConnections,
@@ -49,6 +52,9 @@ export function videoRoutes(deps: {
     if (error instanceof SecretRequiredError) {
       return c.json({ error: { code: 'secret_required' } }, 400);
     }
+    if (error instanceof ProviderNotVerifiedError) {
+      return c.json({ error: { code: 'provider_not_verified' } }, 400);
+    }
     if (error instanceof ConnectionNotFoundError) {
       return c.json({ error: { code: 'not_found' } }, 404);
     }
@@ -61,6 +67,15 @@ export function videoRoutes(deps: {
   routes.get('/video/connections', ...guarded, async (c) => {
     c.header('cache-control', 'no-store');
     return c.json({ connections: await listConnections(c.var.db) });
+  });
+
+  // Quais providers este ambiente oferece (M5-03): Production só os verificados; Dev/Staging todos, com aviso.
+  routes.get('/video/providers', ...guarded, (c) => {
+    c.header('cache-control', 'no-store');
+    return c.json({
+      environment: verificationEnvironment(APP_ENV),
+      providers: providerAvailability(APP_ENV),
+    });
   });
 
   routes.post('/video/connections', ...sensitive, async (c) => {
