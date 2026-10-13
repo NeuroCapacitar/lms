@@ -37,6 +37,12 @@ const HANDLED_KEYS = new Set([
   'vars',
 ]);
 
+/**
+ * Crons permitidos (M4-03): só a reconciliação a cada 30 min. Cada execução acorda o Neon Free; aumentar
+ * a frequência custa CU-h e exige decisão (ADR 0006), não um ajuste de configuração.
+ */
+const ALLOWED_CRONS = new Set(['*/30 * * * *']);
+
 const EXACT_HTTPS_ORIGIN = /^https:\/\/[^/*\s]+$/;
 
 function isTrustedOrigin(value: unknown): boolean {
@@ -101,6 +107,17 @@ export function checkArtifact(
       if (typeof id !== 'string' || !allowed.has(id)) {
         problems.push(
           `recurso não permitido em "${requestedEnvironment}": ${category} ${JSON.stringify(id)}`,
+        );
+      }
+    }
+  }
+
+  const crons = isRecord(artifact.triggers) ? artifact.triggers.crons : undefined;
+  if (Array.isArray(crons)) {
+    for (const cron of crons) {
+      if (typeof cron !== 'string' || !ALLOWED_CRONS.has(cron)) {
+        problems.push(
+          `cron não permitido em "${requestedEnvironment}": ${JSON.stringify(cron)} (só "*/30 * * * *")`,
         );
       }
     }

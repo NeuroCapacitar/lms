@@ -875,3 +875,34 @@ export const systemFlag = pgTable(
   },
   (table) => [check('system_flag_key_check', sql`${table.key} ~ '^[a-z][a-z0-9_.]{0,99}$'`)],
 );
+
+/**
+ * Última execução de cada job do Cron (M4-03), uma linha por nome. Serve a dois fins: o LEASE do job
+ * (execuções sobrepostas não duplicam trabalho; o tempo vem do `now()` do banco, `lease_version` é o
+ * fencing) e o registro da última execução (início, fim, resultado, contagem e código do erro) que o
+ * Operations Center e o alerta "Cron sem rodar" leem. Nunca guarda texto de erro, só código.
+ */
+export const jobRun = pgTable(
+  'job_run',
+  {
+    name: text().primaryKey(),
+    leaseOwner: text(),
+    leaseUntil: timestamp({ withTimezone: true }),
+    leaseVersion: integer().notNull().default(0),
+    lastStartedAt: timestamp({ withTimezone: true }),
+    lastFinishedAt: timestamp({ withTimezone: true }),
+    /** `ok` ou `error` da última execução concluída; vazio enquanto nunca terminou uma. */
+    lastStatus: text(),
+    lastCount: integer(),
+    lastDurationMs: integer(),
+    lastErrorCode: text(),
+  },
+  (table) => [
+    check('job_run_name_check', sql`${table.name} ~ '^[a-z][a-z0-9_.-]{0,99}$'`),
+    check('job_run_status_check', sql`${table.lastStatus} in ('ok', 'error')`),
+    check(
+      'job_run_lease_check',
+      sql`(${table.leaseOwner} is null) = (${table.leaseUntil} is null)`,
+    ),
+  ],
+);

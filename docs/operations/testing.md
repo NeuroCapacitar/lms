@@ -209,3 +209,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `test/workers/queue.test.ts` chama o `queue()` do Worker CONSTRUÍDO (`dist/hub/index.js`, importado no isolate do teste: `exports.default` serializa os argumentos e não aceita um lote). Só caminhos sem banco; rode `bun run build` antes (o `bun run test` já faz).
 - Ao criar um `kind`: registre o handler em `src/server/async/handlers.ts` (o tipo obriga), lance `TransientError`/`PermanentError` e NUNCA chame provider dentro de transação PG.
 - Ainda NÃO coberto: Queue real (retry com atraso, DLQ por `max_retries`, retenção). Roteiro no Staging, com autorização: criar as filas, aplicar a migration 0016, publicar uma intenção `system.demo`, derrubar o consumidor e ver o Cron (M4-03) concluir.
+
+## Cron de reconciliação (M4-03)
+
+- `test/pg/cron.pg.test.ts` roda os jobs contra o Postgres real com uma Queue FALSA (`send` que registra, falha ou espera um portão). Duas execuções simultâneas usam duas conexões e uma Queue lenta para segurar o lease do job. `handleScheduled` FECHA a conexão que abre: injete `openDb` que devolve uma conexão NOVA a cada ciclo.
+- Ao registrar um job novo (M4-08, M5-07, M6-04): adicione-o a `CRON_JOBS` com uma `probe` barata (uma consulta `exists`) e teste: sem trabalho (pula), com trabalho (roda e grava `job_run`), lança (não derruba os outros) e sobreposição.
+- O preflight recusa qualquer cron diferente de `*/30 * * * *`. Aumentar a frequência exige decisão (custo de CU-h do Neon Free), não um ajuste do `wrangler.jsonc`.
+- Ainda NÃO medido: o consumo de CU-h do Neon pelo Cron. Roteiro no Staging, com autorização: aplicar as migrations 0015 a 0017, criar as filas, publicar o Worker, descartar a mensagem de uma intenção (ou deixar o publish falhar) e conferir que o Cron a conclui em até 2 ciclos e que `job_run` mostra a última execução; observar o painel Neon durante a soak.

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 
 import type { Database } from '../../db/client';
 import { inboxEvent } from '../../db/schema';
@@ -14,7 +14,7 @@ import {
   type FailureOutcome,
 } from './lease';
 
-type InboxProvider = 'asaas' | 'resend';
+export type InboxProvider = 'asaas' | 'resend';
 
 /** O evento passa do limite de payload (o ACK do webhook não pode depender de gravar um corpo enorme). */
 export class InboxPayloadTooLargeError extends Error {
@@ -75,8 +75,9 @@ export function claimInbox(
   limit: number,
   owner: string,
   leaseSeconds: number = DEFAULT_LEASE_SECONDS,
+  providers?: readonly InboxProvider[],
 ): Promise<ClaimedRow[]> {
-  return claimRows(db, 'inbox_event', limit, owner, leaseSeconds);
+  return claimRows(db, 'inbox_event', limit, owner, leaseSeconds, { providers });
 }
 
 /** `false` = lease perdido: descarte o resultado e não repita o efeito. */
@@ -100,4 +101,26 @@ export function purgeInbox(db: Database): Promise<number> {
     doneDays: RETENTION_DAYS.done,
     problemDays: RETENTION_DAYS.problem,
   });
+}
+
+/** Há evento da inbox que o Cron possa processar agora (pendente disponível ou lease vencido)? */
+export async function hasClaimableInbox(
+  db: Database,
+  providers: readonly InboxProvider[],
+): Promise<boolean> {
+  if (providers.length === 0) return false;
+  const [found] = await db
+    .select({ id: inboxEvent.id })
+    .from(inboxEvent)
+    .where(
+      and(
+        inArray(inboxEvent.provider, [...providers]),
+        or(
+          and(eq(inboxEvent.state, 'pending'), sql`${inboxEvent.availableAt} <= now()`),
+          and(eq(inboxEvent.state, 'leased'), sql`${inboxEvent.leaseUntil} < now()`),
+        ),
+      ),
+    )
+    .limit(1);
+  return found !== undefined;
 }

@@ -52,3 +52,9 @@ describe('queue() do Worker', () => {
     await expect(deliver('hub-media', ['x'])).rejects.toThrow('queue_name_unknown');
   });
 });
+
+describe('scheduled() do Worker', () => {
+  it('o Worker construído expõe o handler do Cron (a reconciliação do M4-03)', () => {
+    expect(typeof (worker as ExportedHandler<Env>).scheduled).toBe('function');
+  });
+});

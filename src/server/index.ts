@@ -1,4 +1,5 @@
 import { createApp } from './app';
+import { handleScheduled } from './async/cron';
 import { handleQueueBatch } from './async/queue-entry';
 
 const app = createApp();
@@ -20,5 +21,8 @@ export default {
   },
   async queue(batch, env) {
     await handleQueueBatch(batch, env);
+  },
+  async scheduled(_controller, env) {
+    await handleScheduled(env);
   },
 } satisfies ExportedHandler<Env>;

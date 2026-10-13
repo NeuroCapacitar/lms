@@ -37,9 +37,10 @@ describe('publicação pós-commit', () => {
   it('falha no envio NÃO lança (a requisição não falha): vira alerta e o Cron recupera', async () => {
     const { env } = fakeEnv(new Error('queue indisponível para ana@example.com'));
     const alerts: AlertEvent[] = [];
-    await expect(
-      publishIntents(env, [intent], (event) => alerts.push(event)),
-    ).resolves.toBeUndefined();
+    await expect(publishIntents(env, [intent], (event) => alerts.push(event))).resolves.toEqual({
+      sent: 0,
+      failed: 1,
+    });
     expect(alerts).toEqual([
       { code: 'publish_failed', queue: 'general', intentId: ID, correlationId: 'corr-1' },
     ]);

@@ -69,6 +69,8 @@
         "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea4be9d4370457b93f1feb7469d2ceb" }],
+      // Reconciliação do assíncrono (M4-03). Cada execução acorda o Neon Free: NÃO aumentar a frequência.
+      "triggers": { "crons": ["*/30 * * * *"] },
       "queues": {
         "producers": [
           { "binding": "QUEUE_FINANCE", "queue": "hub-staging-finance" },
@@ -120,6 +122,8 @@
         "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "f31b83e0d8044d00a9651c81d121bc91" }],
+      // Reconciliação do assíncrono (M4-03). Cada execução acorda o Neon Free: NÃO aumentar a frequência.
+      "triggers": { "crons": ["*/30 * * * *"] },
       "queues": {
         "producers": [
           { "binding": "QUEUE_FINANCE", "queue": "hub-production-finance" },
