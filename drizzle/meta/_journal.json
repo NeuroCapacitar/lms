@@ -162,6 +162,13 @@
       "when": 1791916467105,
       "tag": "0022_video_lessons_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791923905541,
+      "tag": "0023_quiz_lessons_attempts",
+      "breakpoints": true
     }
   ]
 }

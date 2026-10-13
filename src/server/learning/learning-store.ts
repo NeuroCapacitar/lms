@@ -18,6 +18,7 @@ import type { PublishedCurriculumDto } from '../../features/catalog/curriculum';
 import { computeProgress, type CourseProgress } from '../../features/access/progress';
 import { resolveAccess } from '../access/entitlement-store';
 import { getPublishedCurriculum } from '../catalog/curriculum-store';
+import { quizPart } from './quiz-attempts';
 import { loadVideoView } from './video-progress';
 
 /**
@@ -190,6 +191,9 @@ export async function getLesson(
         isOptional: current.isOptional,
         body: current.body,
         kind: current.kind ?? 'text',
+        ...(current.kind === 'quiz'
+          ? await quizPart(db, { rawQuiz: current.quiz, lessonId, userId })
+          : {}),
         ...(current.kind === 'video' && current.videoAssetId
           ? {
               video: await loadVideoView(db, {

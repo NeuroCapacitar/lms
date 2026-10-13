@@ -535,6 +535,8 @@ export const lessonDraft = pgTable(
     kind: text().notNull().default('text'),
     /** Aula de vídeo: o UM vídeo da aula (vazio enquanto o rascunho está incompleto; a publicação exige). */
     videoAssetId: uuid().references(() => videoAsset.id, { onDelete: 'restrict' }),
+    /** Aula de quiz (M5-04): o quiz inteiro, com gabarito (só a Staff lê); pode estar incompleto no rascunho. */
+    quiz: jsonb(),
     isOptional: boolean().notNull().default(false),
     body: jsonb(),
     ...stamps,
@@ -546,7 +548,12 @@ export const lessonDraft = pgTable(
       foreignColumns: [moduleDraft.id, moduleDraft.courseId],
     }).onDelete('cascade'),
     index('lesson_draft_module_idx').on(table.moduleId, table.position),
-    check('lesson_draft_kind_check', sql`${table.kind} in ('text', 'video')`),
+    check('lesson_draft_kind_check', sql`${table.kind} in ('text', 'video', 'quiz')`),
+    check('lesson_draft_quiz_check', sql`${table.kind} = 'quiz' or ${table.quiz} is null`),
+    check(
+      'lesson_draft_quiz_size_check',
+      sql`${table.quiz} is null or octet_length(${table.quiz}::text) <= 200000`,
+    ),
     check(
       'lesson_draft_video_asset_check',
       sql`${table.kind} = 'video' or ${table.videoAssetId} is null`,
@@ -595,6 +602,8 @@ export const lesson = pgTable(
     kind: text().notNull().default('text'),
     /** Aula de vídeo: exatamente UM `video_asset` (a aula de texto não tem). */
     videoAssetId: uuid().references(() => videoAsset.id, { onDelete: 'restrict' }),
+    /** Aula de quiz (M5-04): o quiz publicado, com gabarito; NUNCA sai inteiro para o aluno. */
+    quiz: jsonb(),
     isOptional: boolean().notNull().default(false),
     body: jsonb(),
     retiredAt: timestamp({ withTimezone: true }),
@@ -608,7 +617,12 @@ export const lesson = pgTable(
     }).onDelete('restrict'),
     index('lesson_module_idx').on(table.moduleId, table.position),
     unique('lesson_id_course_unique').on(table.id, table.courseId),
-    check('lesson_kind_check', sql`${table.kind} in ('text', 'video')`),
+    check('lesson_kind_check', sql`${table.kind} in ('text', 'video', 'quiz')`),
+    check('lesson_quiz_check', sql`(${table.kind} = 'quiz') = (${table.quiz} is not null)`),
+    check(
+      'lesson_quiz_size_check',
+      sql`${table.quiz} is null or octet_length(${table.quiz}::text) <= 200000`,
+    ),
     check(
       'lesson_video_asset_check',
       sql`(${table.kind} = 'video') = (${table.videoAssetId} is not null)`,
@@ -734,7 +748,7 @@ export const lessonCompletion = pgTable(
       foreignColumns: [lesson.id, lesson.courseId],
     }).onDelete('restrict'),
     index('lesson_completion_course_idx').on(table.userId, table.courseId),
-    check('lesson_completion_method_check', sql`${table.method} in ('manual', 'video')`),
+    check('lesson_completion_method_check', sql`${table.method} in ('manual', 'video', 'quiz')`),
   ],
 );
 
@@ -1142,6 +1156,48 @@ export const videoProgress = pgTable(
     check(
       'video_progress_completion_check',
       sql`(${table.completedAt} is null) = (${table.evidence} is null)`,
+    ),
+  ],
+);
+
+/**
+ * Tentativa de quiz (M5-04): APPEND-ONLY (gatilho) e com número sequencial por (pessoa, aula), protegido por
+ * `UNIQUE(user, lesson, number)` e pela matrícula travada. Guarda uma CÓPIA do quiz como foi apresentado
+ * (ordem, gabarito e nota mínima vigentes na hora) e das respostas, então editar o quiz depois não reescreve o
+ * histórico. A nota é calculada só no servidor.
+ */
+export const quizAttempt = pgTable(
+  'quiz_attempt',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text().notNull(),
+    courseId: uuid().notNull(),
+    lessonId: uuid().notNull(),
+    number: integer().notNull(),
+    snapshot: jsonb().notNull(),
+    answers: jsonb().notNull(),
+    earnedPoints: integer().notNull(),
+    totalPoints: integer().notNull(),
+    scorePercent: integer().notNull(),
+    passed: boolean().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('quiz_attempt_number_unique').on(table.userId, table.lessonId, table.number),
+    foreignKey({
+      name: 'quiz_attempt_enrollment_fk',
+      columns: [table.userId, table.courseId],
+      foreignColumns: [enrollment.userId, enrollment.courseId],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'quiz_attempt_lesson_fk',
+      columns: [table.lessonId, table.courseId],
+      foreignColumns: [lesson.id, lesson.courseId],
+    }).onDelete('restrict'),
+    check('quiz_attempt_number_check', sql`${table.number} >= 1`),
+    check(
+      'quiz_attempt_score_check',
+      sql`${table.earnedPoints} >= 0 and ${table.earnedPoints} <= ${table.totalPoints} and ${table.scorePercent} between 0 and 100`,
     ),
   ],
 );

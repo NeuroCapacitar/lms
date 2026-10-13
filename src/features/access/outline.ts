@@ -1,4 +1,5 @@
 import type { RichText } from '../content/rich-text';
+import type { StudentQuiz } from '../quiz/quiz';
 import type { SequenceMode } from '../catalog/catalog';
 import type { AccessDto } from './access';
 import type { CourseProgress } from './progress';
@@ -64,6 +65,22 @@ export interface LessonVideoDto {
   completionPercent: number;
 }
 
+/**
+ * O quiz de uma aula como o ALUNO o recebe (M5-04): sem gabarito, na ordem da próxima tentativa, com o estado
+ * das tentativas. O gabarito só volta na resposta da submissão, conforme o tipo de feedback do quiz.
+ */
+export interface LessonQuizDto {
+  quiz: StudentQuiz;
+  attemptsUsed: number;
+  /** `null` = ilimitadas. */
+  attemptsLeft: number | null;
+  /** Já foi aprovada (a aula está concluída e não há novas tentativas). */
+  passed: boolean;
+  /** Pode enviar uma tentativa agora (não aprovada e com tentativas sobrando). */
+  canAttempt: boolean;
+  last: { number: number; scorePercent: number; passed: boolean } | null;
+}
+
 export interface LessonViewDto {
   course: { id: string; title: string };
   lesson: {
@@ -72,9 +89,11 @@ export interface LessonViewDto {
     isOptional: boolean;
     body: RichText | null;
     /** Ausente = aula de texto. */
-    kind?: 'text' | 'video';
+    kind?: 'text' | 'video' | 'quiz';
     /** Só na aula de vídeo. */
     video?: LessonVideoDto;
+    /** Só na aula de quiz. */
+    quiz?: LessonQuizDto;
   };
   completed: boolean;
   /** Aulas vizinhas na ordem do curso (só id e título; abrir uma bloqueada é recusado pelo servidor). */

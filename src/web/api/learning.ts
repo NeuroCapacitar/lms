@@ -108,3 +108,29 @@ export async function sendVideoProgress(
     return { kind: 'error' };
   }
 }
+
+/** Resposta de `POST /api/lessons/:id/quiz-attempts` (M5-04). O gabarito só vem com feedback imediato. */
+export interface QuizAttemptResponse {
+  attempt: {
+    number: number;
+    scorePercent: number;
+    earnedPoints: number;
+    totalPoints: number;
+    passed: boolean;
+    minScorePercent: number;
+  };
+  attemptsUsed: number;
+  attemptsLeft: number | null;
+  review?: {
+    questionId: string;
+    correct: boolean;
+    selected: string[];
+    correctOptionIds?: string[];
+  }[];
+  completion?: { courseCompleted: boolean; courseJustCompleted: boolean };
+}
+
+export const submitQuizAttempt = (
+  lessonId: string,
+  answers: { questionId: string; optionIds: string[] }[],
+) => postAction<QuizAttemptResponse>(`/api/lessons/${lessonId}/quiz-attempts`, { answers });

@@ -78,3 +78,47 @@ describe('diffCurriculum', () => {
     expect(diff).toEqual({ details: true, added: [], changed: [], retired: [] });
   });
 });
+
+describe('diffCurriculum: tipo, vídeo e quiz (M5-02, M5-04)', () => {
+  const quiz = {
+    minScorePercent: 70,
+    maxAttempts: null,
+    feedback: 'immediate' as const,
+    shuffle: false,
+    questions: [],
+  };
+
+  it('mudar o quiz, o tipo ou o vídeo de uma aula conta como mudança; ausente equivale a texto/sem vídeo', () => {
+    const published = tree([
+      module('m1', 'Módulo 1', [lesson('a', 'Aula A', { kind: 'quiz', quiz })]),
+    ]);
+    const same = tree([
+      module('m1', 'Módulo 1', [lesson('a', 'Aula A', { kind: 'quiz', quiz: { ...quiz } })]),
+    ]);
+    expect(diffCurriculum(same, published).changed).toEqual([]);
+    const edited = tree([
+      module('m1', 'Módulo 1', [
+        lesson('a', 'Aula A', { kind: 'quiz', quiz: { ...quiz, minScorePercent: 80 } }),
+      ]),
+    ]);
+    expect(diffCurriculum(edited, published).changed.map((item) => item.id)).toEqual(['a']);
+    const toText = tree([module('m1', 'Módulo 1', [lesson('a', 'Aula A')])]);
+    expect(diffCurriculum(toText, published).changed.map((item) => item.id)).toEqual(['a']);
+    const withVideo = tree([
+      module('m1', 'Módulo 1', [lesson('a', 'Aula A', { kind: 'video', videoAssetId: 'v1' })]),
+    ]);
+    const otherVideo = tree([
+      module('m1', 'Módulo 1', [lesson('a', 'Aula A', { kind: 'video', videoAssetId: 'v2' })]),
+    ]);
+    expect(diffCurriculum(otherVideo, withVideo).changed.map((item) => item.id)).toEqual(['a']);
+    // `kind` ausente e `text` são a mesma coisa
+    expect(
+      diffCurriculum(
+        tree([
+          module('m1', 'Módulo 1', [lesson('a', 'Aula A', { kind: 'text', videoAssetId: null })]),
+        ]),
+        tree([module('m1', 'Módulo 1', [lesson('a', 'Aula A')])]),
+      ).changed,
+    ).toEqual([]);
+  });
+});

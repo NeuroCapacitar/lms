@@ -404,6 +404,88 @@ test.describe('currículo: editar, reordenar, salvar', () => {
     ).toBe(5);
   });
 
+  test('quiz: transformar a aula, montar a questão com a resposta certa e salvar manda o quiz inteiro (kind + gabarito)', async ({
+    page,
+  }) => {
+    const state = await seed(page);
+    await page.getByRole('button', { name: 'Transformar a aula 1 do módulo 1 em quiz' }).click();
+    await expect(page.getByRole('group', { name: 'Quiz da aula 1 do módulo 1' })).toBeVisible();
+    await page.getByLabel('Nota mínima para aprovar (%), quiz da aula 1 do módulo 1').fill('80');
+    await page.getByLabel('Máximo de tentativas, quiz da aula 1 do módulo 1').fill('3');
+    await page
+      .getByRole('button', { name: 'Adicionar questão ao quiz da aula 1 do módulo 1' })
+      .click();
+    await page.getByLabel('Enunciado da questão 1 (aula 1 do módulo 1)').fill('Qual é a capital?');
+    await page.getByLabel('Texto da opção 1 (questão 1)').fill('Brasília');
+    await page.getByLabel('Texto da opção 2 (questão 1)').fill('São Paulo');
+    await page.getByLabel('A opção 1 da questão 1 é correta').check();
+    await page.getByRole('button', { name: 'Salvar rascunho' }).click();
+    await expect(page.getByText('Rascunho salvo.')).toBeVisible();
+    const body = state.calls.find((c) => c.method === 'PUT')!.body as {
+      modules: { lessons: { kind?: string; quiz?: any }[] }[];
+    };
+    const [first, second] = body.modules[0]!.lessons;
+    expect(first!.kind).toBe('quiz');
+    expect(first!.quiz).toMatchObject({
+      minScorePercent: 80,
+      maxAttempts: 3,
+      feedback: 'immediate',
+      shuffle: false,
+    });
+    expect(first!.quiz.questions).toHaveLength(1);
+    expect(first!.quiz.questions[0]).toMatchObject({
+      prompt: 'Qual é a capital?',
+      kind: 'single',
+      points: 1,
+    });
+    expect(first!.quiz.questions[0].options.map((o: any) => [o.text, o.correct])).toEqual([
+      ['Brasília', true],
+      ['São Paulo', false],
+    ]);
+    // a aula que não foi mexida não manda tipo (o servidor mantém o que tem)
+    expect(second!.kind).toBeUndefined();
+    expect(second!.quiz).toBeUndefined();
+  });
+
+  test('quiz: na escolha única só uma opção fica correta; converter em texto pede confirmação e apaga o quiz', async ({
+    page,
+  }) => {
+    const state = await seed(page);
+    await page.getByRole('button', { name: 'Transformar a aula 1 do módulo 1 em quiz' }).click();
+    await page
+      .getByRole('button', { name: 'Adicionar questão ao quiz da aula 1 do módulo 1' })
+      .click();
+    await page.getByLabel('A opção 1 da questão 1 é correta').check();
+    await page.getByLabel('A opção 2 da questão 1 é correta').check();
+    await expect(page.getByLabel('A opção 1 da questão 1 é correta')).not.toBeChecked();
+    await page.getByLabel('Tipo da questão 1').selectOption('multiple');
+    await page.getByLabel('A opção 1 da questão 1 é correta').check();
+    await expect(page.getByLabel('A opção 2 da questão 1 é correta')).toBeChecked();
+
+    await page.getByRole('button', { name: 'Converter a aula 1 do módulo 1 em texto' }).click();
+    await page
+      .getByRole('button', { name: 'Confirmar: apagar o quiz e virar aula de texto' })
+      .click();
+    await expect(page.getByRole('group', { name: 'Quiz da aula 1 do módulo 1' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Salvar rascunho' }).click();
+    await expect(page.getByText('Rascunho salvo.')).toBeVisible();
+    const body = state.calls.find((c) => c.method === 'PUT')!.body as {
+      modules: { lessons: { kind?: string; quiz?: unknown }[] }[];
+    };
+    expect(body.modules[0]!.lessons[0]).toMatchObject({ kind: 'text' });
+    expect(body.modules[0]!.lessons[0]!.quiz).toBeUndefined();
+  });
+
+  test('quiz: o editor passa na acessibilidade (WCAG 2.2 AA)', async ({ page }) => {
+    await seed(page);
+    await page.getByRole('button', { name: 'Transformar a aula 1 do módulo 1 em quiz' }).click();
+    await page
+      .getByRole('button', { name: 'Adicionar questão ao quiz da aula 1 do módulo 1' })
+      .click();
+    await page.getByRole('button', { name: 'Adicionar opção à questão 1' }).click();
+    await expectNoViolations(page, 'editor de quiz');
+  });
+
   test('conflito 409: avisa, não sobrescreve e oferece recarregar o rascunho atual', async ({
     page,
   }) => {

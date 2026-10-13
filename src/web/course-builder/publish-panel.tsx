@@ -16,6 +16,9 @@ const PROBLEM_MESSAGES: Record<CurriculumProblem['code'], string> = {
   drip_invalid: 'Há um módulo com prazo de liberação inválido.',
   body_invalid: 'Há uma aula com texto fora do formato permitido.',
   video_asset_missing: 'Há uma aula de vídeo sem o vídeo escolhido.',
+  quiz_missing: 'Há uma aula de quiz sem o quiz montado.',
+  quiz_incomplete:
+    'Há um quiz incompleto: cada questão precisa de enunciado, de 2 a 10 opções com texto e a resposta certa marcada (uma só nas de escolha única).',
 };
 
 /** "módulo 2" ou "módulo 2, aula 1" a partir do caminho do problema. */

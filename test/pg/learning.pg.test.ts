@@ -463,7 +463,7 @@ describe('lesson_completion (restrições do banco)', () => {
     );
     await violation(
       tools.db.execute(
-        sql`insert into lesson_completion (user_id, course_id, lesson_id, method) values (${student.id}, ${courseId}, ${lesson['Como estudar aqui']!}, 'quiz')`,
+        sql`insert into lesson_completion (user_id, course_id, lesson_id, method) values (${student.id}, ${courseId}, ${lesson['Como estudar aqui']!}, 'certificate')`,
       ),
       /lesson_completion_method_check/,
     );

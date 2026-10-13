@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { parseRichText, richTextSchema, type RichText } from '../content/rich-text';
+import { quizProblems, quizSchema, type Quiz } from '../quiz/quiz';
 
 /**
  * Currículo vivo (M2-02). Puro: sem rede nem banco. O curso tem um RASCUNHO (o que a Staff edita) e
@@ -48,11 +49,19 @@ export const saveDraftSchema = z.strictObject({
                  * sem tipo é de texto. Aula de texto não tem vídeo; o vídeo pode faltar no rascunho, mas a
                  * publicação exige.
                  */
-                kind: z.enum(['text', 'video']).optional(),
+                kind: z.enum(['text', 'video', 'quiz']).optional(),
                 videoAssetId: uuid.nullable().optional(),
+                /**
+                 * M5-04: o quiz da aula de quiz (com gabarito). AUSENTE = mantém o quiz do rascunho; `null` o
+                 * remove. O rascunho aceita quiz incompleto; a publicação exige coerência (`quizProblems`).
+                 */
+                quiz: quizSchema.nullable().optional(),
               })
               .refine((lesson) => lesson.kind === 'video' || !lesson.videoAssetId, {
                 message: 'video_asset_on_text_lesson',
+              })
+              .refine((lesson) => lesson.kind === 'quiz' || !lesson.quiz, {
+                message: 'quiz_on_non_quiz_lesson',
               }),
           )
           .max(MAX_LESSONS_PER_MODULE),
@@ -73,9 +82,11 @@ export interface LessonNode {
   isOptional: boolean;
   body: RichText | null;
   /** Ausente = aula de texto (telas e testes anteriores ao M5-02). */
-  kind?: 'text' | 'video';
+  kind?: 'text' | 'video' | 'quiz';
   /** Só na aula de vídeo: o UM `video_asset`. */
   videoAssetId?: string | null;
+  /** Só na aula de quiz (M5-04), COM gabarito: a Staff e o servidor; o aluno recebe `StudentQuiz`. */
+  quiz?: Quiz | null;
 }
 
 export interface ModuleNode {
@@ -112,7 +123,9 @@ export interface CurriculumProblem {
     | 'no_required_lesson'
     | 'drip_invalid'
     | 'body_invalid'
-    | 'video_asset_missing';
+    | 'video_asset_missing'
+    | 'quiz_missing'
+    | 'quiz_incomplete';
   /** Onde: `details.displayTitle`, `modules[1].title`, `modules[0].lessons[2].title`... */
   path: string;
 }
@@ -148,6 +161,11 @@ export function validateCurriculum(tree: CurriculumTree): CurriculumProblem[] {
       }
       if (lesson.kind === 'video' && !lesson.videoAssetId) {
         problems.push({ code: 'video_asset_missing', path: `${lessonAt}.videoAssetId` });
+      }
+      if (lesson.kind === 'quiz') {
+        for (const problem of quizProblems(lesson.quiz)) {
+          problems.push({ code: problem.code, path: `${lessonAt}.${problem.path}` });
+        }
       }
       if (!lesson.isOptional) required += 1;
     });

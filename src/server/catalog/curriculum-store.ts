@@ -23,6 +23,7 @@ import {
   type PublishedCurriculumDto,
 } from '../../features/catalog/curriculum';
 import type { RichText } from '../../features/content/rich-text';
+import type { Quiz } from '../../features/quiz/quiz';
 import { diffCurriculum, type PublishPreview } from '../../features/catalog/curriculum-diff';
 import { isProviderUsable } from '../../features/video/verification';
 import type { VideoProvider } from '../../features/video/providers';
@@ -109,8 +110,9 @@ async function readDraftTree(tx: Tx | Database, courseId: string): Promise<Curri
           title: item.title,
           isOptional: item.isOptional,
           body: (item.body as RichText | null) ?? null,
-          kind: item.kind as 'text' | 'video',
+          kind: item.kind as 'text' | 'video' | 'quiz',
           videoAssetId: item.videoAssetId,
+          quiz: (item.quiz as Quiz | null) ?? null,
         })),
     })),
   };
@@ -154,8 +156,9 @@ export async function readPublishedTree(
           title: item.title,
           isOptional: item.isOptional,
           body: (item.body as RichText | null) ?? null,
-          kind: item.kind as 'text' | 'video',
+          kind: item.kind as 'text' | 'video' | 'quiz',
           videoAssetId: item.videoAssetId,
+          quiz: (item.quiz as Quiz | null) ?? null,
         })),
     })),
   };
@@ -192,8 +195,9 @@ export interface DraftInput {
       title: string;
       isOptional: boolean;
       body: RichText | null;
-      kind?: 'text' | 'video' | undefined;
+      kind?: 'text' | 'video' | 'quiz' | undefined;
       videoAssetId?: string | null | undefined;
+      quiz?: Quiz | null | undefined;
     }[];
   }[];
 }
@@ -330,11 +334,17 @@ export async function saveDraft(
             ? {}
             : {
                 kind: item.kind,
-                ...(item.kind === 'text'
+                // O vídeo só existe na aula de vídeo e o quiz só na de quiz; ausente no corpo = mantém.
+                ...(item.kind !== 'video'
                   ? { videoAssetId: null }
                   : item.videoAssetId === undefined
                     ? {}
                     : { videoAssetId: item.videoAssetId }),
+                ...(item.kind !== 'quiz'
+                  ? { quiz: null }
+                  : item.quiz === undefined
+                    ? {}
+                    : { quiz: item.quiz }),
               }),
         };
         if (item.id !== undefined) {
@@ -463,6 +473,7 @@ export async function publishCurriculum(
           position,
           kind: item.kind ?? 'text',
           videoAssetId: item.kind === 'video' ? (item.videoAssetId ?? null) : null,
+          quiz: item.kind === 'quiz' ? (item.quiz ?? null) : null,
         };
         if (knownLessons.has(item.id)) {
           await tx
