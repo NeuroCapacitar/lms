@@ -7,6 +7,7 @@ import * as schema from '../../src/db/schema.ts';
 import type { AlertEvent } from '../../src/server/async/alerts.ts';
 import { processBatch } from '../../src/server/async/consumer.ts';
 import { processInbox } from '../../src/server/async/inbox-processor.ts';
+import { createQuotaGate } from '../../src/server/email/quota-store.ts';
 import { createEmailHandler, type EmailHandlerDeps } from '../../src/server/email/send-handler.ts';
 import { queueEmail } from '../../src/server/email/email-store.ts';
 import { hashRecipient } from '../../src/server/email/recipient-hash.ts';
@@ -115,7 +116,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await main.db.execute(
-    sql`truncate table email_message, email_recipient_state, outbox_message, inbox_event, system_flag, job_run`,
+    sql`truncate table email_send_ledger, email_message, email_recipient_state, outbox_message, inbox_event, system_flag, job_run`,
   );
   await main.db.delete(schema.user);
 });
@@ -296,6 +297,7 @@ describe('supressão por bounce permanente e reclamação', () => {
   function emailDeps(): EmailHandlerDeps {
     return {
       getMailer: () => mailer,
+      quota: createQuotaGate(),
       from: 'NeuroCapacitar <acesso@neurocapacitar.example>',
       appUrl: BASE,
       allowlist: [],

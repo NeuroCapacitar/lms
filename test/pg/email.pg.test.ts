@@ -13,6 +13,7 @@ import {
   queueEmail,
 } from '../../src/server/email/email-store.ts';
 import type { MailRequest, MailResult, Mailer } from '../../src/server/email/mailer.ts';
+import { createQuotaGate } from '../../src/server/email/quota-store.ts';
 import { createEmailHandler, type EmailHandlerDeps } from '../../src/server/email/send-handler.ts';
 import { FakeMessage, uuid } from '../helpers/async-harness.ts';
 import { createTestSchema, type TestSchema } from '../helpers/pg-schema.ts';
@@ -41,6 +42,7 @@ class ScriptedMailer implements Mailer {
 function deps(mailer: Mailer, overrides: Partial<EmailHandlerDeps> = {}): EmailHandlerDeps {
   return {
     getMailer: () => mailer,
+    quota: createQuotaGate(),
     from: 'NeuroCapacitar <acesso@neurocapacitar.example>',
     appUrl: 'https://hub.example',
     allowlist: [],
@@ -136,7 +138,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await main.db.execute(
-    sql`truncate table email_message, outbox_message, inbox_event, system_flag, job_run`,
+    sql`truncate table email_message, email_send_ledger, outbox_message, inbox_event, system_flag, job_run`,
   );
   await main.db.delete(schema.user);
 });
@@ -294,12 +296,14 @@ describe('envio pelo handler', () => {
     const mailer = new ScriptedMailer();
     mailer.plan = [{ ok: false, kind: 'rate_limited', status: 429 }];
     const first = await deliver(emailMessageId, deps(mailer));
-    expect(first.retried).toBeDefined();
+    // M4-08: 429 é ADIAMENTO (a mensagem é confirmada, a linha volta a pending sem gastar tentativa).
+    expect(first.acked).toBe(true);
+    expect(first.retried).toBeUndefined();
     expect(await message(emailMessageId)).toMatchObject({
       state: 'queued',
       lastErrorCode: 'provider_429',
     });
-    expect((await outboxFor(emailMessageId))!.state).toBe('pending');
+    expect(await outboxFor(emailMessageId)).toMatchObject({ state: 'pending', attempts: 0 });
 
     await makeDue(emailMessageId);
     await deliver(emailMessageId, deps(mailer));

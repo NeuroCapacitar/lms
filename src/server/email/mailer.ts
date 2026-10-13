@@ -29,7 +29,7 @@ type MailFailureKind =
 
 export type MailResult =
   | { ok: true; providerMessageId: string | null }
-  | { ok: false; kind: MailFailureKind; status?: number };
+  | { ok: false; kind: MailFailureKind; status?: number; quota?: 'daily' | 'monthly' };
 
 export interface Mailer {
   send(request: MailRequest): Promise<MailResult>;
@@ -81,12 +81,28 @@ export function createResendMailer(config: ResendMailerConfig): Mailer {
         return { ok: true, providerMessageId };
       }
       const status = response.status;
-      if (status === 429) return { ok: false, kind: 'rate_limited', status };
+      if (status === 429) {
+        // O corpo do 429 diz se foi a TAXA (por segundo) ou a COTA (dia ou mês); só o nome do erro é lido.
+        const quota = await quotaOf(response);
+        return { ok: false, kind: 'rate_limited', status, ...(quota ? { quota } : {}) };
+      }
       if (status === 409) return { ok: false, kind: 'conflict', status };
       if (status >= 500) return { ok: false, kind: 'unavailable', status };
       return { ok: false, kind: 'rejected', status };
     },
   };
+}
+
+/** `daily_quota_exceeded` ou `monthly_quota_exceeded` no corpo do 429; qualquer outra coisa = taxa. */
+async function quotaOf(response: Response): Promise<'daily' | 'monthly' | undefined> {
+  try {
+    const body = (await response.json()) as { name?: unknown };
+    if (body.name === 'daily_quota_exceeded') return 'daily';
+    if (body.name === 'monthly_quota_exceeded') return 'monthly';
+  } catch {
+    // Corpo ilegível: trata como taxa.
+  }
+  return undefined;
 }
 
 /** Mailer de Development: guarda em memória e avisa SEM o endereço nem as variáveis (só o modelo). */

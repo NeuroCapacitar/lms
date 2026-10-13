@@ -4,6 +4,9 @@ import { eq } from 'drizzle-orm';
 
 import { emailRecipientState } from '../../db/schema';
 import { createFakeMailer, createResendMailer, type Mailer } from './mailer';
+import { withDatabase } from '../../db/client';
+import { logAlert } from '../async/alerts';
+import { createQuotaGate, recordDirectSend } from './quota-store';
 import { hashRecipient } from './recipient-hash';
 import { createResendSender } from './resend';
 import type { EmailHandlerDeps } from './send-handler';
@@ -20,7 +23,7 @@ export function createEmailSender(env: Env): EmailSender {
     const magicLinkTemplate: string = env.RESEND_TEMPLATE_MAGIC_LINK;
     const reauthTemplate: string = env.RESEND_TEMPLATE_REAUTH_LINK;
     const invitationTemplate: string = env.RESEND_TEMPLATE_STAFF_INVITATION;
-    return createResendSender({
+    const sender = createResendSender({
       apiKey: env.RESEND_API_KEY,
       from: env.EMAIL_FROM,
       templates: {
@@ -33,6 +36,7 @@ export function createEmailSender(env: Env): EmailSender {
         .map((item) => item.trim().toLowerCase())
         .filter(Boolean),
     });
+    return countedSender(sender, env);
   }
   const isDevelopment = new URL(env.APP_BASE_URL).hostname === 'localhost';
   if (isDevelopment) {
@@ -44,6 +48,27 @@ export function createEmailSender(env: Env): EmailSender {
   return {
     async send() {
       throw new Error('RESEND_API_KEY ausente: envio de e-mail não configurado neste ambiente');
+    },
+  };
+}
+
+/**
+ * Contabiliza no livro-razão da cota (M4-08) os e-mails do caminho DIRETO (link de acesso, reautenticação,
+ * convite), que não passam pela outbox: assim a cota que a outbox enxerga é a real. Conta DEPOIS de o
+ * Resend aceitar e NUNCA recusa nem atrasa o envio (login vem primeiro); se o dia já passou do limite, só
+ * alerta (P1). Falha ao contar não derruba o envio.
+ */
+function countedSender(inner: EmailSender, env: Env): EmailSender {
+  return {
+    async send(message) {
+      await inner.send(message);
+      try {
+        const { overDailyLimit } = await withDatabase(env.HYPERDRIVE, (db) => recordDirectSend(db));
+        if (overDailyLimit)
+          logAlert({ code: 'email_quota_exhausted', reason: 'direct_send_over_limit' });
+      } catch {
+        logAlert({ code: 'email_quota_ledger_unavailable' });
+      }
     },
   };
 }
@@ -70,6 +95,7 @@ export function emailHandlerDeps(env: Env): EmailHandlerDeps {
   return {
     // Criado sob demanda: um lote sem e-mail não depende da chave do Resend.
     getMailer: () => (mailer ??= createMailer(env)),
+    quota: createQuotaGate(),
     from: env.EMAIL_FROM,
     appUrl: env.APP_BASE_URL,
     allowlist: (env.EMAIL_ALLOWLIST ?? '')
