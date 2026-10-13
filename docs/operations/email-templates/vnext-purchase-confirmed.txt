@@ -1,0 +1,7 @@
+Pagamento confirmado
+
+Olá, {{{NAME}}}. Recebemos o pagamento de {{{AMOUNT_BRL}}} pelo curso {{{COURSE_TITLE}}}. Seu acesso é liberado automaticamente.
+
+Acesse: {{{APP_URL}}}/cursos
+
+NeuroCapacitar

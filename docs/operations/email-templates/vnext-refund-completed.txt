@@ -1,0 +1,7 @@
+Reembolso concluído
+
+Olá, {{{NAME}}}. O reembolso de {{{AMOUNT_BRL}}} referente ao curso {{{COURSE_TITLE}}} foi concluído. O acesso ao curso foi encerrado.
+
+Sua conta: {{{APP_URL}}}/conta
+
+NeuroCapacitar

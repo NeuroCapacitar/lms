@@ -1,5 +1,6 @@
 import {
   EMAIL_TEMPLATES,
+  activeTemplateNames,
   expectedVariableNames,
   type EmailTemplateName,
 } from '../../features/email/templates';
@@ -24,11 +25,11 @@ interface ResendTemplate {
 export async function verifyTemplates(options: {
   apiKey: string;
   fetchImpl?: typeof fetch;
-  /** Só para teste: outra lista de nomes. Padrão: todos os do contrato. */
+  /** Só para teste: outra lista de nomes. Padrão: os que o código usa hoje. */
   only?: readonly EmailTemplateName[];
 }): Promise<TemplateProblem[]> {
   const doFetch = options.fetchImpl ?? fetch;
-  const names = options.only ?? (Object.keys(EMAIL_TEMPLATES) as EmailTemplateName[]);
+  const names = options.only ?? activeTemplateNames();
   const problems: TemplateProblem[] = [];
 
   for (const template of names) {

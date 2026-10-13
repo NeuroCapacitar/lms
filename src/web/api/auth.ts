@@ -2,7 +2,12 @@
  * Cliente das rotas de acesso (M1-06). A sessão vive só no cookie HttpOnly: nada aqui lê nem
  * guarda token de sessão. O navegador envia o cabeçalho `Origin`, que o servidor confere.
  */
-export type RequestLinkResult = 'sent' | 'captcha_failed' | 'invalid_email' | 'unavailable';
+export type RequestLinkResult =
+  | 'sent'
+  | 'captcha_failed'
+  | 'invalid_email'
+  | 'email_limit'
+  | 'unavailable';
 export type ConfirmLinkResult = 'ok' | 'invalid_or_expired' | 'unavailable';
 export type AcceptInvitationResult =
   | 'ok'
@@ -41,6 +46,10 @@ export async function requestLink(email: string, captchaToken: string): Promise<
   if (response.ok) return 'sent';
   if (response.status === 403) return 'captcha_failed';
   if (response.status === 400) return 'invalid_email';
+  if (response.status === 503) {
+    const body = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
+    if (body?.error?.code === 'email_unavailable') return 'email_limit';
+  }
   return 'unavailable';
 }
 

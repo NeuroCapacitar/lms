@@ -19,7 +19,7 @@ describe('verificador de modelos do Resend', () => {
       apiKey: 'k',
       only: ['course-available'],
       fetchImpl: resend({
-        'course-available': {
+        'vnext-course-available': {
           body: {
             status: 'published',
             subject: 'Novo curso',
@@ -36,14 +36,14 @@ describe('verificador de modelos do Resend', () => {
       apiKey: 'k',
       only: ['course-available', 'access-granted', 'refund-completed'],
       fetchImpl: resend({
-        'course-available': {
+        'vnext-course-available': {
           body: {
             status: 'draft',
             subject: ' ',
             variables: variables('COURSE_TITLE', 'NAME', 'APP_URL'),
           },
         },
-        'access-granted': {
+        'vnext-access-granted': {
           body: {
             status: 'published',
             subject: 'x',
@@ -59,7 +59,9 @@ describe('verificador de modelos do Resend', () => {
       /access-granted: variáveis que o código envia e o modelo não declara: .*EXPIRES_AT/,
     );
     expect(text).toMatch(/access-granted: variáveis do modelo que o código não envia: EXTRA/);
-    expect(text).toContain('refund-completed: modelo "refund-completed" não existe no Resend');
+    expect(text).toContain(
+      'refund-completed: modelo "vnext-refund-completed" não existe no Resend',
+    );
   });
 
   it('erro do Resend e falta de resposta viram problema (não passam em silêncio)', async () => {
