@@ -1,3 +1,4 @@
+import type { ProgressPayload, SendOutcome } from '../video/progress-reporter';
 import { postAction } from './action';
 import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outline';
 import type { LessonLockReason } from '../../features/access/lesson-access';
@@ -69,3 +70,41 @@ export interface CompleteLessonResponse {
 
 export const completeLesson = (lessonId: string) =>
   postAction<CompleteLessonResponse>(`/api/lessons/${lessonId}/complete`, {});
+
+/**
+ * Envia o progresso de uma aula de vídeo (M5-02). Usa `fetch` com `keepalive` (a requisição sobrevive ao
+ * descarregar da página), `content-type` JSON e o cabeçalho de origem que o navegador manda sozinho: o CSRF
+ * do projeto os exige (por isso NÃO se usa `sendBeacon`). 401 e 403 viram `denied`; o resto, `error`.
+ */
+export async function sendVideoProgress(
+  lessonId: string,
+  payload: ProgressPayload,
+  options: { keepalive: boolean },
+): Promise<SendOutcome> {
+  try {
+    const response = await fetch(`/api/lessons/${lessonId}/video-progress`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'same-origin',
+      keepalive: options.keepalive,
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) {
+      const body = (await response.json().catch(() => null)) as {
+        completed?: boolean;
+        maxPosition?: number;
+        completion?: { courseJustCompleted?: boolean };
+      } | null;
+      return {
+        kind: 'ok',
+        completed: body?.completed === true,
+        maxPosition: body?.maxPosition ?? 0,
+        courseJustCompleted: body?.completion?.courseJustCompleted === true,
+      };
+    }
+    if (response.status === 401 || response.status === 403) return { kind: 'denied' };
+    return { kind: 'error' };
+  } catch {
+    return { kind: 'error' };
+  }
+}

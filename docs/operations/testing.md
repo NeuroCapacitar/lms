@@ -267,3 +267,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `src/server/security/secret-box.test.ts` (cofre), `test/pg/video-connections.pg.test.ts` (rotas, banco e auditoria) e `e2e/videos.spec.ts` (a tela). Os testes usam chaves e tokens FALSOS (`tok_live_…` é só um texto de teste); credencial real de provider nunca entra em fixture, teste nem log.
 - Todo segredo novo de integração segue o mesmo padrão: cifrar com `sealSecret` (AAD = id da linha + o que a identifica), DTO sem o valor, auditoria sem o valor, e um teste que varre respostas, auditoria e colunas procurando o segredo.
 - Roteiro EM STAGING (com autorização): gerar a chave (`openssl rand -base64 32`), gravar `1:<chave>` com `wrangler secret put VIDEO_SECRETS_MASTER_KEY --name hub-staging --profile neurocapacitar`, aplicar a migration 0021, cadastrar uma conexão de teste (YouTube sem segredo e uma com token de teste), conferir que a tela só mostra "configurado (chave v1)", acrescentar a versão 2 mantendo a 1, recifrar e conferir "chave v2".
+
+## Progresso de vídeo e adapter falso (M5-02)
+
+- Servidor: `test/pg/video-progress.pg.test.ts` (rota, banco, trigger) e o bloco M5-02 de `test/pg/curriculum.pg.test.ts`. Decisão pura: `src/features/video/progress.test.ts`. Cliente: `src/web/video/progress-reporter.test.ts`. Tela: `e2e/video.spec.ts`.
+- O e2e usa o adapter FALSO (`VITE_FAKE_VIDEO=1`, definido no `playwright.config.ts`) e a página `e2e/support/fake-video.html`, servida só nesse build por `scripts/e2e-prepare-fake-video.mjs` (a página fica FORA de `public/` e recebe cabeçalhos que permitem o iframe só para ela; os cabeçalhos do app seguem com `frame-ancestors 'none'`). Nunca mover a página para `public/`.
+- Todo adapter real precisa, além do teste de contrato (M5-03): host na allowlist do próprio adapter E em `frame-src` de `public/_headers`; mensagens validadas por `event.origin` e `event.source`; nenhuma capability presumida.

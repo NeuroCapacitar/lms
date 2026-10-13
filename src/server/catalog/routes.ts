@@ -31,6 +31,7 @@ import {
   updateOffer,
 } from './catalog-store';
 import {
+  UnknownVideoAssetError,
   CurriculumCourseNotFoundError,
   CurriculumInvalidError,
   DraftConflictError,
@@ -52,6 +53,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Erros de domínio do catálogo viram respostas com código próprio; o resto é erro do servidor. */
 function domainError(c: CatalogContext, error: unknown): Response {
+  if (error instanceof UnknownVideoAssetError) {
+    return c.json({ error: { code: 'video_asset_not_found' } }, 400);
+  }
   if (error instanceof SlugTakenError) return c.json({ error: { code: 'slug_taken' } }, 409);
   if (error instanceof SlugLockedError) return c.json({ error: { code: 'slug_locked' } }, 409);
   if (error instanceof CourseArchivedError)

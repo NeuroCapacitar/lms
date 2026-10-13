@@ -18,6 +18,7 @@ import type { PublishedCurriculumDto } from '../../features/catalog/curriculum';
 import { computeProgress, type CourseProgress } from '../../features/access/progress';
 import { resolveAccess } from '../access/entitlement-store';
 import { getPublishedCurriculum } from '../catalog/curriculum-store';
+import { loadVideoView } from './video-progress';
 
 /**
  * O curso como UMA pessoa o vê agora (M3-03): acesso, currículo publicado, conclusões e a decisão de
@@ -188,6 +189,17 @@ export async function getLesson(
         title: current.title,
         isOptional: current.isOptional,
         body: current.body,
+        kind: current.kind ?? 'text',
+        ...(current.kind === 'video' && current.videoAssetId
+          ? {
+              video: await loadVideoView(db, {
+                assetId: current.videoAssetId,
+                courseId: row.courseId,
+                lessonId,
+                userId,
+              }),
+            }
+          : {}),
       },
       completed: data.completed.has(lessonId),
       previous: neighbor(flat[index - 1]),

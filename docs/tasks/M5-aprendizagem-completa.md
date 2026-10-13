@@ -26,7 +26,7 @@
 
 ### M5-02 — Contrato de progresso e player de vídeo
 
-**Dependências:** M5-01, M3-04 · **Estado:** `not_started`
+**Dependências:** M5-01, M3-04 · **Estado:** `implemented` (2026-10-13; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** um player e um contrato únicos que qualquer adapter implementa; conclusão pela política do Course (default 90%), autoavanço separado.
 **Passos:**

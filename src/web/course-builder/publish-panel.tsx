@@ -15,6 +15,7 @@ const PROBLEM_MESSAGES: Record<CurriculumProblem['code'], string> = {
   no_required_lesson: 'O curso precisa de pelo menos uma aula obrigatória (não opcional).',
   drip_invalid: 'Há um módulo com prazo de liberação inválido.',
   body_invalid: 'Há uma aula com texto fora do formato permitido.',
+  video_asset_missing: 'Há uma aula de vídeo sem o vídeo escolhido.',
 };
 
 /** "módulo 2" ou "módulo 2, aula 1" a partir do caminho do problema. */

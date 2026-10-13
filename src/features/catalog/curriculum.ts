@@ -36,12 +36,24 @@ export const saveDraftSchema = z.strictObject({
         dripDays: z.number().int().min(0).max(MAX_DRIP_DAYS),
         lessons: z
           .array(
-            z.strictObject({
-              id: uuid.optional(),
-              title: z.string().max(200),
-              isOptional: z.boolean(),
-              body: richOrNull,
-            }),
+            z
+              .strictObject({
+                id: uuid.optional(),
+                title: z.string().max(200),
+                isOptional: z.boolean(),
+                body: richOrNull,
+                /**
+                 * M5-02: tipo da aula e o UM vídeo dela. AUSENTE = mantém o que já está no rascunho (a tela
+                 * antiga, que só edita texto, não converte aula de vídeo em texto sem querer); aula nova
+                 * sem tipo é de texto. Aula de texto não tem vídeo; o vídeo pode faltar no rascunho, mas a
+                 * publicação exige.
+                 */
+                kind: z.enum(['text', 'video']).optional(),
+                videoAssetId: uuid.nullable().optional(),
+              })
+              .refine((lesson) => lesson.kind === 'video' || !lesson.videoAssetId, {
+                message: 'video_asset_on_text_lesson',
+              }),
           )
           .max(MAX_LESSONS_PER_MODULE),
       }),
@@ -60,6 +72,10 @@ export interface LessonNode {
   title: string;
   isOptional: boolean;
   body: RichText | null;
+  /** Ausente = aula de texto (telas e testes anteriores ao M5-02). */
+  kind?: 'text' | 'video';
+  /** Só na aula de vídeo: o UM `video_asset`. */
+  videoAssetId?: string | null;
 }
 
 export interface ModuleNode {
@@ -95,7 +111,8 @@ export interface CurriculumProblem {
     | 'lesson_title_empty'
     | 'no_required_lesson'
     | 'drip_invalid'
-    | 'body_invalid';
+    | 'body_invalid'
+    | 'video_asset_missing';
   /** Onde: `details.displayTitle`, `modules[1].title`, `modules[0].lessons[2].title`... */
   path: string;
 }
@@ -128,6 +145,9 @@ export function validateCurriculum(tree: CurriculumTree): CurriculumProblem[] {
       }
       if (lesson.body !== null && parseRichText(lesson.body) === null) {
         problems.push({ code: 'body_invalid', path: `${lessonAt}.body` });
+      }
+      if (lesson.kind === 'video' && !lesson.videoAssetId) {
+        problems.push({ code: 'video_asset_missing', path: `${lessonAt}.videoAssetId` });
       }
       if (!lesson.isOptional) required += 1;
     });

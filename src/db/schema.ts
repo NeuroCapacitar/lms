@@ -373,6 +373,8 @@ export const course = pgTable(
     title: text().notNull(),
     /** Escolha obrigatória, sem valor padrão: a sequência pedagógica é decisão de quem cria. */
     sequenceMode: text().notNull(),
+    /** Percentual assistido que conclui uma aula de vídeo (M5-02); o padrão do produto é 90. */
+    videoCompletionPercent: integer().notNull().default(90),
     status: text().notNull().default('draft'),
     firstPublishedAt: timestamp({ withTimezone: true }),
     createdBy: text().references(() => user.id, { onDelete: 'set null' }),
@@ -385,6 +387,10 @@ export const course = pgTable(
     ),
     check('course_title_check', sql`char_length(btrim(${table.title})) between 1 and 200`),
     check('course_sequence_mode_check', sql`${table.sequenceMode} in ('guided', 'free')`),
+    check(
+      'course_video_completion_percent_check',
+      sql`${table.videoCompletionPercent} between 50 and 100`,
+    ),
     check('course_status_check', sql`${table.status} in ('draft', 'published', 'archived')`),
   ],
 );
@@ -527,6 +533,8 @@ export const lessonDraft = pgTable(
     title: text().notNull(),
     position: integer().notNull(),
     kind: text().notNull().default('text'),
+    /** Aula de vídeo: o UM vídeo da aula (vazio enquanto o rascunho está incompleto; a publicação exige). */
+    videoAssetId: uuid().references(() => videoAsset.id, { onDelete: 'restrict' }),
     isOptional: boolean().notNull().default(false),
     body: jsonb(),
     ...stamps,
@@ -538,7 +546,11 @@ export const lessonDraft = pgTable(
       foreignColumns: [moduleDraft.id, moduleDraft.courseId],
     }).onDelete('cascade'),
     index('lesson_draft_module_idx').on(table.moduleId, table.position),
-    check('lesson_draft_kind_check', sql`${table.kind} = 'text'`),
+    check('lesson_draft_kind_check', sql`${table.kind} in ('text', 'video')`),
+    check(
+      'lesson_draft_video_asset_check',
+      sql`${table.kind} = 'video' or ${table.videoAssetId} is null`,
+    ),
     check(
       'lesson_draft_body_size_check',
       sql`${table.body} is null or octet_length(${table.body}::text) <= 100000`,
@@ -581,6 +593,8 @@ export const lesson = pgTable(
     title: text().notNull(),
     position: integer().notNull(),
     kind: text().notNull().default('text'),
+    /** Aula de vídeo: exatamente UM `video_asset` (a aula de texto não tem). */
+    videoAssetId: uuid().references(() => videoAsset.id, { onDelete: 'restrict' }),
     isOptional: boolean().notNull().default(false),
     body: jsonb(),
     retiredAt: timestamp({ withTimezone: true }),
@@ -594,7 +608,11 @@ export const lesson = pgTable(
     }).onDelete('restrict'),
     index('lesson_module_idx').on(table.moduleId, table.position),
     unique('lesson_id_course_unique').on(table.id, table.courseId),
-    check('lesson_kind_check', sql`${table.kind} = 'text'`),
+    check('lesson_kind_check', sql`${table.kind} in ('text', 'video')`),
+    check(
+      'lesson_video_asset_check',
+      sql`(${table.kind} = 'video') = (${table.videoAssetId} is not null)`,
+    ),
     check(
       'lesson_body_size_check',
       sql`${table.body} is null or octet_length(${table.body}::text) <= 100000`,
@@ -716,7 +734,7 @@ export const lessonCompletion = pgTable(
       foreignColumns: [lesson.id, lesson.courseId],
     }).onDelete('restrict'),
     index('lesson_completion_course_idx').on(table.userId, table.courseId),
-    check('lesson_completion_method_check', sql`${table.method} = 'manual'`),
+    check('lesson_completion_method_check', sql`${table.method} in ('manual', 'video')`),
   ],
 );
 
@@ -1074,5 +1092,56 @@ export const videoAsset = pgTable(
       sql`${table.durationSeconds} is null or ${table.durationSeconds} between 1 and 86400`,
     ),
     check('video_asset_capabilities_check', sql`jsonb_typeof(${table.capabilities}) = 'object'`),
+  ],
+);
+
+/**
+ * Progresso de uma aula de vídeo (M5-02), uma linha por pessoa e aula. `max_position` (segundos) é a MAIOR
+ * posição já alcançada e só SOBE (gatilho): seek para trás não a reduz. Conclui quando `max_position /
+ * duration` alcança o limiar do curso; a conclusão grava a EVIDÊNCIA (provider, asset, posição, duração,
+ * hora do servidor) e depois disso a linha não muda mais. Só existe para quem tem matrícula (FK composta).
+ * `last_session_id` e `last_seq` ordenam os envios de UMA sessão de reprodução: o que chega com `seq`
+ * menor ou igual ao último é ignorado.
+ */
+export const videoProgress = pgTable(
+  'video_progress',
+  {
+    userId: text().notNull(),
+    lessonId: uuid().notNull(),
+    courseId: uuid().notNull(),
+    videoAssetId: uuid()
+      .notNull()
+      .references(() => videoAsset.id, { onDelete: 'restrict' }),
+    maxPosition: integer().notNull().default(0),
+    durationSeconds: integer().notNull(),
+    lastSessionId: text(),
+    lastSeq: integer().notNull().default(0),
+    completedAt: timestamp({ withTimezone: true }),
+    evidence: jsonb(),
+    ...stamps,
+  },
+  (table) => [
+    primaryKey({ name: 'video_progress_pk', columns: [table.userId, table.lessonId] }),
+    foreignKey({
+      name: 'video_progress_enrollment_fk',
+      columns: [table.userId, table.courseId],
+      foreignColumns: [enrollment.userId, enrollment.courseId],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'video_progress_lesson_fk',
+      columns: [table.lessonId, table.courseId],
+      foreignColumns: [lesson.id, lesson.courseId],
+    }).onDelete('restrict'),
+    check('video_progress_position_check', sql`${table.maxPosition} >= 0`),
+    check(
+      'video_progress_position_duration_check',
+      sql`${table.maxPosition} <= ${table.durationSeconds}`,
+    ),
+    check('video_progress_duration_check', sql`${table.durationSeconds} between 1 and 86400`),
+    check('video_progress_seq_check', sql`${table.lastSeq} >= 0`),
+    check(
+      'video_progress_completion_check',
+      sql`(${table.completedAt} is null) = (${table.evidence} is null)`,
+    ),
   ],
 );

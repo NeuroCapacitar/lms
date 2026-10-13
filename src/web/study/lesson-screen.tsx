@@ -1,10 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { completeLesson, fetchLesson, fetchPreviewLesson } from '../api/learning';
+import { fetchProfile } from '../api/profile';
 import { RichTextView } from '../components/rich-text/rich-text-view';
 import { StudyNotice, lockMessage } from '../components/study-notice';
 import { Button } from '../components/ui/button';
+import { VideoPlayer } from '../video/video-player';
 import { LessonLink, OutlineLink, PreviewBanner, type StudyMode } from './study-links';
 
 /**
@@ -16,6 +19,15 @@ import { LessonLink, OutlineLink, PreviewBanner, type StudyMode } from './study-
 export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: string }) {
   const { courseId, preview } = mode;
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  // Preferência de autoavanço (M5-02): padrão DESLIGADA; só o aluno a lê (a prévia nunca avança sozinha).
+  const profile = useQuery({
+    queryKey: ['profile'],
+    queryFn: fetchProfile,
+    retry: false,
+    enabled: !preview,
+    staleTime: 60_000,
+  });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | undefined>();
   const lesson = useQuery({
@@ -125,42 +137,87 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
       <article className="mb-8 max-w-prose">
         <RichTextView value={current.body} />
       </article>
-      <div className="mb-10 grid max-w-prose gap-2">
-        {preview ? (
-          <>
+      {current.kind === 'video' && current.video ? (
+        <div className="mb-10 grid gap-3">
+          <VideoPlayer
+            key={current.id}
+            lessonId={lessonId}
+            video={current.video}
+            preview={preview}
+            autoAdvance={profile.data?.autoAdvance === true}
+            next={next}
+            onCompleted={(outcome) => {
+              setMessage({
+                kind: 'ok',
+                text: outcome.courseJustCompleted
+                  ? 'Aula concluída. Parabéns, você concluiu o curso!'
+                  : 'Aula concluída.',
+              });
+              void Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] }),
+                queryClient.invalidateQueries({ queryKey: ['outline', courseId] }),
+              ]);
+            }}
+            onNext={() => {
+              if (!next) return;
+              void navigate({
+                to: '/estudar/$courseId/aulas/$lessonId',
+                params: { courseId, lessonId: next.id },
+              });
+            }}
+          />
+          {completed && !preview ? (
+            <p role="status" className="font-medium text-[var(--text-success)]">
+              Aula concluída.
+            </p>
+          ) : null}
+          {message ? (
+            <p
+              role={message.kind === 'ok' ? 'status' : 'alert'}
+              className="font-medium text-[var(--text-success)]"
+            >
+              {message.text}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mb-10 grid max-w-prose gap-2">
+          {preview ? (
+            <>
+              <div>
+                <Button type="button" disabled aria-describedby="previa-concluir">
+                  Concluir aula
+                </Button>
+              </div>
+              <p id="previa-concluir" className="text-sm text-[var(--text-muted)]">
+                Na prévia não é possível concluir aulas: nada é gravado.
+              </p>
+            </>
+          ) : completed ? (
+            <p role="status" className="font-medium text-[var(--text-success)]">
+              Aula concluída.
+            </p>
+          ) : (
             <div>
-              <Button type="button" disabled aria-describedby="previa-concluir">
-                Concluir aula
+              <Button type="button" disabled={busy} onClick={() => void conclude()}>
+                {busy ? 'Concluindo…' : 'Concluir aula'}
               </Button>
             </div>
-            <p id="previa-concluir" className="text-sm text-[var(--text-muted)]">
-              Na prévia não é possível concluir aulas: nada é gravado.
+          )}
+          {message ? (
+            <p
+              role={message.kind === 'ok' ? 'status' : 'alert'}
+              className={
+                message.kind === 'ok'
+                  ? 'font-medium text-[var(--text-success)]'
+                  : 'font-medium text-[var(--text-danger)]'
+              }
+            >
+              {message.text}
             </p>
-          </>
-        ) : completed ? (
-          <p role="status" className="font-medium text-[var(--text-success)]">
-            Aula concluída.
-          </p>
-        ) : (
-          <div>
-            <Button type="button" disabled={busy} onClick={() => void conclude()}>
-              {busy ? 'Concluindo…' : 'Concluir aula'}
-            </Button>
-          </div>
-        )}
-        {message ? (
-          <p
-            role={message.kind === 'ok' ? 'status' : 'alert'}
-            className={
-              message.kind === 'ok'
-                ? 'font-medium text-[var(--text-success)]'
-                : 'font-medium text-[var(--text-danger)]'
-            }
-          >
-            {message.text}
-          </p>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      )}
       <nav aria-label="Navegação entre aulas" className="flex flex-wrap justify-between gap-4">
         {previous ? (
           <LessonLink mode={mode} lessonId={previous.id}>

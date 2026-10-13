@@ -10,6 +10,7 @@ import {
   lesson,
   lessonDraft,
   moduleDraft,
+  videoAsset,
 } from '../../db/schema';
 import {
   curriculumEquals,
@@ -42,6 +43,13 @@ export class UnknownDraftIdError extends Error {
     super('unknown_id');
   }
 }
+/** Um `videoAssetId` do corpo não existe (nunca se grava referência a vídeo inexistente). */
+export class UnknownVideoAssetError extends Error {
+  constructor() {
+    super('unknown_video_asset');
+  }
+}
+
 /** O rascunho não passa nas validações de publicação; `problems` lista todas. */
 export class CurriculumInvalidError extends Error {
   constructor(readonly problems: CurriculumProblem[]) {
@@ -91,6 +99,8 @@ async function readDraftTree(tx: Tx | Database, courseId: string): Promise<Curri
           title: item.title,
           isOptional: item.isOptional,
           body: (item.body as RichText | null) ?? null,
+          kind: item.kind as 'text' | 'video',
+          videoAssetId: item.videoAssetId,
         })),
     })),
   };
@@ -134,6 +144,8 @@ export async function readPublishedTree(
           title: item.title,
           isOptional: item.isOptional,
           body: (item.body as RichText | null) ?? null,
+          kind: item.kind as 'text' | 'video',
+          videoAssetId: item.videoAssetId,
         })),
     })),
   };
@@ -170,6 +182,8 @@ export interface DraftInput {
       title: string;
       isOptional: boolean;
       body: RichText | null;
+      kind?: 'text' | 'video' | undefined;
+      videoAssetId?: string | null | undefined;
     }[];
   }[];
 }
@@ -242,6 +256,21 @@ export async function saveDraft(
       }
     }
 
+    const assetIds = [
+      ...new Set(
+        input.modules.flatMap((module) =>
+          module.lessons.flatMap((item) => (item.videoAssetId ? [item.videoAssetId] : [])),
+        ),
+      ),
+    ];
+    if (assetIds.length > 0) {
+      const found = await tx
+        .select({ id: videoAsset.id })
+        .from(videoAsset)
+        .where(inArray(videoAsset.id, assetIds));
+      if (found.length !== assetIds.length) throw new UnknownVideoAssetError();
+    }
+
     await tx
       .insert(courseDraft)
       .values({ courseId: input.courseId, ...input.details })
@@ -281,6 +310,17 @@ export async function saveDraft(
           body: item.body,
           position,
           moduleId: moduleIds[moduleIndex]!,
+          // M5-02: sem `kind` no corpo, mantém o tipo e o vídeo que já estão no rascunho (ou texto, se nova).
+          ...(item.kind === undefined
+            ? {}
+            : {
+                kind: item.kind,
+                ...(item.kind === 'text'
+                  ? { videoAssetId: null }
+                  : item.videoAssetId === undefined
+                    ? {}
+                    : { videoAssetId: item.videoAssetId }),
+              }),
         };
         if (item.id !== undefined) {
           await tx
@@ -406,6 +446,8 @@ export async function publishCurriculum(
           isOptional: item.isOptional,
           body: item.body,
           position,
+          kind: item.kind ?? 'text',
+          videoAssetId: item.kind === 'video' ? (item.videoAssetId ?? null) : null,
         };
         if (knownLessons.has(item.id)) {
           await tx

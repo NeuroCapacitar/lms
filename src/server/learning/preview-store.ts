@@ -6,6 +6,7 @@ import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outl
 import { computeProgress } from '../../features/access/progress';
 import type { SequenceMode } from '../../features/catalog/catalog';
 import { getPublishedCurriculum } from '../catalog/curriculum-store';
+import { loadVideoView } from './video-progress';
 
 /**
  * Prévia de aluno da Staff (M3-07): o curso PUBLICADO no mesmo formato do aluno, com `preview: true`.
@@ -83,6 +84,11 @@ export async function getPreviewLesson(
       title: current.title,
       isOptional: current.isOptional,
       body: current.body,
+      kind: current.kind ?? 'text',
+      // Prévia: o mesmo vídeo, mas SEM progresso (nada é lido nem gravado da pessoa).
+      ...(current.kind === 'video' && current.videoAssetId
+        ? { video: await loadVideoView(db, { assetId: current.videoAssetId, courseId }) }
+        : {}),
     },
     completed: false,
     previous: neighbor(flat[index - 1]),

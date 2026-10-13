@@ -8,7 +8,13 @@ import {
   LessonNotFoundError,
   completeLesson,
 } from './completion';
+import { videoProgressSchema } from '../../features/video/progress';
 import { getCourseOutline, getLesson } from './learning-store';
+import {
+  VideoAssetMismatchError,
+  VideoNotMeasurableError,
+  reportVideoProgress,
+} from './video-progress';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -103,6 +109,74 @@ export function learningRoutes(deps: {
           },
           403,
         );
+      }
+      throw error;
+    }
+  });
+
+  /**
+   * Progresso da aula de VÍDEO (M5-02): heartbeat, pausa, seek, fim, aba oculta e saída da página (o
+   * cliente usa `fetch` com `keepalive`, com o cabeçalho de origem e o `content-type` JSON que o CSRF do
+   * projeto exige; não `sendBeacon`). DTO estrito. A cada chamada o servidor reverifica acesso, drip e
+   * sequência; só a MAIOR posição vale; seq repetido ou menor é ignorado; conclui no limiar do curso. Não há
+   * conclusão manual de vídeo. 200 sempre que o envio foi aceito (inclusive o ignorado); a conclusão vem em
+   * `completion`. Staff sem matrícula recebe 403: a prévia não grava.
+   */
+  routes.post('/lessons/:id/video-progress', deps.withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const lessonId = c.req.param('id');
+    if (!UUID.test(lessonId)) return c.json({ error: { code: 'not_found' } }, 404);
+    const parsed = videoProgressSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    c.header('Cache-Control', 'no-store');
+    try {
+      const result = await reportVideoProgress(c.var.db, {
+        userId: session.user.id,
+        lessonId,
+        report: parsed.data,
+        ...(deps.clock ? { clock: deps.clock } : {}),
+      });
+      return c.json({
+        status: result.status,
+        maxPosition: result.maxPosition,
+        durationSeconds: result.durationSeconds,
+        completed: result.completed,
+        ...(result.completion
+          ? {
+              completion: {
+                status: result.completion.status,
+                progress: result.completion.progress,
+                courseCompleted: result.completion.courseCompleted,
+                courseJustCompleted: result.completion.courseJustCompleted,
+              },
+            }
+          : {}),
+      });
+    } catch (error) {
+      if (error instanceof LessonNotFoundError) {
+        return c.json({ error: { code: 'not_found' } }, 404);
+      }
+      if (error instanceof CompletionAccessDeniedError) {
+        return c.json({ error: { code: 'access_denied', reason: error.reason } }, 403);
+      }
+      if (error instanceof LessonLockedError) {
+        return c.json(
+          {
+            error: {
+              code: 'lesson_locked',
+              reason: error.reason,
+              releasesAt: error.releasesAt ? error.releasesAt.toISOString() : null,
+            },
+          },
+          403,
+        );
+      }
+      if (error instanceof VideoAssetMismatchError) {
+        return c.json({ error: { code: 'video_asset_mismatch' } }, 409);
+      }
+      if (error instanceof VideoNotMeasurableError) {
+        return c.json({ error: { code: 'video_not_measurable', reason: error.reason } }, 409);
       }
       throw error;
     }
