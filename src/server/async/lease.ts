@@ -20,9 +20,11 @@ export interface ClaimedRow {
   leaseVersion: number;
   correlationId: string;
   payload: unknown;
-  /** Só a outbox tem `kind`; a inbox tem `provider`. */
+  /** Só a outbox tem `kind` e `dedupeKey`; a inbox tem `provider`. */
   kind: string | null;
   provider: string | null;
+  /** Base da chave de idempotência das chamadas externas do handler. */
+  dedupeKey: string | null;
 }
 
 export type FailureKind = 'transient' | 'permanent';
@@ -47,6 +49,7 @@ export async function claimRows(
   limit: number,
   owner: string,
   leaseSeconds: number,
+  onlyId?: string,
 ): Promise<ClaimedRow[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
     throw new RangeError('claim_limit_invalid');
@@ -59,8 +62,9 @@ export async function claimRows(
   const orderBy = outbox ? sql`priority, available_at, id` : sql`available_at, id`;
   const priority = outbox ? sql`target.priority` : sql`0 as priority`;
   const identity = outbox
-    ? sql`target.kind, null::text as provider`
-    : sql`null::text as kind, target.provider`;
+    ? sql`target.kind, null::text as provider, target.dedupe_key`
+    : sql`null::text as kind, target.provider, null::text as dedupe_key`;
+  const only = onlyId === undefined ? sql`true` : sql`id = ${onlyId}`;
 
   return db.transaction(async (tx) => {
     await tx.execute(sql`
@@ -77,8 +81,9 @@ export async function claimRows(
              updated_at = now()
        where target.id in (
          select id from ${table(name)}
-          where (state = 'pending' and available_at <= now())
-             or (state = 'leased' and lease_until < now())
+          where ((state = 'pending' and available_at <= now())
+             or (state = 'leased' and lease_until < now()))
+            and ${only}
           order by ${orderBy}
           for update skip locked
           limit ${limit})
@@ -93,6 +98,7 @@ export async function claimRows(
       payload: row.payload,
       kind: (row.kind as string | null) ?? null,
       provider: (row.provider as string | null) ?? null,
+      dedupeKey: (row.dedupe_key as string | null) ?? null,
     }));
   });
 }
@@ -193,4 +199,45 @@ export async function purgeRows(
             and finished_at < now() - make_interval(days => ${retention.problemDays}))
     returning id`);
   return rowsOf(result).length;
+}
+
+/** Como a linha está agora, vista por quem NÃO conseguiu o claim (mensagem duplicada ou adiantada). */
+export interface RowSnapshot {
+  state: string;
+  /** Segundos até a linha poder ser reivindicada (0 se já pode). Tempo do banco. */
+  waitSeconds: number;
+}
+
+export async function peekRow(
+  db: Database,
+  name: LeasedTable,
+  id: string,
+): Promise<RowSnapshot | undefined> {
+  const result = await db.execute(sql`
+    select state, greatest(0, ceil(extract(epoch from (available_at - now()))))::int as wait_seconds
+      from ${table(name)} where id = ${id}`);
+  const found = rowsOf(result)[0];
+  return found
+    ? { state: found.state as string, waitSeconds: found.wait_seconds as number }
+    : undefined;
+}
+
+/**
+ * Encerra como `dead` uma linha AINDA não final (`pending` ou `leased`), sem exigir o lease: é a
+ * decisão do sistema (mensagem na DLQ, envelope inválido), não de um worker. `false` = já estava final
+ * ou não existe. Nunca apaga.
+ */
+export async function markRowDead(
+  db: Database,
+  name: LeasedTable,
+  id: string,
+  code: string,
+): Promise<boolean> {
+  const result = await db.execute(sql`
+    update ${table(name)}
+       set state = 'dead', lease_owner = null, lease_until = null, finished_at = now(),
+           updated_at = now(), last_error_code = ${code.slice(0, 100)}
+     where id = ${id} and state in ('pending', 'leased')
+    returning id`);
+  return rowsOf(result).length === 1;
 }

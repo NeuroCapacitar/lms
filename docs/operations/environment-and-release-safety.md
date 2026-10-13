@@ -7,7 +7,7 @@
 | Runtime | local (workerd) | Worker dedicado | Worker dedicado |
 | PostgreSQL | PG18 local ou projeto Neon Free próprio | projeto Neon Free | projeto Neon Free (região São Paulo se o plano permitir) |
 | R2 | recursos de teste | buckets e chaves separados | buckets e chaves separados |
-| Queues | simuladas | `hub-finance` e `hub-general` + DLQs | `hub-finance` e `hub-general` + DLQs |
+| Queues | simuladas (`hub-finance`, `hub-general`) | `hub-staging-finance` e `hub-staging-general` + DLQs `…-dlq` | `hub-production-finance` e `hub-production-general` + DLQs `…-dlq` |
 | Providers | fake ou sandbox | sandbox/teste | live somente após o Go/No-Go |
 | Segredos | locais, nunca commitados | escopo Staging | fora do CI comum do GitHub |
 | Dados | sintéticos | sintéticos | reais |

@@ -1,4 +1,5 @@
 import { createApp } from './app';
+import { handleQueueBatch } from './async/queue-entry';
 
 const app = createApp();
 
@@ -16,5 +17,8 @@ export default {
     const withId = new Response(response.body, response);
     withId.headers.set('x-request-id', requestId);
     return withId;
+  },
+  async queue(batch, env) {
+    await handleQueueBatch(batch, env);
   },
 } satisfies ExportedHandler<Env>;

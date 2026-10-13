@@ -50,6 +50,8 @@
     "test/pg/team.pg.test.ts",
     "test/pg/catalog.pg.test.ts",
     "test/pg/curriculum.pg.test.ts",
-    "test/pg/rich-text.pg.test.ts"
+    "test/pg/rich-text.pg.test.ts",
+    "test/pg/outbox.pg.test.ts",
+    "test/pg/consumer.pg.test.ts"
   ]
 }

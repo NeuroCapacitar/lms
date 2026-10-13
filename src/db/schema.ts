@@ -859,3 +859,19 @@ export const inboxEvent = pgTable(
     check('inbox_event_payload_size_check', sql`octet_length(${table.payload}::text) <= 65536`),
   ],
 );
+
+/**
+ * Chaves de operação (M4-02): hoje só o kill switch por fila (`queue.finance.paused`,
+ * `queue.general.paused`). A AUSÊNCIA da linha significa "não pausada". Só a Staff com a capacidade
+ * certa muda (Operations Center, M4-09); o consumidor apenas LÊ.
+ */
+export const systemFlag = pgTable(
+  'system_flag',
+  {
+    key: text().primaryKey(),
+    enabled: boolean().notNull().default(false),
+    reason: text(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('system_flag_key_check', sql`${table.key} ~ '^[a-z][a-z0-9_.]{0,99}$'`)],
+);

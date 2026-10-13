@@ -94,10 +94,8 @@ describe('enqueueIntent', () => {
     const first = await enqueue({ dedupeKey: 'unica' });
     const second = await enqueue({ dedupeKey: 'unica' });
     expect(second).toEqual({ id: first.id, created: false });
-    const [{ total }] = (
-      await main.db.execute(sql`select count(*)::int as total from outbox_message`)
-    ).rows as { total: number }[];
-    expect(total).toBe(1);
+    const counted = await main.db.execute(sql`select count(*)::int as total from outbox_message`);
+    expect((counted.rows[0] as { total: number }).total).toBe(1);
   });
 
   it('dedupeKey de OUTRO kind é conflito, nunca a intenção alheia', async () => {

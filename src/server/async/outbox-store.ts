@@ -14,11 +14,14 @@ import {
   claimRows,
   completeRow,
   failRow,
+  markRowDead,
+  peekRow,
   purgeRows,
   requeueRow,
   type ClaimedRow,
   type FailureKind,
   type FailureOutcome,
+  type RowSnapshot,
 } from './lease';
 
 /** A transação de domínio. O `Database` comum NÃO é atribuível a ela (falta `rollback`): o tipo já impede. */
@@ -109,6 +112,30 @@ export function claimOutbox(
   leaseSeconds: number = DEFAULT_LEASE_SECONDS,
 ): Promise<ClaimedRow[]> {
   return claimRows(db, 'outbox_message', limit, owner, leaseSeconds);
+}
+
+/**
+ * Reivindica UMA intenção pelo id (é o que o consumidor da Queue recebe). `undefined` = não era
+ * reivindicável agora (já concluída, com lease vivo de outro worker, ainda no atraso do backoff ou
+ * inexistente); `peekOutbox` diz o que aconteceu.
+ */
+export async function claimOutboxById(
+  db: Database,
+  id: string,
+  owner: string,
+  leaseSeconds: number = DEFAULT_LEASE_SECONDS,
+): Promise<ClaimedRow | undefined> {
+  const [claimed] = await claimRows(db, 'outbox_message', 1, owner, leaseSeconds, id);
+  return claimed;
+}
+
+export function peekOutbox(db: Database, id: string): Promise<RowSnapshot | undefined> {
+  return peekRow(db, 'outbox_message', id);
+}
+
+/** Decisão do sistema (DLQ, envelope inválido): encerra como `dead` com o motivo. `false` = já estava final. */
+export function markOutboxDead(db: Database, id: string, code: string): Promise<boolean> {
+  return markRowDead(db, 'outbox_message', id, code);
 }
 
 /** `false` = lease perdido: descarte o resultado e não repita o efeito. */
