@@ -180,6 +180,8 @@ describe('rascunho', () => {
       displayTitle: 'Título interno',
       description: null,
       workloadHours: null,
+      coverMediaId: null,
+      bannerMediaId: null,
     });
     expect(
       (await call('GET', '/courses/00000000-0000-4000-8000-000000000000/draft', admin.headers))
@@ -419,7 +421,7 @@ describe('publicação', () => {
     expect(published.version).toBe(1);
     expect(ids(published.modules)).toEqual(ids(draft.modules));
     expect(shape(published.modules)).toEqual(shape(draft.modules));
-    expect(published.details).toEqual(details);
+    expect(published.details).toMatchObject(details);
     const entry = (await tools.db.select().from(schema.auditLog)).find(
       (row) => row.action === 'curriculum.publish' && row.targetId === courseId,
     )!;

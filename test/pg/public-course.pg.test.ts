@@ -143,6 +143,8 @@ describe('GET /api/public/courses/:slug', () => {
         maxInstallments: 1,
       },
       syllabus: ['Módulo Um', 'Módulo Dois'],
+      cover: null,
+      banner: null,
     });
     const text = JSON.stringify(body);
     for (const forbidden of [
