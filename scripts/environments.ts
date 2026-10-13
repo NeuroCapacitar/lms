@@ -18,12 +18,17 @@ export interface ExpectedEnvironment {
   readonly databaseHost: string;
 }
 
-// Os recursos entram aqui quando forem criados (filas no M4, R2 no M5...).
+// Os recursos entram aqui quando forem criados (R2 no M5...). Filas (M4-02): uma lane por fila + DLQ; o
+// nome leva o ambiente porque Staging e Production dividem a conta Cloudflare.
 export const ENVIRONMENTS: Readonly<Record<EnvironmentName, ExpectedEnvironment>> = {
   dev: {
     cloudflareEnv: null,
     workerName: 'hub',
-    resources: { hyperdrive: ['cda50f48086646dda22bbb4424791e58'] },
+    resources: {
+      hyperdrive: ['cda50f48086646dda22bbb4424791e58'],
+      queue_producers: ['hub-finance', 'hub-general', 'hub-finance-dlq', 'hub-general-dlq'],
+      queue_consumers: ['hub-finance', 'hub-general', 'hub-finance-dlq', 'hub-general-dlq'],
+    },
     vars: [
       'APP_BASE_URL',
       'EMAIL_FROM',
@@ -36,7 +41,21 @@ export const ENVIRONMENTS: Readonly<Record<EnvironmentName, ExpectedEnvironment>
   staging: {
     cloudflareEnv: 'staging',
     workerName: 'hub-staging',
-    resources: { hyperdrive: ['cea4be9d4370457b93f1feb7469d2ceb'] },
+    resources: {
+      hyperdrive: ['cea4be9d4370457b93f1feb7469d2ceb'],
+      queue_producers: [
+        'hub-staging-finance',
+        'hub-staging-general',
+        'hub-staging-finance-dlq',
+        'hub-staging-general-dlq',
+      ],
+      queue_consumers: [
+        'hub-staging-finance',
+        'hub-staging-general',
+        'hub-staging-finance-dlq',
+        'hub-staging-general-dlq',
+      ],
+    },
     vars: [
       'APP_BASE_URL',
       'EMAIL_FROM',
@@ -49,7 +68,21 @@ export const ENVIRONMENTS: Readonly<Record<EnvironmentName, ExpectedEnvironment>
   production: {
     cloudflareEnv: 'production',
     workerName: 'hub-production',
-    resources: { hyperdrive: ['f31b83e0d8044d00a9651c81d121bc91'] },
+    resources: {
+      hyperdrive: ['f31b83e0d8044d00a9651c81d121bc91'],
+      queue_producers: [
+        'hub-production-finance',
+        'hub-production-general',
+        'hub-production-finance-dlq',
+        'hub-production-general-dlq',
+      ],
+      queue_consumers: [
+        'hub-production-finance',
+        'hub-production-general',
+        'hub-production-finance-dlq',
+        'hub-production-general-dlq',
+      ],
+    },
     vars: [
       'APP_BASE_URL',
       'EMAIL_FROM',

@@ -12,7 +12,7 @@
 
 ### M4-01 — Núcleo Postgres de outbox e inbox com lease por linha
 
-**Dependências:** M0-04, M1-03 · **Estado:** `implemented` (2026-10-12; CI e Staging pendentes, ver STATUS)
+**Dependências:** M0-04, M1-03 · **Estado:** `verified` no CI (2026-10-12; Staging pendente, ver STATUS)
 
 **Objetivo:** gravar uma "intenção" (e-mail, chamada a provider, tarefa) na **mesma transação** da mudança de domínio e poder reivindicá-la com segurança por vários workers, sem perder nem duplicar o efeito além do at-least-once. O inbox guarda eventos externos (Asaas, Resend) antes de qualquer processamento.
 **Passos:**
@@ -27,7 +27,7 @@
 
 ### M4-02 — Duas Queues por ambiente, DLQs e consumers tipados
 
-**Dependências:** M4-01, M0-03 · **Estado:** `not_started`
+**Dependências:** M4-01, M0-03 · **Estado:** `implemented` (2026-10-12; Queue real só no Staging, ver STATUS)
 
 **Objetivo:** acelerar a entrega do outbox via `hub-finance` (webhooks Asaas, pagamento, reembolso, reconciliação) e `hub-general` (e-mail, interesse, limpeza, certificado no M7), cada uma com DLQ, em Dev/Staging/Production isolados.
 **Passos:**

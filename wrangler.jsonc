@@ -18,6 +18,46 @@
     "run_worker_first": ["/api/*", "/cursos/*"],
   },
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cda50f48086646dda22bbb4424791e58" }],
+  "queues": {
+    "producers": [
+      { "binding": "QUEUE_FINANCE", "queue": "hub-finance" },
+      { "binding": "QUEUE_GENERAL", "queue": "hub-general" },
+      { "binding": "DLQ_FINANCE", "queue": "hub-finance-dlq" },
+      { "binding": "DLQ_GENERAL", "queue": "hub-general-dlq" },
+    ],
+    "consumers": [
+      {
+        "queue": "hub-finance",
+        "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_retries": 6,
+        "max_concurrency": 2,
+        "dead_letter_queue": "hub-finance-dlq",
+      },
+      {
+        "queue": "hub-general",
+        "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_retries": 6,
+        "max_concurrency": 2,
+        "dead_letter_queue": "hub-general-dlq",
+      },
+      {
+        "queue": "hub-finance-dlq",
+        "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+        "max_concurrency": 1,
+      },
+      {
+        "queue": "hub-general-dlq",
+        "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+        "max_concurrency": 1,
+      },
+    ],
+  },
   "env": {
     "staging": {
       "name": "hub-staging",
@@ -29,6 +69,46 @@
         "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea4be9d4370457b93f1feb7469d2ceb" }],
+      "queues": {
+        "producers": [
+          { "binding": "QUEUE_FINANCE", "queue": "hub-staging-finance" },
+          { "binding": "QUEUE_GENERAL", "queue": "hub-staging-general" },
+          { "binding": "DLQ_FINANCE", "queue": "hub-staging-finance-dlq" },
+          { "binding": "DLQ_GENERAL", "queue": "hub-staging-general-dlq" },
+        ],
+        "consumers": [
+          {
+            "queue": "hub-staging-finance",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 6,
+            "max_concurrency": 2,
+            "dead_letter_queue": "hub-staging-finance-dlq",
+          },
+          {
+            "queue": "hub-staging-general",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 6,
+            "max_concurrency": 2,
+            "dead_letter_queue": "hub-staging-general-dlq",
+          },
+          {
+            "queue": "hub-staging-finance-dlq",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 3,
+            "max_concurrency": 1,
+          },
+          {
+            "queue": "hub-staging-general-dlq",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 3,
+            "max_concurrency": 1,
+          },
+        ],
+      },
     },
     "production": {
       "name": "hub-production",
@@ -40,6 +120,46 @@
         "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "f31b83e0d8044d00a9651c81d121bc91" }],
+      "queues": {
+        "producers": [
+          { "binding": "QUEUE_FINANCE", "queue": "hub-production-finance" },
+          { "binding": "QUEUE_GENERAL", "queue": "hub-production-general" },
+          { "binding": "DLQ_FINANCE", "queue": "hub-production-finance-dlq" },
+          { "binding": "DLQ_GENERAL", "queue": "hub-production-general-dlq" },
+        ],
+        "consumers": [
+          {
+            "queue": "hub-production-finance",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 6,
+            "max_concurrency": 2,
+            "dead_letter_queue": "hub-production-finance-dlq",
+          },
+          {
+            "queue": "hub-production-general",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 6,
+            "max_concurrency": 2,
+            "dead_letter_queue": "hub-production-general-dlq",
+          },
+          {
+            "queue": "hub-production-finance-dlq",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 3,
+            "max_concurrency": 1,
+          },
+          {
+            "queue": "hub-production-general-dlq",
+            "max_batch_size": 5,
+            "max_batch_timeout": 5,
+            "max_retries": 3,
+            "max_concurrency": 1,
+          },
+        ],
+      },
     },
   },
 }

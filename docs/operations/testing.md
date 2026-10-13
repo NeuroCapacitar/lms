@@ -202,3 +202,10 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `test/pg/outbox.pg.test.ts` roda em PG18 real: claim concorrente com DUAS conexões, lease expirado (o tempo é o `now()` do banco; o teste usa lease de 50 ms e espera 150 ms), fencing, backoff, esgotamento para `dead`, dedupe, rollback sem intenção órfã e retenção. Para provar a corrida de verdade, cada claim concorrente usa um cliente `pg` próprio (o mesmo cliente serializa as consultas).
 - Ao criar um `kind` novo: registre-o em `src/features/async/intents.ts` com o payload **só de UUIDs** (`intentPayload`); o teste do contrato falha se o payload aceitar campo a mais.
 - `enqueueIntent` só compila com o `tx` de `db.transaction`. Nunca contorne com `as never`: a execução também recusa.
+
+## Consumidor da Queue (M4-02)
+
+- `test/pg/consumer.pg.test.ts` testa o consumidor com mensagens FALSAS (`FakeMessage`) e o Postgres real: a Queue só carrega o id, então o comportamento que importa (claim, fencing, DLQ, kill switch) está no banco. Duplicata simultânea usa duas conexões e um handler que segura o lease.
+- `test/workers/queue.test.ts` chama o `queue()` do Worker CONSTRUÍDO (`dist/hub/index.js`, importado no isolate do teste: `exports.default` serializa os argumentos e não aceita um lote). Só caminhos sem banco; rode `bun run build` antes (o `bun run test` já faz).
+- Ao criar um `kind`: registre o handler em `src/server/async/handlers.ts` (o tipo obriga), lance `TransientError`/`PermanentError` e NUNCA chame provider dentro de transação PG.
+- Ainda NÃO coberto: Queue real (retry com atraso, DLQ por `max_retries`, retenção). Roteiro no Staging, com autorização: criar as filas, aplicar a migration 0016, publicar uma intenção `system.demo`, derrubar o consumidor e ver o Cron (M4-03) concluir.
