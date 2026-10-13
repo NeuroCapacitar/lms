@@ -223,3 +223,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - **Nova categoria (M5, M6, M7) = novas linhas aqui**, com o próximo número, e a linha no mapa de concorrência da spec. Não crie outra matriz.
 - O handler demonstrativo RELÊ o provider antes de repetir: é o padrão que todo handler com efeito externo deve seguir (chave de idempotência = `idempotencyKey` do contexto).
 - A matriz NÃO prova exactly-once nem a idempotência de um provider real: isso é teste de contrato com conta real.
+
+## Roteiro do assíncrono no Staging (executado em 2026-10-13, cauda feliz)
+
+1. `neon me --profile neurocapacitar` e `cf auth whoami --profile neurocapacitar`; `wrangler queues create <nome> --profile neurocapacitar` para as 4 filas `hub-staging-*`.
+2. `DATABASE_URL_MIGRATION="$(neon connection-string --project-id dry-term-45495258 --pooled false --ssl require --role-name neondb_owner --profile neurocapacitar)" bun run db:migrate staging`.
+3. Deploy manual (`gh workflow run deploy-staging.yml --ref main`) e `bun run smoke <url> <sha>`.
+4. Intenção sintética: `insert into outbox_message (kind, queue, dedupe_key, payload, correlation_id, available_at)` com `system.demo`, `general`, payload `{"subjectId": "<uuid>"}` e `available_at = now() - interval '10 minutes'`; esperar o Cron (a cada 30 min, em :00 e :30 UTC) e conferir `state = 'delivered'` e `job_run`.
+5. Faltam no roteiro: derrubar o consumidor no meio, forçar `max_retries`, ligar o kill switch (`system_flag`) e medir o ciclo ocioso e o CU-h.
