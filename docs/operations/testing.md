@@ -261,3 +261,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Criar um modelo vNext (só `vnext-*`; nunca editar nem apagar os do legado): gerar o HTML em `docs/operations/email-templates/vnext-<nome>.html`, `resend templates create --name vnext-<nome> --alias vnext-<nome> --subject … --from … --html-file … --text-file … --var CHAVE:string …` e `resend templates publish <id>`. Toda variável declarada precisa aparecer no HTML.
 - Verificar com o Resend REAL: criar uma chave temporária de acesso total `vnext-hub-verify-temp`, rodar `RESEND_API_KEY=… bun run email:verify-templates` e APAGAR a chave. O token nunca vai para arquivo nem log.
 - Resend sem webhook do Hub no ambiente = rota responde 500 e nada é aceito; com o endpoint criado, o segredo do endpoint (`whsec_…`) vai para `RESEND_WEBHOOK_SECRET` por `wrangler secret put … --name hub-<ambiente> --profile neurocapacitar`, lido da resposta do comando, sem imprimir.
+
+## Conexões de vídeo e o cofre de segredos (M5-01)
+
+- `src/server/security/secret-box.test.ts` (cofre), `test/pg/video-connections.pg.test.ts` (rotas, banco e auditoria) e `e2e/videos.spec.ts` (a tela). Os testes usam chaves e tokens FALSOS (`tok_live_…` é só um texto de teste); credencial real de provider nunca entra em fixture, teste nem log.
+- Todo segredo novo de integração segue o mesmo padrão: cifrar com `sealSecret` (AAD = id da linha + o que a identifica), DTO sem o valor, auditoria sem o valor, e um teste que varre respostas, auditoria e colunas procurando o segredo.
+- Roteiro EM STAGING (com autorização): gerar a chave (`openssl rand -base64 32`), gravar `1:<chave>` com `wrangler secret put VIDEO_SECRETS_MASTER_KEY --name hub-staging --profile neurocapacitar`, aplicar a migration 0021, cadastrar uma conexão de teste (YouTube sem segredo e uma com token de teste), conferir que a tela só mostra "configurado (chave v1)", acrescentar a versão 2 mantendo a 1, recifrar e conferir "chave v2".

@@ -24,6 +24,7 @@ import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffEquipeRouteImport } from './routes/staff.equipe'
 import { Route as StaffOperacaoRouteImport } from './routes/staff.operacao'
+import { Route as StaffVideosRouteImport } from './routes/staff.videos'
 import { Route as EstudarCourseIdIndexRouteImport } from './routes/estudar.$courseId.index'
 import { Route as StaffCursosIndexRouteImport } from './routes/staff.cursos.index'
 import { Route as StaffCursosCourseIdRouteImport } from './routes/staff.cursos.$courseId'
@@ -106,6 +107,11 @@ const StaffOperacaoRoute = StaffOperacaoRouteImport.update({
   path: '/operacao',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffVideosRoute = StaffVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => StaffRoute,
+} as any)
 const EstudarCourseIdIndexRoute = EstudarCourseIdIndexRouteImport.update({
   id: '/estudar/$courseId/',
   path: '/estudar/$courseId/',
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/operacao': typeof StaffOperacaoRoute
+  '/staff/videos': typeof StaffVideosRoute
   '/conta/': typeof ContaIndexRoute
   '/cursos/': typeof CursosIndexRoute
   '/entrar/': typeof EntrarIndexRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/operacao': typeof StaffOperacaoRoute
+  '/staff/videos': typeof StaffVideosRoute
   '/conta': typeof ContaIndexRoute
   '/cursos': typeof CursosIndexRoute
   '/entrar': typeof EntrarIndexRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/operacao': typeof StaffOperacaoRoute
+  '/staff/videos': typeof StaffVideosRoute
   '/conta/': typeof ContaIndexRoute
   '/cursos/': typeof CursosIndexRoute
   '/entrar/': typeof EntrarIndexRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/equipe'
     | '/staff/operacao'
+    | '/staff/videos'
     | '/conta/'
     | '/cursos/'
     | '/entrar/'
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/equipe'
     | '/staff/operacao'
+    | '/staff/videos'
     | '/conta'
     | '/cursos'
     | '/entrar'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/equipe'
     | '/staff/operacao'
+    | '/staff/videos'
     | '/conta/'
     | '/cursos/'
     | '/entrar/'
@@ -404,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffOperacaoRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/videos': {
+      id: '/staff/videos'
+      path: '/videos'
+      fullPath: '/staff/videos'
+      preLoaderRoute: typeof StaffVideosRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/estudar/$courseId/': {
       id: '/estudar/$courseId/'
       path: '/estudar/$courseId'
@@ -452,6 +471,7 @@ declare module '@tanstack/react-router' {
 interface StaffRouteChildren {
   StaffEquipeRoute: typeof StaffEquipeRoute
   StaffOperacaoRoute: typeof StaffOperacaoRoute
+  StaffVideosRoute: typeof StaffVideosRoute
   StaffIndexRoute: typeof StaffIndexRoute
   StaffCursosCourseIdRoute: typeof StaffCursosCourseIdRoute
   StaffCursosIndexRoute: typeof StaffCursosIndexRoute
@@ -462,6 +482,7 @@ interface StaffRouteChildren {
 const StaffRouteChildren: StaffRouteChildren = {
   StaffEquipeRoute: StaffEquipeRoute,
   StaffOperacaoRoute: StaffOperacaoRoute,
+  StaffVideosRoute: StaffVideosRoute,
   StaffIndexRoute: StaffIndexRoute,
   StaffCursosCourseIdRoute: StaffCursosCourseIdRoute,
   StaffCursosIndexRoute: StaffCursosIndexRoute,

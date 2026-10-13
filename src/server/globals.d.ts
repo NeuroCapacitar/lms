@@ -26,4 +26,10 @@ interface Env {
   RESEND_WEBHOOK_SECRET?: string;
   /** Chave do HMAC que identifica o destinatário na supressão (M4-07). Worker Secret por ambiente, mín. 32 caracteres. */
   EMAIL_HASH_KEY?: string;
+  /**
+   * Cofre das chaves que cifram os segredos de vídeo (M5-01): `1:<base64 de 32 bytes>,2:<base64>`; a versão
+   * mais alta cifra e as demais só abrem o antigo. Worker Secret por ambiente; nunca no banco nem no repo.
+   * Perdida = as conexões precisam ser recadastradas.
+   */
+  VIDEO_SECRETS_MASTER_KEY?: string;
 }

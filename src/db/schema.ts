@@ -996,3 +996,83 @@ export const emailSendLedger = pgTable(
   },
   (table) => [check('email_send_ledger_count_check', sql`${table.count} >= 0`)],
 );
+
+/**
+ * Conexão com um provider de vídeo (M5-01): a conta do CLIENTE. O segredo (token de API) é guardado CIFRADO
+ * (AES-256-GCM; nonce aleatório de 96 bits, AAD = id da conexão + provider, chave mestra VERSIONADA num
+ * segredo do Worker, nunca no banco). As três colunas do cofre vêm juntas ou ficam todas vazias (conexão sem
+ * credenciais, como YouTube e Vimeo públicos). Várias conexões por provider; sem provider padrão por curso.
+ * Nenhuma rota devolve o segredo, cifrado ou não.
+ */
+export const videoProviderConnection = pgTable(
+  'video_provider_connection',
+  {
+    id: uuid().primaryKey(),
+    provider: text().notNull(),
+    label: text().notNull(),
+    ciphertext: text(),
+    nonce: text(),
+    keyVersion: integer(),
+    status: text().notNull().default('active'),
+    createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+    ...stamps,
+  },
+  (table) => [
+    check(
+      'video_provider_connection_provider_check',
+      sql`${table.provider} in ('jmvstream', 'panda', 'cloudflare_stream', 'mux', 'youtube', 'vimeo')`,
+    ),
+    check('video_provider_connection_status_check', sql`${table.status} in ('active', 'disabled')`),
+    check('video_provider_connection_label_check', sql`length(${table.label}) between 1 and 80`),
+    check(
+      'video_provider_connection_secret_check',
+      sql`(${table.ciphertext} is null) = (${table.nonce} is null) and (${table.ciphertext} is null) = (${table.keyVersion} is null)`,
+    ),
+    check(
+      'video_provider_connection_key_version_check',
+      sql`${table.keyVersion} is null or ${table.keyVersion} >= 1`,
+    ),
+    index('video_provider_connection_provider_idx').on(table.provider, table.status),
+  ],
+);
+
+/**
+ * Um vídeo de um provider (M5-01). Usa UMA conexão concreta; trocar ou desativar a conexão NÃO altera o
+ * asset existente (nem o histórico de progresso): a FK é `restrict` e o `provider` fica copiado aqui.
+ * `managed` = subido pelo Hub (pode ser apagado no provider); `referenced` = só apontado (nunca apagado).
+ * `duration_seconds` vem do provider, nunca do cliente. `capabilities` só traz o que o adapter declarou.
+ */
+export const videoAsset = pgTable(
+  'video_asset',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    connectionId: uuid()
+      .notNull()
+      .references(() => videoProviderConnection.id, { onDelete: 'restrict' }),
+    provider: text().notNull(),
+    externalId: text().notNull(),
+    mode: text().notNull(),
+    state: text().notNull().default('processing'),
+    durationSeconds: integer(),
+    capabilities: jsonb().notNull().default({}),
+    ...stamps,
+  },
+  (table) => [
+    uniqueIndex('video_asset_provider_external_idx').on(table.connectionId, table.externalId),
+    check(
+      'video_asset_provider_check',
+      sql`${table.provider} in ('jmvstream', 'panda', 'cloudflare_stream', 'mux', 'youtube', 'vimeo')`,
+    ),
+    check('video_asset_mode_check', sql`${table.mode} in ('managed', 'referenced')`),
+    check(
+      'video_asset_state_check',
+      sql`${table.state} in ('processing', 'ready', 'error', 'unavailable')`,
+    ),
+    check('video_asset_external_id_check', sql`length(${table.externalId}) between 1 and 200`),
+    check(
+      'video_asset_duration_check',
+      sql`${table.durationSeconds} is null or ${table.durationSeconds} between 1 and 86400`,
+    ),
+    check('video_asset_capabilities_check', sql`jsonb_typeof(${table.capabilities}) = 'object'`),
+  ],
+);

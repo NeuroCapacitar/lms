@@ -12,7 +12,7 @@
 
 ### M5-01 — VideoAsset e VideoProviderConnection com segredos cifrados
 
-**Dependências:** M2-02, M1-05, M0-04 · **Estado:** `not_started`
+**Dependências:** M2-02, M1-05, M0-04 · **Estado:** `implemented` (2026-10-13; CI pendente; cofre real não exercitado, ver STATUS)
 
 **Objetivo:** a Admin cadastra conexões com os providers (contas do cliente) sem que o segredo volte ao navegador; aulas apontam para um `VideoAsset` que usa uma conexão concreta.
 **Passos:**
