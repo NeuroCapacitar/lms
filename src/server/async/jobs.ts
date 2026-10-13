@@ -7,6 +7,8 @@ import { hasClaimableInbox, purgeInbox, type InboxProvider } from './inbox-store
 import { acquireJob, finishJob, type JobResult } from './job-store';
 import { deadLetterExhausted, hasPurgeableRows } from './lease';
 import { hasRepublishable, listRepublishable, markOutboxDead, purgeOutbox } from './outbox-store';
+import { evaluateAlerts } from '../../features/ops/operations';
+import { loadOperationsSnapshot } from '../ops/operations-store';
 import { publishIntents, type PublishableIntent } from './publisher';
 
 export interface JobContext {
@@ -89,9 +91,25 @@ export const purgeJob: CronJob = {
   },
 };
 
+/**
+ * Avalia o estado e REGISTRA os alertas P0 a P3 (M4-05) no log do Worker (um evento por alerta, só
+ * severidade e código, sem dado pessoal). Só lê. Roda por último, depois da republicação e da purga, e como
+ * o banco já está acordado pelo ciclo, custa só consultas leves. Enquanto o problema existir o alerta se
+ * repete a cada ciclo (30 min): é de propósito, não há estado de "já avisei".
+ */
+export const alertsJob: CronJob = {
+  name: 'ops.alerts',
+  async run({ db, alert }) {
+    const alerts = evaluateAlerts(await loadOperationsSnapshot(db));
+    for (const item of alerts)
+      alert({ code: 'ops_alert', reason: `${item.severity}:${item.code}` });
+    return { count: alerts.length };
+  },
+};
+
 /** Os jobs do Cron, na ordem. M5-07 e M6-04 registram os seus aqui; `handlers` são os dos eventos da inbox. */
 export function createCronJobs(handlers: InboxHandlers): readonly CronJob[] {
-  return [republishJob, inboxJob(handlers), purgeJob];
+  return [republishJob, inboxJob(handlers), purgeJob, alertsJob];
 }
 
 export interface CycleSummary {

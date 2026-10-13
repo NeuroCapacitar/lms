@@ -188,6 +188,7 @@ export function createEmailHandler(deps: EmailHandlerDeps) {
       idempotencyKey,
       from: contract.from ?? deps.from,
       replyTo: contract.replyTo,
+      correlationId: context.correlationId,
     });
 
     if (result.ok) {

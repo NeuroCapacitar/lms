@@ -74,7 +74,7 @@
 
 ### M4-05 — Observabilidade e Operations Center inicial
 
-**Dependências:** M4-01, M4-02, M0-08 (spike M0-18) · **Estado:** `not_started`
+**Dependências:** M4-01, M4-02, M0-08 (spike M0-18) · **Estado:** `implemented` (2026-10-13; CI pendente; Sentry e Staging não exercitados, ver STATUS)
 
 **Objetivo:** a Staff enxerga fila travada, DLQ, última execução do Cron, silêncio de webhook e cota de e-mail; o desenvolvedor segue uma requisição de ponta a ponta.
 **Passos:**
@@ -114,7 +114,7 @@
 
 ### M4-08 — Cota do Resend Free: adiar o excedente
 
-**Dependências:** M4-04 · **Estado:** `implemented` (2026-10-13; CI pendente; cota real não exercitada, ver STATUS)
+**Dependências:** M4-04 · **Estado:** `verified` no CI (2026-10-13; cota real não exercitada, ver STATUS)
 
 **Objetivo:** nunca estourar 100 e-mails/dia (3.000/mês) nem deixar e-mail de baixa prioridade bloquear login/pagamento.
 **Passos:**

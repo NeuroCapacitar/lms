@@ -1,0 +1,216 @@
+import { z } from 'zod';
+
+import type { QuotaSummary } from '../email/quota';
+
+/**
+ * Operations Center (M4-05), parte pura: o que a tela "Operação" mostra e como o estado vira alerta. Sem
+ * SQL nem Hono. NADA aqui carrega payload, e-mail, nome, token ou segredo: só contagens, idades, ids,
+ * tipos e códigos de erro.
+ */
+export type LaneName = 'finance' | 'general';
+
+export interface OutboxCount {
+  queue: LaneName;
+  state: string;
+  count: number;
+}
+
+/** Um item que terminou mal (`dead` ou `failed`): sem payload. */
+export interface ProblemItem {
+  id: string;
+  kind: string;
+  queue: LaneName;
+  state: 'dead' | 'failed';
+  attempts: number;
+  lastErrorCode: string | null;
+  finishedAt: string | null;
+  correlationId: string;
+}
+
+export interface JobStatus {
+  name: string;
+  lastStatus: 'ok' | 'error' | null;
+  lastCount: number | null;
+  lastDurationMs: number | null;
+  lastErrorCode: string | null;
+  lastFinishedAt: string | null;
+  /** O lease do job está vivo agora (uma execução em andamento). */
+  running: boolean;
+}
+
+export interface ProviderActivity {
+  provider: string;
+  /** Quando o último evento chegou à inbox (silêncio do webhook). */
+  lastReceivedAt: string | null;
+  pending: number;
+  problems: number;
+}
+
+export interface EmailStateCount {
+  state: string;
+  count: number;
+}
+
+export interface OperationsSnapshot {
+  outbox: OutboxCount[];
+  /** Idade (s) da intenção aberta mais antiga já DISPONÍVEL por fila, ou `null` se não há. */
+  oldestOpenAgeSeconds: Record<LaneName, number | null>;
+  problems: ProblemItem[];
+  inbox: ProviderActivity[];
+  jobs: JobStatus[];
+  /** Segundos desde o fim do último ciclo do Cron, ou `null` se nunca rodou. */
+  cronAgeSeconds: number | null;
+  quota: QuotaSummary;
+  email: EmailStateCount[];
+  suppressedRecipients: number;
+  /** E-mails aceitos pelo Resend nas últimas 24 h (para o alerta de silêncio do webhook). */
+  emailAcceptedLast24h: number;
+  paused: Record<LaneName, boolean>;
+}
+
+type Severity = 'P0' | 'P1' | 'P2' | 'P3';
+
+export interface OpsAlert {
+  code: string;
+  severity: Severity;
+  message: string;
+}
+
+/**
+ * Limites INICIAIS dos alertas. Não são SLO: são o que o desenho de recuperação já implica, para o alerta
+ * só acender quando algo está mesmo preso.
+ * - O Cron roda a cada 30 min e republica o esquecido em até 2 ciclos: uma intenção disponível há mais de
+ *   60 min é suspeita (P2), e há mais de 180 min é grave (P1).
+ * - "Cron sem rodar": 90 min = 3 ciclos perdidos (valor da tarefa).
+ * - Silêncio do webhook: o Resend avisa a entrega em segundos; 24 h sem nenhum evento com e-mails aceitos no
+ *   período indica endpoint ou segredo quebrado.
+ */
+export const OPS_THRESHOLDS = {
+  oldestOpenWarnSeconds: 60 * 60,
+  oldestOpenCriticalSeconds: 180 * 60,
+  cronSilenceSeconds: 90 * 60,
+  webhookSilenceSeconds: 24 * 60 * 60,
+} as const;
+
+const SEVERITY_ORDER: Record<Severity, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+
+function count(snapshot: OperationsSnapshot, state: string, queue?: LaneName): number {
+  return snapshot.outbox
+    .filter((row) => row.state === state && (queue === undefined || row.queue === queue))
+    .reduce((sum, row) => sum + row.count, 0);
+}
+
+/** Converte o estado em alertas, do mais grave ao menos grave. Pura e determinística. */
+export function evaluateAlerts(
+  snapshot: OperationsSnapshot,
+  nowMs: number = Date.now(),
+): OpsAlert[] {
+  const alerts: OpsAlert[] = [];
+
+  if (snapshot.cronAgeSeconds === null) {
+    alerts.push({
+      code: 'cron_never_ran',
+      severity: 'P2',
+      message: 'O Cron de reconciliação ainda não registrou nenhuma execução.',
+    });
+  } else if (snapshot.cronAgeSeconds > OPS_THRESHOLDS.cronSilenceSeconds) {
+    alerts.push({
+      code: 'cron_silent',
+      severity: 'P1',
+      message: 'O Cron de reconciliação não roda há mais de 90 minutos.',
+    });
+  }
+  for (const job of snapshot.jobs) {
+    if (job.lastStatus === 'error') {
+      alerts.push({
+        code: `job_failed:${job.name}`,
+        severity: 'P2',
+        message: `A última execução do job "${job.name}" terminou com erro (${job.lastErrorCode ?? 'sem código'}).`,
+      });
+    }
+  }
+
+  for (const lane of ['finance', 'general'] as const) {
+    const age = snapshot.oldestOpenAgeSeconds[lane];
+    if (age !== null && age > OPS_THRESHOLDS.oldestOpenCriticalSeconds) {
+      alerts.push({
+        code: `queue_stuck:${lane}`,
+        severity: 'P1',
+        message: `Fila "${lane}" travada: há item aberto há mais de 3 horas.`,
+      });
+    } else if (age !== null && age > OPS_THRESHOLDS.oldestOpenWarnSeconds) {
+      alerts.push({
+        code: `queue_slow:${lane}`,
+        severity: 'P2',
+        message: `Fila "${lane}" atrasada: há item aberto há mais de 1 hora.`,
+      });
+    }
+    const dead = count(snapshot, 'dead', lane);
+    if (dead > 0) {
+      alerts.push({
+        code: `dead_letter:${lane}`,
+        // Dinheiro e acesso (finance) sobem de gravidade.
+        severity: lane === 'finance' ? 'P1' : 'P2',
+        message: `Fila "${lane}": ${dead} item(ns) esgotaram as tentativas (DLQ) e esperam decisão.`,
+      });
+    }
+    if (snapshot.paused[lane]) {
+      alerts.push({
+        code: `queue_paused:${lane}`,
+        severity: 'P2',
+        message: `Fila "${lane}" está PAUSADA (kill switch): nada é processado até retomar.`,
+      });
+    }
+  }
+  const failed = count(snapshot, 'failed');
+  if (failed > 0) {
+    alerts.push({
+      code: 'failed_items',
+      severity: 'P3',
+      message: `${failed} item(ns) falharam de forma definitiva e esperam decisão.`,
+    });
+  }
+
+  if (snapshot.quota.today >= snapshot.quota.dailyLimit) {
+    alerts.push({
+      code: 'email_quota_exhausted',
+      severity: 'P1',
+      message:
+        'A cota diária de e-mails acabou: o link de acesso pode não chegar até a meia-noite UTC.',
+    });
+  }
+  if (snapshot.quota.upgradeSignal) {
+    alerts.push({
+      code: 'email_quota_upgrade',
+      severity: 'P3',
+      message:
+        'O uso de e-mail dos últimos 7 dias passou de 60% do que o plano permite: avalie o upgrade.',
+    });
+  }
+
+  const resend = snapshot.inbox.find((provider) => provider.provider === 'resend');
+  const silentFor = resend?.lastReceivedAt
+    ? (nowMs - new Date(resend.lastReceivedAt).getTime()) / 1000
+    : null;
+  if (
+    snapshot.emailAcceptedLast24h > 0 &&
+    (silentFor === null || silentFor > OPS_THRESHOLDS.webhookSilenceSeconds)
+  ) {
+    alerts.push({
+      code: 'webhook_silent:resend',
+      severity: 'P2',
+      message:
+        'Há e-mails aceitos nas últimas 24 h, mas o webhook do Resend não entregou nenhum evento.',
+    });
+  }
+
+  return alerts.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
+}
+
+const reason = z.string().trim().min(5).max(500);
+
+/** Reenfileirar um item `dead` ou `failed`: o motivo é obrigatório e vai para a auditoria. */
+export const requeueBodySchema = z.strictObject({ reason });
+
+/** Pausar ou retomar uma fila (kill switch): só Admin; o motivo vai para a auditoria. */
+export const pauseBodySchema = z.strictObject({ paused: z.boolean(), reason });

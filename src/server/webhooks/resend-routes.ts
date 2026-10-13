@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { withDatabase } from '../../db/client';
 import type { LogVariables } from '../logging';
 import { recordInboxEvent } from '../async/inbox-store';
+import { requestCorrelationId } from '../correlation';
 import { minimizeResendEvent } from '../email/resend-events';
 import { verifySvixSignature } from '../email/svix';
 
@@ -52,7 +53,7 @@ export function resendWebhookRoutes() {
           provider: 'resend',
           eventId: svixId,
           payload,
-          correlationId: c.req.header('x-request-id') ?? crypto.randomUUID(),
+          correlationId: requestCorrelationId(c.req.raw.headers),
         }),
       );
     } catch (error) {
