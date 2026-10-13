@@ -906,3 +906,48 @@ export const jobRun = pgTable(
     ),
   ],
 );
+
+/**
+ * Rastro de cada e-mail transacional enviado pelo outbox (M4-04). SEM corpo, SEM destinatário em claro
+ * (a pessoa é referenciada por `recipient_user_id` e o endereço é lido da conta só na hora de enviar) e
+ * SEM token ou link de acesso. `variables` guarda só valores NÃO sensíveis validados pelo contrato do
+ * template (ex.: título do curso). Estados: `queued` (aguarda envio), `sending`, `accepted` (o Resend
+ * aceitou), `acceptance_unknown` (timeout ou 5xx: pode ter sido aceito; só se repete com a MESMA chave de
+ * idempotência, dentro da janela), `delivered`, `delayed`, `bounced`, `complained` (estes quatro vêm do
+ * webhook, M4-07), `failed`, `suppressed` e `blocked` (fora da lista permitida do Staging).
+ */
+export const emailMessage = pgTable(
+  'email_message',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    /** Idempotência da intenção de e-mail: repetir não cria outra mensagem nem outro envio. */
+    dedupeKey: text().notNull(),
+    template: text().notNull(),
+    recipientKind: text().notNull(),
+    recipientUserId: text().references(() => user.id, { onDelete: 'set null' }),
+    variables: jsonb().notNull().default({}),
+    state: text().notNull().default('queued'),
+    providerMessageId: text(),
+    /** Início da janela de idempotência do Resend (a primeira tentativa de envio). */
+    firstAttemptAt: timestamp({ withTimezone: true }),
+    acceptedAt: timestamp({ withTimezone: true }),
+    lastErrorCode: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('email_message_dedupe_key_idx').on(table.dedupeKey),
+    index('email_message_recipient_idx').on(table.recipientUserId, table.createdAt),
+    index('email_message_provider_idx').on(table.providerMessageId),
+    check('email_message_dedupe_key_check', sql`length(${table.dedupeKey}) between 1 and 200`),
+    check(
+      'email_message_recipient_kind_check',
+      sql`${table.recipientKind} in ('user', 'support_inbox')`,
+    ),
+    check(
+      'email_message_state_check',
+      sql`${table.state} in ('queued', 'sending', 'accepted', 'acceptance_unknown', 'delivered', 'delayed', 'bounced', 'complained', 'failed', 'suppressed', 'blocked')`,
+    ),
+    check('email_message_variables_check', sql`jsonb_typeof(${table.variables}) = 'object'`),
+  ],
+);

@@ -20,4 +20,6 @@ interface Env {
    * são e-mails de pessoas e não entram no repositório. Ausente = sem filtro.
    */
   EMAIL_ALLOWLIST?: string;
+  /** Caixa de suporte (destino do modelo `support-request`). Endereço de equipe, não de aluno; Worker Secret. */
+  SUPPORT_INBOX_EMAIL?: string;
 }

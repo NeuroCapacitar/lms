@@ -1,6 +1,8 @@
 import type { EmailSender } from '../../features/identity/link-policy';
 import { createFakeEmailSender } from './fake';
+import { createFakeMailer, createResendMailer, type Mailer } from './mailer';
 import { createResendSender } from './resend';
+import type { EmailHandlerDeps } from './send-handler';
 
 /**
  * Escolhe o envio pelo ambiente. Com `RESEND_API_KEY`, Resend. Sem ela, o falso SÓ em
@@ -39,5 +41,37 @@ export function createEmailSender(env: Env): EmailSender {
     async send() {
       throw new Error('RESEND_API_KEY ausente: envio de e-mail não configurado neste ambiente');
     },
+  };
+}
+
+/**
+ * Mailer do e-mail TRANSACIONAL pelo outbox (M4-04). Com `RESEND_API_KEY`, Resend. Sem ela, o falso SÓ em
+ * Development (origem localhost); em Staging e Production a falta da chave lança (o handler a trata como
+ * `mailer_not_configured`, que tenta de novo depois de corrigido, e nunca finge que enviou).
+ */
+function createMailer(env: Env): Mailer {
+  if (env.RESEND_API_KEY) return createResendMailer({ apiKey: env.RESEND_API_KEY });
+  if (new URL(env.APP_BASE_URL).hostname === 'localhost') {
+    // Dev: avisa SEM o endereço nem as variáveis (só o modelo).
+    return createFakeMailer((request) => {
+      console.warn(`[dev] e-mail transacional "${request.templateAlias}" simulado`);
+    });
+  }
+  throw new Error('RESEND_API_KEY ausente: envio de e-mail não configurado neste ambiente');
+}
+
+/** Dependências do handler `email.send` a partir do ambiente do Worker. */
+export function emailHandlerDeps(env: Env): EmailHandlerDeps {
+  let mailer: Mailer | undefined;
+  return {
+    // Criado sob demanda: um lote sem e-mail não depende da chave do Resend.
+    getMailer: () => (mailer ??= createMailer(env)),
+    from: env.EMAIL_FROM,
+    appUrl: env.APP_BASE_URL,
+    allowlist: (env.EMAIL_ALLOWLIST ?? '')
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean),
+    supportInbox: env.SUPPORT_INBOX_EMAIL,
   };
 }

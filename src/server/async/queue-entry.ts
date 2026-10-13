@@ -2,7 +2,8 @@ import { openDatabase, type Database, type OpenDatabase } from '../../db/client'
 import { laneOfQueueName } from '../../features/async/envelope';
 import { logAlert } from './alerts';
 import { processBatch, processDeadLetters } from './consumer';
-import { HANDLERS } from './handlers';
+import { emailHandlerDeps } from '../email/factory';
+import { createHandlers } from './handlers';
 
 /**
  * Entrada `queue()` do Worker (M4-02): roteia o lote pela lane do NOME da fila (`…-finance`,
@@ -30,7 +31,7 @@ export async function handleQueueBatch(batch: MessageBatch<unknown>, env: Env): 
       sendToDeadLetter: async (body) => {
         await deadLetterQueue.send(body, { contentType: 'json' });
       },
-      handlers: HANDLERS,
+      handlers: createHandlers({ email: emailHandlerDeps(env) }),
       owner: `queue:${batch.queue}:${crypto.randomUUID()}`,
       alert: logAlert,
     });
