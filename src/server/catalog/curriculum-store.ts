@@ -28,6 +28,7 @@ import { diffCurriculum, type PublishPreview } from '../../features/catalog/curr
 import { isProviderUsable } from '../../features/video/verification';
 import type { VideoProvider } from '../../features/video/providers';
 import { auditEvent } from '../auth/access-store';
+import { setReferenceIn } from '../media/references';
 import { openAvailabilityCycleIfNeeded } from '../interest/store';
 import { APP_ENV } from '../release';
 
@@ -98,8 +99,16 @@ async function readDraftTree(tx: Tx | Database, courseId: string): Promise<Curri
           displayTitle: details.displayTitle,
           description: (details.description as RichText | null) ?? null,
           workloadHours: details.workloadHours,
+          coverMediaId: details.coverMediaId,
+          bannerMediaId: details.bannerMediaId,
         }
-      : { displayTitle: courseRow?.title ?? '', description: null, workloadHours: null },
+      : {
+          displayTitle: courseRow?.title ?? '',
+          description: null,
+          workloadHours: null,
+          coverMediaId: null,
+          bannerMediaId: null,
+        },
     modules: modules.map<ModuleNode>((module) => ({
       id: module.id,
       title: module.title,
@@ -144,8 +153,16 @@ export async function readPublishedTree(
           displayTitle: details.displayTitle,
           description: (details.description as RichText | null) ?? null,
           workloadHours: details.workloadHours,
+          coverMediaId: details.coverMediaId,
+          bannerMediaId: details.bannerMediaId,
         }
-      : { displayTitle: '', description: null, workloadHours: null },
+      : {
+          displayTitle: '',
+          description: null,
+          workloadHours: null,
+          coverMediaId: null,
+          bannerMediaId: null,
+        },
     modules: modules.map<ModuleNode>((module) => ({
       id: module.id,
       title: module.title,
@@ -291,12 +308,32 @@ export async function saveDraft(
       }
     }
 
+    // M5-07: capa e banner. AUSENTE mantém; `null` remove. Cada ponteiro faz a referência NA mesma transação
+    // (trava o asset: pronto e do propósito certo), então a limpeza de órfãos nunca apaga o que acabou de ganhar uso.
+    const { coverMediaId, bannerMediaId, ...textDetails } = input.details;
+    const pointers = {
+      ...(coverMediaId === undefined ? {} : { coverMediaId }),
+      ...(bannerMediaId === undefined ? {} : { bannerMediaId }),
+    };
+    for (const [slot, mediaId, purpose] of [
+      ['cover', coverMediaId, 'course_cover'],
+      ['banner', bannerMediaId, 'course_banner'],
+    ] as const) {
+      if (mediaId === undefined) continue;
+      await setReferenceIn(tx, {
+        ownerType: 'course_draft',
+        ownerId: input.courseId,
+        slot,
+        mediaId,
+        purpose,
+      });
+    }
     await tx
       .insert(courseDraft)
-      .values({ courseId: input.courseId, ...input.details })
+      .values({ courseId: input.courseId, ...textDetails, ...pointers })
       .onConflictDoUpdate({
         target: courseDraft.courseId,
-        set: { ...input.details, updatedAt: new Date() },
+        set: { ...textDetails, ...pointers, updatedAt: new Date() },
       });
 
     // 1) módulos (novos e existentes), 2) aulas (podem trocar de módulo), 3) remove o que sumiu.
@@ -441,12 +478,39 @@ export async function publishCurriculum(
       ).map((r) => r.id),
     );
 
+    // M5-07: o ponteiro público só aponta para mídia que JÁ foi copiada para o bucket público (a rota publica
+    // as mídias antes de chamar isto); a referência do conteúdo publicado nasce aqui, na mesma transação.
+    const publishedCover = draft.details.coverMediaId ?? null;
+    const publishedBanner = draft.details.bannerMediaId ?? null;
+    for (const [slot, mediaId, purpose] of [
+      ['cover', publishedCover, 'course_cover'],
+      ['banner', publishedBanner, 'course_banner'],
+    ] as const) {
+      await setReferenceIn(tx, {
+        ownerType: 'course_content',
+        ownerId: input.courseId,
+        slot,
+        mediaId,
+        purpose,
+        requirePublished: true,
+      });
+    }
     await tx
       .insert(courseContent)
-      .values({ courseId: input.courseId, ...draft.details })
+      .values({
+        courseId: input.courseId,
+        ...draft.details,
+        coverMediaId: publishedCover,
+        bannerMediaId: publishedBanner,
+      })
       .onConflictDoUpdate({
         target: courseContent.courseId,
-        set: { ...draft.details, updatedAt: new Date() },
+        set: {
+          ...draft.details,
+          coverMediaId: publishedCover,
+          bannerMediaId: publishedBanner,
+          updatedAt: new Date(),
+        },
       });
 
     let added = 0;

@@ -99,7 +99,7 @@
 
 ### M5-07 — Uploads em R2, validação de bytes e Images Free com fallback
 
-**Dependências:** M2-03, M0-03, M1-03 (spike M0-16) · **Estado:** `not_started`
+**Dependências:** M2-03, M0-03, M1-03 (spike M0-16) · **Estado:** `implemented` (2026-10-13; evidência e limites em `docs/implementation/STATUS.md`; R2 e Images reais NÃO exercitados, roteiro em `docs/operations/media.md`)
 
 **Objetivo:** capas/banners públicos e documentos privados enviados direto ao R2 com segurança, entrega barata e sem quebrar quando a cota de transformação acabar.
 **Passos:**

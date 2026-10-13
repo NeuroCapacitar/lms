@@ -14,6 +14,7 @@ import { ConfirmButton } from '../components/confirm-button';
 import { RichTextView } from '../components/rich-text/rich-text-view';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
+import { MediaField } from './media-field';
 
 const RichTextEditor = lazy(() =>
   import('../components/rich-text/rich-text-editor').then((module) => ({
@@ -195,6 +196,22 @@ export function DetailsTab({
               }),
             )
           }
+        />
+        <MediaField
+          purpose="course_cover"
+          label="Capa do curso"
+          help="Recortada ao centro na proporção 16:9 (1280×720). Aparece na página pública do curso."
+          value={draft.details.coverMediaId}
+          readOnly={readOnly}
+          onChange={(coverMediaId) => onChange(updateDetails(draft, { coverMediaId }))}
+        />
+        <MediaField
+          purpose="course_banner"
+          label="Banner do curso"
+          help="Recortado ao centro na proporção 4:1 (1680×420), com pelo menos 840 pixels de largura."
+          value={draft.details.bannerMediaId}
+          readOnly={readOnly}
+          onChange={(bannerMediaId) => onChange(updateDetails(draft, { bannerMediaId }))}
         />
         <div className="grid gap-2">
           <p className="font-medium">Descrição</p>

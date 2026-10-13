@@ -20,6 +20,11 @@ O legado normalizava imagens com Sharp e gerava PNG/PDF com dependências nativa
 
 Custo praticamente zero nessa escala, mas o R2 não tem região na América do Sul, o que exige base jurídica de transferência internacional (PENDENTE: advogado). Se o volume de transformações ultrapassar a cota, o fallback degrada a imagem, não quebra a página. Mais código de validação no Worker.
 
+## Emenda (2026-10-13, M5-07): entrega privada pelo Worker
+
+- Mídia privada NÃO sai por GET pré-assinado reutilizável: `GET /api/media/:id/content` autoriza a cada requisição (Staff, ou quem pode abrir uma aula que referencia a mídia), lê do R2 pelo binding e entrega com `no-store`, `nosniff`, CSP `sandbox` e `attachment` para PDF. Motivo: nenhuma URL vazada serve depois, o acesso expirado ou revogado corta na hora e não exige credencial S3 para leitura; o custo (banda de ~20 alunos pelo Worker) é desprezível. O PUT de envio continua pré-assinado (o navegador sobe direto ao R2).
+- Capa e banner só vão ao bucket público quando o currículo é PUBLICADO (cópia primeiro, ponteiro depois); rascunho nunca fica público.
+
 ## Como validar
 
 spike M0-16 (transformação de imagens com fallback; confirmar uso do binding Images no plano Free e o comportamento do erro 9422). Testes de upload com tipo falsificado, tamanho excedido e objeto ausente; teste de autorização cruzada em objetos privados.

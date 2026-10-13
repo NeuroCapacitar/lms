@@ -462,6 +462,9 @@ export const courseDraft = pgTable(
     /** Texto rico (Tiptap JSON validado por allowlist, M2-05); nulo = sem descrição. */
     description: jsonb(),
     workloadHours: integer(),
+    /** Capa e banner (M5-07): `media_asset` PRONTOS; nulos = sem imagem. */
+    coverMediaId: uuid().references(() => mediaAsset.id, { onDelete: 'restrict' }),
+    bannerMediaId: uuid().references(() => mediaAsset.id, { onDelete: 'restrict' }),
     ...stamps,
   },
   (table) => [
@@ -487,6 +490,9 @@ export const courseContent = pgTable(
     /** Texto rico (Tiptap JSON validado por allowlist, M2-05); nulo = sem descrição. */
     description: jsonb(),
     workloadHours: integer(),
+    /** Capa e banner PUBLICADOS (M5-07): o master já foi copiado para o bucket público antes do ponteiro. */
+    coverMediaId: uuid().references(() => mediaAsset.id, { onDelete: 'restrict' }),
+    bannerMediaId: uuid().references(() => mediaAsset.id, { onDelete: 'restrict' }),
     ...stamps,
   },
   (table) => [
@@ -1348,5 +1354,98 @@ export const courseInterestNotification = pgTable(
       name: 'course_interest_notification_pk',
       columns: [table.interestId, table.cycleId],
     }),
+  ],
+);
+
+/**
+ * Objeto de mídia no R2 (M5-07, ADR 0016). Nasce `pending_upload` (PUT pré-assinado curto, expira em 24 h) e só
+ * vira `ready` depois de o servidor conferir os BYTES (tamanho, assinatura mágica, dimensões do cabeçalho e
+ * SHA-256); "200 no PUT" não publica nada. A chave do master é opaca e imutável. Capa e banner são PÚBLICOS: o
+ * master é copiado para o bucket público (`public_key`) ANTES de qualquer ponteiro apontar para ele. Todo o
+ * resto é privado e só sai depois de autorização. Nada é apagado enquanto houver referência.
+ */
+export const mediaAsset = pgTable(
+  'media_asset',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    purpose: text().notNull(),
+    visibility: text().notNull(),
+    state: text().notNull().default('pending_upload'),
+    declaredType: text().notNull(),
+    declaredSize: integer().notNull(),
+    contentType: text(),
+    size: integer(),
+    width: integer(),
+    height: integer(),
+    sha256: text(),
+    /** Chave opaca do master no bucket PRIVADO. */
+    storageKey: text().notNull().unique(),
+    /** Chave do master copiado no bucket PÚBLICO (só capa e banner, depois de publicados). */
+    publicKey: text(),
+    publishedAt: timestamp({ withTimezone: true }),
+    createdBy: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    /** Upload não confirmado expira aqui (24 h). */
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    confirmedAt: timestamp({ withTimezone: true }),
+    rejectedReason: text(),
+    deletedAt: timestamp({ withTimezone: true }),
+    /** Quando os objetos do R2 foram de fato apagados (depois do `deleted`, fora da transação). */
+    storagePurgedAt: timestamp({ withTimezone: true }),
+    ...stamps,
+  },
+  (table) => [
+    index('media_asset_state_idx').on(table.state, table.createdAt),
+    check(
+      'media_asset_purpose_check',
+      sql`${table.purpose} in ('course_cover', 'course_banner', 'lesson_material', 'certificate_asset')`,
+    ),
+    check('media_asset_visibility_check', sql`${table.visibility} in ('public', 'private')`),
+    check(
+      'media_asset_state_check',
+      sql`${table.state} in ('pending_upload', 'ready', 'rejected', 'deleted')`,
+    ),
+    check(
+      'media_asset_ready_check',
+      sql`${table.state} <> 'ready' or (${table.sha256} is not null and ${table.size} is not null and ${table.contentType} is not null and ${table.confirmedAt} is not null)`,
+    ),
+    check(
+      'media_asset_public_key_check',
+      sql`${table.publicKey} is null or ${table.visibility} = 'public'`,
+    ),
+    check(
+      'media_asset_size_check',
+      sql`${table.declaredSize} > 0 and (${table.size} is null or ${table.size} > 0)`,
+    ),
+  ],
+);
+
+/**
+ * Quem usa o objeto (M5-07): UMA linha por (dono, espaço). A contagem de referências é a das linhas, lida SOB
+ * TRAVA do asset na mesma transação que muda o ponteiro e na limpeza, então uma corrida entre "passar a usar" e
+ * "apagar o órfão" nunca apaga o que acabou de ganhar referência.
+ */
+export const mediaReference = pgTable(
+  'media_reference',
+  {
+    mediaId: uuid()
+      .notNull()
+      .references(() => mediaAsset.id, { onDelete: 'restrict' }),
+    ownerType: text().notNull(),
+    ownerId: text().notNull(),
+    slot: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: 'media_reference_pk',
+      columns: [table.ownerType, table.ownerId, table.slot],
+    }),
+    index('media_reference_media_idx').on(table.mediaId),
+    check(
+      'media_reference_owner_check',
+      sql`${table.ownerType} in ('course_draft', 'course_content', 'lesson')`,
+    ),
   ],
 );

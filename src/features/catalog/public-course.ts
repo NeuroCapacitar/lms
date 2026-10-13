@@ -1,4 +1,5 @@
 import type { RichText } from '../content/rich-text';
+import type { PublicImageDto } from '../media/delivery';
 import type { PublicCourseDto, SequenceMode } from './catalog';
 import { toCatalogCourse, type CatalogOfferSummary } from './student-catalog';
 
@@ -17,12 +18,19 @@ export interface PublicCoursePageDto {
   availability: 'open' | 'closed';
   offer: CatalogOfferSummary | null;
   syllabus: string[];
+  /** Capa e banner PUBLICADOS (M5-07), com a variante e o fallback estático; `null` = sem imagem. */
+  cover: PublicImageDto | null;
+  banner: PublicImageDto | null;
 }
 
 /** `null` se o curso não tem currículo publicado (então não há página para mostrar). */
 export function toPublicCoursePage(
   course: PublicCourseDto,
   moduleTitles: string[],
+  images: { cover: PublicImageDto | null; banner: PublicImageDto | null } = {
+    cover: null,
+    banner: null,
+  },
 ): PublicCoursePageDto | null {
   const catalog = toCatalogCourse(course);
   if (!catalog || !course.content) return null;
@@ -36,5 +44,7 @@ export function toPublicCoursePage(
     availability: catalog.availability,
     offer: catalog.offer,
     syllabus: moduleTitles,
+    cover: images.cover,
+    banner: images.banner,
   };
 }

@@ -11,7 +11,7 @@ export function publicCourseRoutes() {
   const routes = new Hono<{ Bindings: Env }>();
   routes.get('/courses/:slug', async (c) => {
     const page = await withDatabase(c.env.HYPERDRIVE, (db) =>
-      loadPublicCoursePage(db, c.req.param('slug')),
+      loadPublicCoursePage(db, c.req.param('slug'), c.env.MEDIA_PUBLIC_BASE_URL),
     );
     return page ? c.json(page) : c.json({ error: { code: 'not_found' } }, 404);
   });

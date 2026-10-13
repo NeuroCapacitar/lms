@@ -1,6 +1,8 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 
+import { solidPng } from './support/png.ts';
+
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const COURSE_ID = '11111111-1111-4111-8111-111111111111';
 const ADMIN = ['staff.read', 'staff.manage', 'course.create', 'course.edit', 'offer.manage'];
@@ -791,5 +793,185 @@ test.describe('acessibilidade e CSP', () => {
     await page.keyboard.type('Texto sob a CSP');
     await page.waitForTimeout(400);
     expect(await page.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
+  });
+});
+
+test.describe('capa e banner do curso (M5-07)', () => {
+  const MEDIA_ID = '99999999-9999-4999-8999-999999999999';
+
+  async function setup(
+    page: Page,
+    options: {
+      intent?: (body: Record<string, any>) => { status: number; json: unknown };
+      confirm?: () => { status: number; json: unknown };
+      readOnly?: boolean;
+      cover?: string | null;
+    } = {},
+  ) {
+    const state = options.readOnly ? await stub(page, ['staff.read']) : await asAdmin(page);
+    if (options.cover)
+      (state.draft.details as Record<string, unknown>).coverMediaId = options.cover;
+    const media = {
+      intents: [] as Record<string, any>[],
+      puts: [] as { url: string; contentType: string | undefined; head: string; size: number }[],
+      confirms: 0,
+    };
+    await page.route('**/api/media/intents', (route) => {
+      const body = route.request().postDataJSON() as Record<string, any>;
+      media.intents.push(body);
+      const answer = options.intent?.(body) ?? {
+        status: 201,
+        json: {
+          id: MEDIA_ID,
+          upload: {
+            method: 'PUT',
+            url: 'https://conta-teste.r2.cloudflarestorage.com/bucket-privado/m/' + MEDIA_ID,
+            headers: { 'content-type': body.contentType },
+            expiresInSeconds: 300,
+          },
+        },
+      };
+      return route.fulfill({ status: answer.status, json: answer.json });
+    });
+    await page.route('https://conta-teste.r2.cloudflarestorage.com/**', (route) => {
+      const request = route.request();
+      const buffer = request.postDataBuffer() ?? Buffer.alloc(0);
+      media.puts.push({
+        url: request.url(),
+        contentType: request.headers()['content-type'],
+        head: buffer.subarray(0, 12).toString('latin1'),
+        size: buffer.length,
+      });
+      return route.fulfill({
+        status: 200,
+        headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' },
+        body: '',
+      });
+    });
+    await page.route('**/api/media/*/confirm', (route) => {
+      media.confirms += 1;
+      const answer = options.confirm?.() ?? {
+        status: 200,
+        json: {
+          media: {
+            id: MEDIA_ID,
+            purpose: 'course_cover',
+            state: 'ready',
+            contentType: 'image/webp',
+            size: 1000,
+            width: 1280,
+            height: 720,
+          },
+        },
+      };
+      return route.fulfill({ status: answer.status, json: answer.json });
+    });
+    await page.goto(editorUrl);
+    return { state, media };
+  }
+
+  test('escolher a imagem recorta, converte e envia só o master; o ponteiro vai com "Salvar rascunho"', async ({
+    page,
+  }) => {
+    const { state, media } = await setup(page);
+    await page.getByLabel('Capa do curso').setInputFiles({
+      name: 'foto-da-camera.png',
+      mimeType: 'image/png',
+      buffer: solidPng(1600, 1200),
+    });
+    await expect(page.getByText('Imagem enviada. Salve o rascunho')).toBeVisible();
+    await expect(page.getByAltText('Prévia: Capa do curso')).toBeVisible();
+    // a intenção declara o tipo e o tamanho REAIS do arquivo preparado (não o do original)
+    expect(media.intents).toHaveLength(1);
+    expect(media.intents[0]).toMatchObject({ purpose: 'course_cover' });
+    expect(['image/webp', 'image/jpeg']).toContain(media.intents[0]!.contentType);
+    expect(media.puts).toHaveLength(1);
+    expect(media.puts[0]!.size).toBe(media.intents[0]!.size);
+    expect(media.puts[0]!.contentType).toBe(media.intents[0]!.contentType);
+    expect(media.puts[0]!.head).toMatch(/^RIFF....WEBP|^\xff\xd8\xff/s);
+    expect(media.confirms).toBe(1);
+
+    await page.getByRole('button', { name: 'Salvar rascunho' }).click();
+    await expect(page.getByText('Rascunho salvo.')).toBeVisible();
+    const put = state.calls.find((c) => c.method === 'PUT')!.body as {
+      details: { coverMediaId?: string; bannerMediaId?: string };
+    };
+    expect(put.details.coverMediaId).toBe(MEDIA_ID);
+    expect(put.details.bannerMediaId).toBeUndefined();
+  });
+
+  test('imagem pequena demais ou ilegível é recusada no navegador, sem chamar o servidor', async ({
+    page,
+  }) => {
+    const { media } = await setup(page);
+    await page.getByLabel('Capa do curso').setInputFiles({
+      name: 'pequena.png',
+      mimeType: 'image/png',
+      buffer: solidPng(200, 100),
+    });
+    await expect(page.getByRole('alert')).toHaveText('A imagem é pequena demais para este espaço.');
+    await page.getByLabel('Banner do curso').setInputFiles({
+      name: 'nao-e-imagem.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('isto não é uma imagem'),
+    });
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Não foi possível ler este arquivo como imagem.' }),
+    ).toBeVisible();
+    expect(media.intents).toHaveLength(0);
+    expect(media.puts).toHaveLength(0);
+  });
+
+  test('o servidor recusa os bytes: mensagem clara e o ponteiro NÃO muda', async ({ page }) => {
+    const { state } = await setup(page, {
+      confirm: () => ({
+        status: 422,
+        json: { error: { code: 'invalid_media', reason: 'type_mismatch' } },
+      }),
+    });
+    await page.getByLabel('Capa do curso').setInputFiles({
+      name: 'ok.png',
+      mimeType: 'image/png',
+      buffer: solidPng(1280, 720),
+    });
+    await expect(page.getByRole('alert')).toHaveText('O arquivo não é uma imagem válida.');
+    await expect(page.getByText('Nenhuma imagem definida.').first()).toBeVisible();
+    await expect(page.getByText('Alterações não salvas.')).toHaveCount(0);
+    expect(state.calls.filter((c) => c.method === 'PUT')).toHaveLength(0);
+  });
+
+  test('armazenamento desligado (503) e falha do PUT viram avisos claros', async ({ page }) => {
+    await setup(page, {
+      intent: () => ({ status: 503, json: { error: { code: 'media_not_configured' } } }),
+    });
+    await page.getByLabel('Banner do curso').setInputFiles({
+      name: 'b.png',
+      mimeType: 'image/png',
+      buffer: solidPng(1680, 420),
+    });
+    await expect(page.getByRole('alert')).toContainText(
+      'o armazenamento de imagens pode não estar ativo',
+    );
+  });
+
+  test('remover a imagem pede confirmação e manda null; quem só lê não vê o campo de arquivo', async ({
+    page,
+  }) => {
+    const { state } = await setup(page, { cover: MEDIA_ID });
+    await expect(page.getByText('Há uma imagem definida.')).toBeVisible();
+    await page.getByRole('button', { name: 'Remover capa do curso' }).click();
+    await page.getByRole('button', { name: 'Confirmar remoção da imagem' }).click();
+    await page.getByRole('button', { name: 'Salvar rascunho' }).click();
+    await expect(page.getByText('Rascunho salvo.')).toBeVisible();
+    const put = state.calls.find((c) => c.method === 'PUT')!.body as {
+      details: { coverMediaId?: string | null };
+    };
+    expect(put.details.coverMediaId).toBeNull();
+  });
+
+  test('leitura: sem campo de arquivo', async ({ page }) => {
+    await setup(page, { readOnly: true });
+    await expect(page.getByLabel('Capa do curso')).toHaveCount(0);
+    await expect(page.getByText('Nenhuma imagem definida.').first()).toBeVisible();
   });
 });
