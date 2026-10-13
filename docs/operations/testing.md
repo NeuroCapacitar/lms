@@ -249,3 +249,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - `test/pg/quota.pg.test.ts` usa uma política PEQUENA (10 por dia, 30 por mês, reserva 2) para ser rápido no Neon remoto; a de produção é `FREE_PLAN_QUOTA` (100 e 3.000, reserva 20). A virada do dia é simulada deslocando o livro-razão e o `available_at` das linhas adiadas; o Cron (`republishJob`) faz o resto.
 - Todo handler que fala com um provider com cota deve reservar ANTES, devolver a vaga se o provider não aceitou e lançar `DeferError` (não `TransientError`) quando o motivo é falta de folga: adiar não gasta tentativa, não gera alerta e não manda nada à DLQ.
 - Roteiro EM STAGING (com autorização): aplicar a migration 0020, enfileirar uma rajada de `course-available` para contas de teste da allowlist, conferir que só saem as vagas do dia (`select * from email_send_ledger`), que o resto fica `pending` com `available_at` na próxima meia-noite UTC e que o Cron entrega no dia seguinte.
+
+## Operations Center (M4-05)
+
+- `test/pg/operations.pg.test.ts` (foto do estado, autorização de cada rota, auditoria, alertas do Cron e correlação) e `e2e/operacao.spec.ts` (a tela com rotas simuladas e axe). A auditoria é append-only: não dá para truncar; os testes olham só as linhas do próprio alvo (`targetId`).
+- Toda ação nova da tela exige: capability conferida no servidor, `requireRecentAuth`, motivo obrigatório e `auditEvent` na MESMA transação da mudança. A tela nunca devolve payload, endereço nem nome: o teste varre o JSON e a página.
+- Roteiro EM STAGING (com autorização, depois das migrations 0018 a 0020 e do deploy): (1) abrir `/staff/operacao` como Suporte e como Admin; (2) derrubar um handler (ex.: um `kind` que sempre falha) e ver o item chegar a `dead` e o alerta `dead_letter` no log do Cron; (3) reenfileirar com motivo e conferir a linha em `audit_log`; (4) pausar a fila, ver o alerta de pausa, retomar; (5) esperar o Cron e conferir `ops_alert` no Workers Logs.

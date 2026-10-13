@@ -34,6 +34,7 @@ import { catalogRoutes } from '../catalog/routes';
 import { studentCatalogRoutes } from '../catalog/student-routes';
 import { courseAccessRoutes } from '../access/routes';
 import { enrollmentStaffRoutes } from '../access/staff-routes';
+import { operationsRoutes } from '../ops/routes';
 import { previewRoutes } from '../learning/preview-routes';
 import { learningRoutes } from '../learning/routes';
 import { methodRoutes } from './method-routes';
@@ -379,6 +380,9 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
 
   // Catálogo da Staff (M2-01): /api/staff/courses/*.
   routes.route('/staff', catalogRoutes({ withDatabase }));
+
+  // Operations Center (M4-05): /api/staff/operations (leitura da Staff; ações com grant e reautenticação).
+  routes.route('/staff', operationsRoutes({ withDatabase }));
 
   // Catálogo do aluno (M2-04): /api/catalog/courses (com sessão e termos aceitos).
   routes.route('/catalog', studentCatalogRoutes({ withDatabase }));

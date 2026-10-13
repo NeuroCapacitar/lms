@@ -13,6 +13,8 @@ export interface MailRequest {
   idempotencyKey: string;
   from: string;
   replyTo?: string;
+  /** Id de correlação (HTTP → outbox → Queue → provider): vai como tag e volta nos eventos do webhook. */
+  correlationId?: string;
 }
 
 type MailFailureKind =
@@ -63,6 +65,10 @@ export function createResendMailer(config: ResendMailerConfig): Mailer {
             from: request.from,
             to: [request.to],
             ...(request.replyTo ? { reply_to: request.replyTo } : {}),
+            // Tag do Resend: só letras, números, `_` e `-`. O id de correlação é um UUID; outro formato não vai.
+            ...(request.correlationId && /^[A-Za-z0-9_-]{1,256}$/.test(request.correlationId)
+              ? { tags: [{ name: 'correlation_id', value: request.correlationId }] }
+              : {}),
             template: { id: request.templateAlias, variables: request.variables },
           }),
           signal: AbortSignal.timeout(config.timeoutMs ?? 10_000),

@@ -285,7 +285,7 @@ describe('duas execuções simultâneas', () => {
 });
 
 describe('handleScheduled (o ciclo completo)', () => {
-  it('sem trabalho: só as sondas e o registro de que o Cron rodou (nenhum job assume lease)', async () => {
+  it('sem trabalho: só as sondas, o job de alertas (que só lê) e o registro de que o Cron rodou', async () => {
     const { env } = fakeQueues();
     // `handleScheduled` fecha a conexão que abre: cada ciclo recebe uma nova.
     await handleScheduled(env, {
@@ -293,9 +293,11 @@ describe('handleScheduled (o ciclo completo)', () => {
       alert: () => {},
     });
     const rows = await main.db.select().from(schema.jobRun);
-    expect(rows.map((row) => row.name)).toEqual(['cron']);
-    expect(rows[0]).toMatchObject({ lastStatus: 'ok', lastCount: 0 });
-    expect(rows[0]!.lastFinishedAt).not.toBeNull();
+    // Os jobs com sonda (republicação, inbox, purga) pulam; o de alertas (M4-05) não tem sonda e roda.
+    expect(rows.map((row) => row.name).sort()).toEqual(['cron', 'ops.alerts']);
+    const cron = rows.find((row) => row.name === 'cron')!;
+    expect(cron).toMatchObject({ lastStatus: 'ok' });
+    expect(cron.lastFinishedAt).not.toBeNull();
   });
 
   it('uma intenção cuja mensagem foi descartada é republicada e o ciclo registra', async () => {
@@ -308,7 +310,7 @@ describe('handleScheduled (o ciclo completo)', () => {
     });
     expect(sent.map((item) => item.body.intentId)).toEqual([id]);
     const names = (await main.db.select().from(schema.jobRun)).map((row) => row.name).sort();
-    expect(names).toEqual(['cron', 'outbox.republish']);
+    expect(names).toEqual(['cron', 'ops.alerts', 'outbox.republish']);
   });
 
   it('banco indisponível: alerta e o erro sobe (não há onde registrar)', async () => {
