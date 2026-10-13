@@ -46,9 +46,36 @@ interface LessonNeighborDto {
   title: string;
 }
 
+/**
+ * O vídeo de uma aula como o PLAYER precisa (M5-02): o provider e o id público do vídeo (para montar o
+ * embed de um host da allowlist), a duração conhecida, o que o adapter declara e o ponto de retomada.
+ * Nunca traz segredo de conexão nem credencial.
+ */
+export interface LessonVideoDto {
+  assetId: string;
+  provider: string;
+  externalId: string;
+  /** `null` enquanto o provider ainda não a informou (o player a revela e o servidor congela a primeira). */
+  durationSeconds: number | null;
+  capabilities: Record<string, boolean>;
+  /** A maior posição já alcançada (segundos): de onde retomar. */
+  maxPosition: number;
+  /** Percentual que conclui a aula (limiar do curso). */
+  completionPercent: number;
+}
+
 export interface LessonViewDto {
   course: { id: string; title: string };
-  lesson: { id: string; title: string; isOptional: boolean; body: RichText | null };
+  lesson: {
+    id: string;
+    title: string;
+    isOptional: boolean;
+    body: RichText | null;
+    /** Ausente = aula de texto. */
+    kind?: 'text' | 'video';
+    /** Só na aula de vídeo. */
+    video?: LessonVideoDto;
+  };
   completed: boolean;
   /** Aulas vizinhas na ordem do curso (só id e título; abrir uma bloqueada é recusado pelo servidor). */
   previous: LessonNeighborDto | null;

@@ -91,6 +91,8 @@ type L = {
   title: string;
   isOptional?: boolean;
   body?: RichText | null;
+  kind?: 'text' | 'video';
+  videoAssetId?: string | null;
 };
 type M = { id?: string; title: string; dripDays?: number; lessons: L[] };
 const details = {
@@ -214,7 +216,8 @@ describe('rascunho', () => {
       payload(1, [
         { title: 'x', lessons: [{ title: 'y', body: { a: 'x'.repeat(200_001) } as never }] },
       ]),
-      payload(1, [{ title: 'x', lessons: [{ title: 'y', kind: 'video' } as never] }]),
+      // M5-02: video passou a existir; tipo desconhecido (quiz so no M5-04) segue recusado.
+      payload(1, [{ title: 'x', lessons: [{ title: 'y', kind: 'quiz' } as never] }]),
     ]) {
       expect(
         (await call('PUT', `/courses/${courseId}/draft`, admin.headers, body)).status,
@@ -777,5 +780,180 @@ describe('pré-publicação (resumo do que muda)', () => {
     expect(after.problems.map((p: { code: string }) => p.code)).toContain('module_no_lessons');
     // pré-visualizar nunca altera o publicado
     expect((await getPublishedCurriculum(tools.db, courseId))!.version).toBe(1);
+  });
+});
+
+describe('aula de vídeo no currículo (M5-02)', () => {
+  async function newAsset() {
+    const connectionId = crypto.randomUUID();
+    await tools.db.insert(schema.videoProviderConnection).values({
+      id: connectionId,
+      provider: 'youtube',
+      label: `público ${crypto.randomUUID().slice(0, 6)}`,
+    });
+    const [asset] = await tools.db
+      .insert(schema.videoAsset)
+      .values({
+        connectionId,
+        provider: 'youtube',
+        externalId: `v-${crypto.randomUUID().slice(0, 8)}`,
+        mode: 'referenced',
+        state: 'ready',
+        durationSeconds: 600,
+      })
+      .returning();
+    return asset!.id;
+  }
+  const video = (assetId: string | null, extra: Partial<L> = {}) => ({
+    title: 'Aula em vídeo',
+    kind: 'video' as const,
+    videoAssetId: assetId,
+    ...extra,
+  });
+
+  it('salva a aula de vídeo com o vídeo, devolve kind e videoAssetId e publica copiando os dois', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const assetId = await newAsset();
+    const { response, body } = await save(admin, courseId, 0, [
+      { title: 'Módulo A', lessons: [video(assetId) as L, { title: 'Texto' }] },
+    ]);
+    expect(response.status).toBe(200);
+    expect(body.modules[0].lessons[0]).toMatchObject({ kind: 'video', videoAssetId: assetId });
+    expect(body.modules[0].lessons[1]).toMatchObject({ kind: 'text', videoAssetId: null });
+
+    expect((await publish(admin, courseId)).status).toBe(200);
+    const [live] = await tools.db
+      .select()
+      .from(schema.lesson)
+      .where(eq(schema.lesson.title, 'Aula em vídeo'));
+    expect(live).toMatchObject({ kind: 'video', videoAssetId: assetId });
+    const published = (await getPublishedCurriculum(tools.db, courseId))!;
+    expect(published.modules[0]!.lessons[0]).toMatchObject({
+      kind: 'video',
+      videoAssetId: assetId,
+    });
+  });
+
+  it('o rascunho aceita o vídeo ainda não escolhido, mas a PUBLICAÇÃO exige (video_asset_missing)', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const { response } = await save(admin, courseId, 0, [
+      { title: 'Módulo A', lessons: [video(null) as L] },
+    ]);
+    expect(response.status).toBe(200);
+    const result = await publish(admin, courseId);
+    expect(result.status).toBe(422);
+    expect((await json(result)).error.problems).toEqual(
+      expect.arrayContaining([
+        { code: 'video_asset_missing', path: 'modules[0].lessons[0].videoAssetId' },
+      ]),
+    );
+    expect(await getPublishedCurriculum(tools.db, courseId)).toBeNull();
+  });
+
+  it('vídeo inexistente: 400 video_asset_not_found e nada é gravado', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const { response, body } = await save(admin, courseId, 0, [
+      { title: 'Módulo A', lessons: [video(crypto.randomUUID()) as L] },
+    ]);
+    expect(response.status).toBe(400);
+    expect(body.error).toEqual({ code: 'video_asset_not_found' });
+    const draft = await json(await call('GET', `/courses/${courseId}/draft`, admin.headers));
+    expect(draft).toMatchObject({ rev: 0, modules: [] });
+  });
+
+  it('aula de TEXTO com videoAssetId é recusada (400), com ou sem kind no corpo', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const assetId = await newAsset();
+    const bad = await save(admin, courseId, 0, [
+      {
+        title: 'Módulo A',
+        lessons: [{ title: 'Texto', kind: 'text', videoAssetId: assetId } as L],
+      },
+    ]);
+    expect(bad.response.status).toBe(400);
+    const noKind = await save(admin, courseId, 0, [
+      { title: 'Módulo A', lessons: [{ title: 'Texto', videoAssetId: assetId } as L] },
+    ]);
+    expect(noKind.response.status).toBe(400);
+  });
+
+  it('a tela antiga (que não manda kind) NÃO converte a aula de vídeo em texto: tipo e vídeo são mantidos', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const assetId = await newAsset();
+    const first = await save(admin, courseId, 0, [
+      { title: 'Módulo A', lessons: [video(assetId) as L, { title: 'Texto' }] },
+    ]);
+    const moduleId = first.body.modules[0].id as string;
+    const videoLessonId = first.body.modules[0].lessons[0].id as string;
+    const textLessonId = first.body.modules[0].lessons[1].id as string;
+    // Sem kind nem videoAssetId: só o título muda.
+    const edited = await save(admin, courseId, first.body.rev, [
+      {
+        id: moduleId,
+        title: 'Módulo A',
+        lessons: [
+          { id: videoLessonId, title: 'Aula em vídeo (editada)' },
+          { id: textLessonId, title: 'Texto' },
+        ],
+      },
+    ]);
+    expect(edited.body.modules[0].lessons[0]).toMatchObject({
+      title: 'Aula em vídeo (editada)',
+      kind: 'video',
+      videoAssetId: assetId,
+    });
+    expect(edited.body.modules[0].lessons[1]).toMatchObject({ kind: 'text', videoAssetId: null });
+  });
+
+  it('trocar o vídeo e converter a aula para texto (kind text) limpa o vídeo', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const assetId = await newAsset();
+    const other = await newAsset();
+    const first = await save(admin, courseId, 0, [
+      { title: 'Módulo A', lessons: [video(assetId) as L, { title: 'Texto' }] },
+    ]);
+    const moduleId = first.body.modules[0].id as string;
+    const lessonId = first.body.modules[0].lessons[0].id as string;
+    const textId = first.body.modules[0].lessons[1].id as string;
+    const swapped = await save(admin, courseId, first.body.rev, [
+      {
+        id: moduleId,
+        title: 'Módulo A',
+        lessons: [{ id: lessonId, ...video(other) } as L, { id: textId, title: 'Texto' }],
+      },
+    ]);
+    expect(swapped.body.modules[0].lessons[0].videoAssetId).toBe(other);
+    const toText = await save(admin, courseId, swapped.body.rev, [
+      {
+        id: moduleId,
+        title: 'Módulo A',
+        lessons: [
+          { id: lessonId, title: 'Agora texto', kind: 'text' } as L,
+          { id: textId, title: 'Texto' },
+        ],
+      },
+    ]);
+    expect(toText.body.modules[0].lessons[0]).toMatchObject({ kind: 'text', videoAssetId: null });
+  });
+
+  it('o vídeo de uma aula não pode ser apagado do banco enquanto a aula o usa, e kind e vídeo são coerentes', async () => {
+    const admin = await actor('admin');
+    const courseId = await newCourse();
+    const assetId = await newAsset();
+    await save(admin, courseId, 0, [{ title: 'Módulo A', lessons: [video(assetId) as L] }]);
+    await expectViolation(
+      tools.db.delete(schema.videoAsset).where(eq(schema.videoAsset.id, assetId)),
+      /foreign key|violates|restrict/i,
+    );
+    await expectViolation(
+      tools.db.execute(sql`update lesson_draft set kind = 'text' where kind = 'video'`),
+      /lesson_draft_video_asset_check/i,
+    );
   });
 });

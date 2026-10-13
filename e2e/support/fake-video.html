@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Vídeo de teste (adapter falso)</title>
+    <!--
+      M5-02: "provider" de mentira, só para testar o player, o progresso e o autoavanço. Fala com o app por
+      postMessage com o alvo EXPLÍCITO (a origem do próprio Hub). O servidor nunca emite o provider "fake"
+      (o banco só aceita os seis reais) e o adapter só existe com VITE_FAKE_VIDEO=1; fora disso esta página é
+      inerte (e, com a CSP de Production, nem executa o script).
+    -->
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 12px;
+        background: #1b2a2c;
+        color: #fff;
+      }
+      button {
+        min-height: 44px;
+        margin: 4px;
+        padding: 6px 12px;
+        font-size: 14px;
+      }
+      output {
+        display: inline-block;
+        min-width: 6ch;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <p>
+      Vídeo de teste <output id="time" aria-live="off">0</output> s de
+      <output id="total">0</output> s
+    </p>
+    <div>
+      <button type="button" id="play">Tocar</button>
+      <button type="button" id="pause">Pausar</button>
+      <button type="button" id="seek-start">Início</button>
+      <button type="button" id="seek-89">Ir a 89%</button>
+      <button type="button" id="seek-90">Ir a 90%</button>
+      <button type="button" id="rate">Velocidade 2×</button>
+      <button type="button" id="end">Terminar</button>
+      <button type="button" id="boom">Erro</button>
+    </div>
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var duration = Number(params.get('d')) || 600;
+        var position = Number(params.get('start')) || 0;
+        var rate = 1;
+        var timer = null;
+        var target = location.origin;
+        var timeEl = document.getElementById('time');
+        document.getElementById('total').textContent = String(duration);
+
+        function post(type, extra) {
+          var message = { source: 'fake-video', type: type };
+          if (extra) for (var key in extra) message[key] = extra[key];
+          parent.postMessage(message, target);
+        }
+        function show() {
+          timeEl.textContent = String(Math.floor(position));
+        }
+        function stop() {
+          if (timer) {
+            clearInterval(timer);
+            timer = null;
+          }
+        }
+        function seek(to) {
+          position = Math.max(0, Math.min(duration, to));
+          show();
+          post('seeked', { t: position });
+          post('timeupdate', { t: position });
+        }
+
+        document.getElementById('play').addEventListener('click', function () {
+          post('play');
+          stop();
+          timer = setInterval(function () {
+            position = Math.min(duration, position + rate);
+            show();
+            post('timeupdate', { t: position });
+            if (position >= duration) {
+              stop();
+              post('ended');
+            }
+          }, 1000);
+        });
+        document.getElementById('pause').addEventListener('click', function () {
+          stop();
+          post('pause');
+        });
+        document.getElementById('seek-start').addEventListener('click', function () {
+          seek(0);
+        });
+        document.getElementById('seek-89').addEventListener('click', function () {
+          seek(Math.floor(duration * 0.89));
+        });
+        document.getElementById('seek-90').addEventListener('click', function () {
+          seek(Math.ceil(duration * 0.9));
+        });
+        document.getElementById('rate').addEventListener('click', function () {
+          rate = 2;
+          post('ratechange');
+        });
+        document.getElementById('end').addEventListener('click', function () {
+          stop();
+          position = duration;
+          show();
+          post('timeupdate', { t: duration });
+          post('ended');
+        });
+        document.getElementById('boom').addEventListener('click', function () {
+          stop();
+          post('error');
+        });
+
+        show();
+        post('durationchange', { duration: duration });
+        post('ready');
+      })();
+    </script>
+  </body>
+</html>
