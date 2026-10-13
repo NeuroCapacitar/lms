@@ -58,7 +58,7 @@
 
 ### M4-04 — Entrega transacional via Resend (Hosted Templates)
 
-**Dependências:** M4-01, M4-02, M1-01 · **Estado:** `not_started`
+**Dependências:** M4-01, M4-02, M1-01 · **Estado:** `implemented` (2026-10-13; CI pendente; Resend real e modelos hospedados não exercitados, ver STATUS)
 
 **Objetivo:** enviar os e-mails do produto pelo outbox, com template editorial hospedado no Resend e contrato tipado no código; falhar no e-mail nunca bloqueia acesso.
 **Passos:**

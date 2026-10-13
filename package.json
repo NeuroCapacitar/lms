@@ -27,6 +27,7 @@
     "db:roles": "bun scripts/db/setup-roles.ts",
     "admin:bootstrap": "bun scripts/admin-bootstrap.ts",
     "seed:demo": "bun scripts/seed-demo.ts",
+    "email:verify-templates": "bun scripts/verify-email-templates.ts",
     "test:db": "node --test \"scripts/**/*.integration.ts\"",
     "knip": "knip",
     "arch": "depcruise src --config .dependency-cruiser.cjs",

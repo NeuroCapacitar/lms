@@ -8,6 +8,9 @@ import { handleScheduled } from '../../src/server/async/cron.ts';
 import { processDeadLetters } from '../../src/server/async/consumer.ts';
 import { pauseFlagKey } from '../../src/server/async/flags.ts';
 import { TransientError, type HandlerRegistry } from '../../src/server/async/handlers.ts';
+import { queueEmail } from '../../src/server/email/email-store.ts';
+import { createEmailHandler } from '../../src/server/email/send-handler.ts';
+import type { MailRequest, MailResult, Mailer } from '../../src/server/email/mailer.ts';
 import { processInbox } from '../../src/server/async/inbox-processor.ts';
 import { recordInboxEvent } from '../../src/server/async/inbox-store.ts';
 import { republishJob, runCycle, type JobContext } from '../../src/server/async/jobs.ts';
@@ -119,6 +122,7 @@ describe('Fault matrix (M4-06)', () => {
       let release: () => void = () => {};
       const gate = new Promise<void>((resolve) => (release = resolve));
       const slow: HandlerRegistry = {
+        'email.send': async () => {},
         'system.demo': async (context) => {
           await gate;
           return demoHandlers(provider)['system.demo'](context);
@@ -411,5 +415,73 @@ describe('Fault matrix (M4-06)', () => {
     expect(queue.pending).toEqual([envelope]);
     await queue.deliver(h.consumerDeps(main.db, demoHandlers(provider)));
     expect((await row(id)).state).toBe('delivered');
+  });
+
+  it('F13 e-mail (M4-04): o Resend aceitou e o consumidor morreu antes de gravar; a repetição usa a MESMA chave e o e-mail sai UMA vez', async () => {
+    // Resend falso com idempotência de verdade: a mesma chave devolve o mesmo envio.
+    const accepted = new Map<string, number>();
+    const mailer: Mailer = {
+      async send(request: MailRequest): Promise<MailResult> {
+        accepted.set(request.idempotencyKey, (accepted.get(request.idempotencyKey) ?? 0) + 1);
+        return { ok: true, providerMessageId: `re_${request.idempotencyKey}` };
+      },
+    };
+    const emailDeps = {
+      getMailer: () => mailer,
+      from: 'NeuroCapacitar <acesso@neurocapacitar.example>',
+      appUrl: 'https://hub.example',
+      allowlist: [],
+    };
+    const userId = uuid();
+    await main.db.insert(schema.user).values({ id: userId, name: 'Ana', email: 'ana@example.com' });
+    const { emailMessageId } = await main.db.transaction((tx) =>
+      queueEmail(tx, {
+        template: 'access-granted',
+        recipientUserId: userId,
+        variables: { COURSE_TITLE: 'Curso', EXPIRES_AT: '12/01/2027' },
+        dedupeKey: `f13:${uuid()}`,
+        correlationId: 'corr-f13',
+      }),
+    );
+    const [intent] = await main.db
+      .select()
+      .from(schema.outboxMessage)
+      .where(sql`payload->>'emailMessageId' = ${emailMessageId}`);
+
+    // O consumidor que vai morrer: reivindica, marca `sending`, o Resend ACEITA e o processo morre.
+    const dying = await claimOutboxById(main.db, intent!.id, 'consumidor-que-morreu');
+    await main.db.execute(
+      sql`update email_message set state = 'sending', first_attempt_at = now() where id = ${emailMessageId}`,
+    );
+    await mailer.send({
+      to: 'ana@example.com',
+      templateAlias: 'access-granted',
+      variables: {},
+      idempotencyKey: dying!.dedupeKey!,
+      from: 'x',
+    });
+    await main.db.execute(
+      sql`update outbox_message set lease_until = now() - interval '1 second' where id = ${intent!.id}`,
+    );
+
+    // O Cron republica, o novo consumidor repete a chamada com a MESMA chave e conclui.
+    const queue = new SimQueue();
+    await runCycle(cronContext(queue), [republishJob]);
+    const h = createHarness();
+    await queue.deliver(
+      h.consumerDeps(main.db, {
+        'system.demo': async () => {},
+        'email.send': createEmailHandler(emailDeps),
+      }),
+    );
+
+    expect([...accepted.keys()]).toEqual([dying!.dedupeKey]); // uma única chave no provider
+    expect(accepted.get(dying!.dedupeKey!)).toBe(2); // 2 chamadas, MESMA chave: o provider deduplica
+    const [saved] = await main.db
+      .select()
+      .from(schema.emailMessage)
+      .where(eq(schema.emailMessage.id, emailMessageId));
+    expect(saved).toMatchObject({ state: 'accepted' });
+    expect((await row(intent!.id)).state).toBe('delivered');
   });
 });

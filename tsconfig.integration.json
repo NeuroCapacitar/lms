@@ -29,6 +29,7 @@
     "test/pg/reauth.pg.test.ts",
     "scripts/admin-bootstrap.ts",
     "scripts/seed-demo.ts",
+    "scripts/verify-email-templates.ts",
     "scripts/seed-demo-core.ts",
     "test/helpers/demo-course.ts",
     "test/pg/demo-seed.pg.test.ts",
@@ -55,6 +56,7 @@
     "test/pg/consumer.pg.test.ts",
     "test/pg/cron.pg.test.ts",
     "test/pg/fault-matrix.pg.test.ts",
+    "test/pg/email.pg.test.ts",
     "test/helpers/async-harness.ts"
   ]
 }

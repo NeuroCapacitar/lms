@@ -17,6 +17,8 @@ function intentPayload<Shape extends Record<string, typeof id>>(shape: Shape) {
 export const INTENT_KINDS = {
   /** Handler demonstrativo (M4-02): prova o fluxo claim → handler → conclusão sem efeito externo. */
   'system.demo': { queue: 'general', payload: intentPayload({ subjectId: id }) },
+  /** E-mail transacional (M4-04): o payload é só o id da `email_message`; destinatário e variáveis ficam no banco. */
+  'email.send': { queue: 'general', payload: intentPayload({ emailMessageId: id }) },
 } as const satisfies Record<string, { queue: QueueName; payload: z.ZodType }>;
 
 export type IntentKind = keyof typeof INTENT_KINDS;

@@ -231,3 +231,9 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 3. Deploy manual (`gh workflow run deploy-staging.yml --ref main`) e `bun run smoke <url> <sha>`.
 4. Intenção sintética: `insert into outbox_message (kind, queue, dedupe_key, payload, correlation_id, available_at)` com `system.demo`, `general`, payload `{"subjectId": "<uuid>"}` e `available_at = now() - interval '10 minutes'`; esperar o Cron (a cada 30 min, em :00 e :30 UTC) e conferir `state = 'delivered'` e `job_run`.
 5. Faltam no roteiro: derrubar o consumidor no meio, forçar `max_retries`, ligar o kill switch (`system_flag`) e medir o ciclo ocioso e o CU-h.
+
+## E-mail transacional (M4-04)
+
+- `test/pg/email.pg.test.ts` usa um `ScriptedMailer` (resultado por chamada: aceito, 429, 5xx, timeout, 4xx) e o consumidor REAL; `src/server/email/mailer.test.ts` cobre o `fetch` do Resend por mock. Nenhum teste envia e-mail de verdade.
+- Ao criar um template novo: acrescente-o a `EMAIL_TEMPLATES` (alias, variáveis estritas, classe, destinatário), crie e PUBLIQUE o modelo no Resend com o MESMO alias e as variáveis de `expectedVariableNames` (as do contrato mais `NAME`, se usa, e `APP_URL`), e rode `RESEND_API_KEY=<chave do ambiente> bun run email:verify-templates`. Link com token nunca é `queued`.
+- Roteiro EM STAGING (com autorização e a chave do Resend do ambiente; só destinatários da `EMAIL_ALLOWLIST`): criar os modelos, aplicar a migration 0018, rodar o verificador, enfileirar um `access-granted` para uma conta de teste e conferir `email_message.state = 'accepted'` e o e-mail na caixa; depois repetir com um endereço fora da lista (deve ficar `blocked`) e conferir que nenhum log contém o endereço.
