@@ -57,6 +57,8 @@
     "test/pg/cron.pg.test.ts",
     "test/pg/fault-matrix.pg.test.ts",
     "test/pg/email.pg.test.ts",
+    "test/pg/resend-webhook.pg.test.ts",
+    "test/helpers/svix.ts",
     "test/helpers/async-harness.ts"
   ]
 }

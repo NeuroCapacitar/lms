@@ -11,6 +11,7 @@ import { RELEASE_ID } from './release';
 import { csrfProtection } from './security/csrf';
 import { securityHeaders } from './security/headers';
 import { sentryMiddleware } from './sentry';
+import { resendWebhookRoutes } from './webhooks/resend-routes';
 
 /**
  * Composição HTTP do Worker. Aqui só entram adapters de entrada; regras de negócio
@@ -51,6 +52,9 @@ export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
         c.get('log')?.error(error instanceof Error ? error : new Error('course_page_failed')),
     }),
   );
+
+  // Webhooks de provedores (assinatura própria, fora do CSRF): só o do Resend por ora (M4-07).
+  app.route('/api/webhooks', resendWebhookRoutes());
 
   app.route('/api', authRoutes(options.auth));
 

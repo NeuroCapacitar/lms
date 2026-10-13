@@ -1,6 +1,7 @@
 import { openDatabase, type OpenDatabase } from '../../db/client';
 import { logAlert, type Alert } from './alerts';
-import { CRON_JOBS, runCycle, type CronJob } from './jobs';
+import { resendEventHandler } from '../email/resend-events';
+import { createCronJobs, runCycle, type CronJob } from './jobs';
 import { recordCycle } from './job-store';
 
 /** Teto para o Neon acordar: passou disso, o ciclo termina com erro em vez de pendurar. */
@@ -39,7 +40,7 @@ export async function handleScheduled(env: Env, deps: ScheduledDeps = {}): Promi
   try {
     const summary = await runCycle(
       { db: opened.db, env, alert, owner: `cron:${crypto.randomUUID()}` },
-      deps.jobs ?? CRON_JOBS,
+      deps.jobs ?? createCronJobs({ resend: resendEventHandler }),
     );
     await recordCycle(opened.db, {
       durationMs: Date.now() - startedAt,

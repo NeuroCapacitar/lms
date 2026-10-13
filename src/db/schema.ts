@@ -951,3 +951,30 @@ export const emailMessage = pgTable(
     check('email_message_variables_check', sql`jsonb_typeof(${table.variables}) = 'object'`),
   ],
 );
+
+/**
+ * Estado de entregabilidade por DESTINATÁRIO (M4-07): quem teve bounce permanente ou reclamação não
+ * recebe mais e-mail transacional enfileirado. A chave é o HMAC-SHA256 do endereço normalizado (nunca o
+ * endereço em claro) com uma chave de servidor, então a tabela não vira lista de e-mails. Bounce e
+ * reclamação NÃO alteram User, Enrollment nem Order.
+ */
+export const emailRecipientState = pgTable(
+  'email_recipient_state',
+  {
+    recipientHash: text().primaryKey(),
+    state: text().notNull().default('suppressed'),
+    reason: text().notNull(),
+    /** Id do evento do Resend (inbox) que causou a supressão: rastro para a Staff. */
+    sourceEventId: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('email_recipient_state_hash_check', sql`${table.recipientHash} ~ '^[0-9a-f]{64}$'`),
+    check('email_recipient_state_state_check', sql`${table.state} = 'suppressed'`),
+    check(
+      'email_recipient_state_reason_check',
+      sql`${table.reason} in ('hard_bounce', 'complaint')`,
+    ),
+  ],
+);

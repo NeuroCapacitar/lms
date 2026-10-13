@@ -58,7 +58,7 @@
 
 ### M4-04 — Entrega transacional via Resend (Hosted Templates)
 
-**Dependências:** M4-01, M4-02, M1-01 · **Estado:** `implemented` (2026-10-13; CI pendente; Resend real e modelos hospedados não exercitados, ver STATUS)
+**Dependências:** M4-01, M4-02, M1-01 · **Estado:** `verified` no CI (2026-10-13; Resend real e modelos hospedados não exercitados, ver STATUS)
 
 **Objetivo:** enviar os e-mails do produto pelo outbox, com template editorial hospedado no Resend e contrato tipado no código; falhar no e-mail nunca bloqueia acesso.
 **Passos:**
@@ -99,7 +99,7 @@
 
 ### M4-07 — Webhook Resend (Svix) e supressão
 
-**Dependências:** M4-04, M4-01 · **Estado:** `not_started`
+**Dependências:** M4-04, M4-01 · **Estado:** `implemented` (2026-10-13; CI pendente; webhook real não exercitado, ver STATUS)
 
 **Objetivo:** refletir entrega/bounce/complaint em `email_messages` e impedir novos envios a endereços problemáticos.
 **Passos:**

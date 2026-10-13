@@ -11,6 +11,10 @@ import { TransientError, type HandlerRegistry } from '../../src/server/async/han
 import { queueEmail } from '../../src/server/email/email-store.ts';
 import { createEmailHandler } from '../../src/server/email/send-handler.ts';
 import type { MailRequest, MailResult, Mailer } from '../../src/server/email/mailer.ts';
+import { resendEventHandler } from '../../src/server/email/resend-events.ts';
+import { resendWebhookRoutes } from '../../src/server/webhooks/resend-routes.ts';
+import { Hono } from 'hono';
+import { TEST_WEBHOOK_SECRET, signedHeaders } from '../helpers/svix.ts';
 import { processInbox } from '../../src/server/async/inbox-processor.ts';
 import { recordInboxEvent } from '../../src/server/async/inbox-store.ts';
 import { republishJob, runCycle, type JobContext } from '../../src/server/async/jobs.ts';
@@ -483,5 +487,52 @@ describe('Fault matrix (M4-06)', () => {
       .where(eq(schema.emailMessage.id, emailMessageId));
     expect(saved).toMatchObject({ state: 'accepted' });
     expect((await row(intent!.id)).state).toBe('delivered');
+  });
+
+  it('F14 webhook do Resend (M4-07): evento duplicado e fora de ordem não duplicam nem desfazem o estado', async () => {
+    const [created] = await main.db
+      .insert(schema.emailMessage)
+      .values({
+        dedupeKey: `f14:${uuid()}`,
+        template: 'access-granted',
+        recipientKind: 'user',
+        variables: { COURSE_TITLE: 'C', EXPIRES_AT: 'x' },
+        state: 'accepted',
+        providerMessageId: 'f14-email',
+      })
+      .returning();
+    const app = new Hono<{ Bindings: Env }>().route('/api/webhooks', resendWebhookRoutes());
+    const env = {
+      RESEND_WEBHOOK_SECRET: TEST_WEBHOOK_SECRET,
+      EMAIL_HASH_KEY: 'chave-de-hmac-so-de-teste-0123456789abcdef',
+      HYPERDRIVE: { connectionString: database.connectionString },
+    } as unknown as Env;
+    const send = async (type: string, id: string) => {
+      const body = JSON.stringify({
+        type,
+        data: { email_id: 'f14-email', bounce: { type: 'Transient' } },
+      });
+      return app.request(
+        '/api/webhooks/resend',
+        { method: 'POST', body, headers: await signedHeaders(body, { id }) },
+        env,
+      );
+    };
+    // O bounced chega ANTES do delivered, e o bounced é reenviado pelo Resend (mesmo svix-id).
+    expect((await send('email.bounced', 'msg_f14_a')).status).toBe(200);
+    expect((await send('email.bounced', 'msg_f14_a')).status).toBe(200);
+    expect((await send('email.delivered', 'msg_f14_b')).status).toBe(200);
+    expect(await main.db.select().from(schema.inboxEvent)).toHaveLength(2);
+
+    await processInbox(main.db, {
+      handlers: { resend: resendEventHandler },
+      owner: 'f14',
+      alert: () => {},
+    });
+    const [saved] = await main.db
+      .select()
+      .from(schema.emailMessage)
+      .where(eq(schema.emailMessage.id, created!.id));
+    expect(saved!.state).toBe('bounced'); // delivered depois de bounced não desfaz
   });
 });

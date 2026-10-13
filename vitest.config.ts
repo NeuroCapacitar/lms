@@ -27,7 +27,13 @@ export default defineConfig({
             wrangler: { configPath: './dist/hub/wrangler.json' },
             // Segredo só de teste: o `.env` de desenvolvimento não existe no CI.
             miniflare: {
-              bindings: { BETTER_AUTH_SECRET: 'segredo-de-teste-do-worker-0123456789abcdef' },
+              bindings: {
+                BETTER_AUTH_SECRET: 'segredo-de-teste-do-worker-0123456789abcdef',
+                // Segredos só de teste do webhook do Resend (M4-07).
+                RESEND_WEBHOOK_SECRET:
+                  'whsec_c2VncmVkby1kZS13ZWJob29rLXNvLWRlLXRlc3RlLTAxMjM0NTY3ODk=',
+                EMAIL_HASH_KEY: 'chave-de-hmac-so-de-teste-0123456789abcdef',
+              },
             },
           }),
         ],

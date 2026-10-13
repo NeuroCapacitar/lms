@@ -2,7 +2,7 @@ import type { Database } from '../../db/client';
 import { RETENTION_DAYS, isIntentKind } from '../../features/async/intents';
 import type { Alert } from './alerts';
 import { isQueuePaused } from './flags';
-import { INBOX_HANDLERS, processInbox, type InboxHandlers } from './inbox-processor';
+import { processInbox, type InboxHandlers } from './inbox-processor';
 import { hasClaimableInbox, purgeInbox, type InboxProvider } from './inbox-store';
 import { acquireJob, finishJob, type JobResult } from './job-store';
 import { deadLetterExhausted, hasPurgeableRows } from './lease';
@@ -62,7 +62,7 @@ export const republishJob: CronJob = {
   },
 };
 
-export function inboxJob(handlers: InboxHandlers = INBOX_HANDLERS): CronJob {
+export function inboxJob(handlers: InboxHandlers): CronJob {
   const providers = Object.keys(handlers) as InboxProvider[];
   return {
     name: 'inbox.process',
@@ -89,7 +89,10 @@ export const purgeJob: CronJob = {
   },
 };
 
-export const CRON_JOBS: readonly CronJob[] = [republishJob, inboxJob(), purgeJob];
+/** Os jobs do Cron, na ordem. M5-07 e M6-04 registram os seus aqui; `handlers` são os dos eventos da inbox. */
+export function createCronJobs(handlers: InboxHandlers): readonly CronJob[] {
+  return [republishJob, inboxJob(handlers), purgeJob];
+}
 
 export interface CycleSummary {
   ran: number;
@@ -104,7 +107,7 @@ export interface CycleSummary {
  */
 export async function runCycle(
   context: JobContext,
-  jobs: readonly CronJob[] = CRON_JOBS,
+  jobs: readonly CronJob[],
 ): Promise<CycleSummary> {
   const summary: CycleSummary = { ran: 0, skipped: 0, failed: 0 };
   for (const job of jobs) {
