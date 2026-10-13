@@ -32,6 +32,7 @@ import {
 } from './catalog-store';
 import {
   UnknownVideoAssetError,
+  VideoProviderNotVerifiedError,
   CurriculumCourseNotFoundError,
   CurriculumInvalidError,
   DraftConflictError,
@@ -55,6 +56,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function domainError(c: CatalogContext, error: unknown): Response {
   if (error instanceof UnknownVideoAssetError) {
     return c.json({ error: { code: 'video_asset_not_found' } }, 400);
+  }
+  if (error instanceof VideoProviderNotVerifiedError) {
+    return c.json({ error: { code: 'video_provider_not_verified' } }, 400);
   }
   if (error instanceof SlugTakenError) return c.json({ error: { code: 'slug_taken' } }, 409);
   if (error instanceof SlugLockedError) return c.json({ error: { code: 'slug_locked' } }, 409);

@@ -5,7 +5,12 @@ import * as schema from '../../src/db/schema.ts';
 import { grantRole } from '../../src/server/auth/access-store.ts';
 import { createFakeEmailSender } from '../../src/server/email/fake.ts';
 import { openSecret, parseKeyring } from '../../src/server/security/secret-box.ts';
-import { readConnectionSecret } from '../../src/server/video/connection-store.ts';
+import {
+  ProviderNotVerifiedError,
+  createConnection,
+  readConnectionSecret,
+  setConnectionStatus,
+} from '../../src/server/video/connection-store.ts';
 import { apiApp } from '../helpers/api-app.ts';
 import { createTestAuth } from '../helpers/auth.ts';
 import { createTestSchema, type TestSchema } from '../helpers/pg-schema.ts';
@@ -506,5 +511,88 @@ describe('rotação e assets', () => {
         sql`update video_provider_connection set key_version = 0 where id = ${connection.id}`,
       ),
     ).rejects.toThrow();
+  });
+});
+
+describe('trava de ativação dos providers (M5-03)', () => {
+  it('GET /video/providers: só o Admin; em Dev todos selecionáveis e NENHUM verificado', async () => {
+    expect((await call('GET', '/video/providers', undefined)).status).toBe(401);
+    const support = await newPerson({ role: 'support' });
+    expect((await call('GET', '/video/providers', support.headers)).status).toBe(403);
+    const admin = await newPerson({ role: 'admin' });
+    const response = await call('GET', '/video/providers', admin.headers);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    const body = await json(response);
+    expect(body.environment).toBe('development');
+    expect(body.providers).toHaveLength(6);
+    expect(body.providers.every((item: any) => item.selectable && !item.verified)).toBe(true);
+  });
+
+  it('em Production, cadastrar conexão de provider NÃO verificado é recusado e nada é gravado', async () => {
+    const admin = await newPerson({ role: 'admin', reauth: true });
+    const keyring = await parseKeyring(KEYS_V1);
+    await expect(
+      createConnection(tools.db, keyring, {
+        provider: 'panda',
+        label: 'Panda',
+        secret: PROVIDER_TOKEN,
+        actorId: admin.id,
+        environment: 'production',
+      }),
+    ).rejects.toBeInstanceOf(ProviderNotVerifiedError);
+    // ambiente desconhecido também é Production
+    await expect(
+      createConnection(tools.db, keyring, {
+        provider: 'youtube',
+        label: 'YT',
+        actorId: admin.id,
+        environment: 'preview',
+      }),
+    ).rejects.toBeInstanceOf(ProviderNotVerifiedError);
+    expect(await tools.db.select().from(schema.videoProviderConnection)).toHaveLength(0);
+    const staging = await createConnection(tools.db, keyring, {
+      provider: 'panda',
+      label: 'Panda',
+      secret: PROVIDER_TOKEN,
+      actorId: admin.id,
+      environment: 'staging',
+    });
+    expect(staging.provider).toBe('panda');
+  });
+
+  it('em Production, reativar conexão de provider não verificado é recusado; desativar sempre pode', async () => {
+    const admin = await newPerson({ role: 'admin', reauth: true });
+    const connection = await createPanda(admin);
+    const disabled = await setConnectionStatus(tools.db, {
+      id: connection.id,
+      status: 'disabled',
+      actorId: admin.id,
+      environment: 'production',
+    });
+    expect(disabled.status).toBe('disabled');
+    await expect(
+      setConnectionStatus(tools.db, {
+        id: connection.id,
+        status: 'active',
+        actorId: admin.id,
+        environment: 'production',
+      }),
+    ).rejects.toBeInstanceOf(ProviderNotVerifiedError);
+    const [row] = await tools.db
+      .select()
+      .from(schema.videoProviderConnection)
+      .where(eq(schema.videoProviderConnection.id, connection.id));
+    expect(row!.status).toBe('disabled');
+    expect(
+      (
+        await setConnectionStatus(tools.db, {
+          id: connection.id,
+          status: 'active',
+          actorId: admin.id,
+          environment: 'staging',
+        })
+      ).status,
+    ).toBe('active');
   });
 });

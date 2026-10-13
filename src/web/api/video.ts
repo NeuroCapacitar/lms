@@ -1,4 +1,5 @@
 import type { VideoConnectionDto, VideoProvider } from '../../features/video/providers';
+import type { ProviderAvailabilityDto } from '../../features/video/verification';
 import { postAction, sendAction } from './action';
 import { getJson } from './staff';
 
@@ -24,4 +25,10 @@ export const rekeyVideoSecrets = async () =>
   await postAction<{ rekeyed: number; alreadyCurrent: number; failed: number }>(
     '/api/staff/video/rekey',
     {},
+  );
+
+/** Quais providers este ambiente oferece (M5-03): Production só os verificados; Dev e Staging, todos. */
+export const fetchVideoProviders = async () =>
+  await getJson<{ environment: string; providers: ProviderAvailabilityDto[] }>(
+    '/api/staff/video/providers',
   );

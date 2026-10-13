@@ -14,6 +14,7 @@ import { ForbiddenError } from '../api/staff';
 import {
   createVideoConnection,
   fetchVideoConnections,
+  fetchVideoProviders,
   rekeyVideoSecrets,
   rotateVideoSecret,
   setVideoConnectionEnabled,
@@ -106,10 +107,16 @@ function VideoConnections() {
     queryFn: fetchVideoConnections,
     retry: false,
   });
+  // Quais providers o ambiente oferece (M5-03). Se a consulta falhar, mostra todos: o servidor é quem trava.
+  const availability = useQuery({
+    queryKey: ['video-providers'],
+    queryFn: fetchVideoProviders,
+    retry: false,
+  });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | undefined>();
   const [needsReauth, setNeedsReauth] = useState<string | undefined>();
-  const [provider, setProvider] = useState<VideoProvider>('panda');
+  const [chosenProvider, setProvider] = useState<VideoProvider>('panda');
   const [label, setLabel] = useState('');
   const [secret, setSecret] = useState('');
 
@@ -195,6 +202,12 @@ function VideoConnections() {
     );
   }
 
+  const known = new Map((availability.data?.providers ?? []).map((item) => [item.provider, item]));
+  const options = VIDEO_PROVIDERS.filter((value) => known.get(value)?.selectable ?? true);
+  const provider = options.includes(chosenProvider)
+    ? chosenProvider
+    : (options[0] ?? chosenProvider);
+  const unverified = (value: VideoProvider) => known.get(value)?.verified === false;
   const needsSecret = secretRequired(provider);
 
   return (
@@ -319,13 +332,25 @@ function VideoConnections() {
               onChange={(event) => setProvider(event.target.value as VideoProvider)}
               className="min-h-11 rounded-lg border border-[var(--border-control)] bg-[var(--surface)] px-3"
             >
-              {VIDEO_PROVIDERS.map((value) => (
+              {options.map((value) => (
                 <option key={value} value={value}>
                   {VIDEO_PROVIDER_LABELS[value]}
+                  {unverified(value) ? ' (não verificado)' : ''}
                 </option>
               ))}
             </select>
           </label>
+          {options.length === 0 ? (
+            <p role="alert" className="font-medium text-[var(--text-danger)]">
+              Nenhum provedor foi ativado neste ambiente: cada um só é liberado depois do teste com
+              conta real.
+            </p>
+          ) : options.some(unverified) ? (
+            <p className="text-sm text-[var(--text-muted)]">
+              Provedores "não verificados" ainda não passaram no teste com conta real: use só para
+              testar. Em produção só aparecem os verificados.
+            </p>
+          ) : null}
           <TextField
             label="Nome da conta"
             name="label"
@@ -347,7 +372,7 @@ function VideoConnections() {
             }
           />
           <div>
-            <Button type="submit" disabled={busy || label.trim() === ''}>
+            <Button type="submit" disabled={busy || options.length === 0 || label.trim() === ''}>
               Cadastrar conexão
             </Button>
           </div>

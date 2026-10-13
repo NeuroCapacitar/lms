@@ -42,7 +42,7 @@
 
 ### M5-03 — Suíte de contrato por adapter e trava de ativação
 
-**Dependências:** M5-02 · **Estado:** `not_started`
+**Dependências:** M5-02 · **Estado:** `implemented` (2026-10-13; evidência em `docs/implementation/STATUS.md`; nenhum provider verificado, a suíte roda hoje só para o adapter falso e adapters de referência)
 
 **Objetivo:** garantir que nenhum adapter chegue à Staff/aluno sem prova com conta real.
 **Passos:**
