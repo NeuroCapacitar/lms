@@ -169,6 +169,13 @@
       "when": 1791923905541,
       "tag": "0023_quiz_lessons_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791925758069,
+      "tag": "0024_discussions",
+      "breakpoints": true
     }
   ]
 }

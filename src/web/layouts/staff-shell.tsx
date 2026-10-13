@@ -11,7 +11,13 @@ import { RequireTerms } from '../components/require-terms';
 import { ThemeToggle } from '../components/theme-toggle';
 
 interface NavItem {
-  to: '/staff' | '/staff/cursos' | '/staff/operacao' | '/staff/videos' | '/staff/equipe';
+  to:
+    | '/staff'
+    | '/staff/cursos'
+    | '/staff/operacao'
+    | '/staff/discussoes'
+    | '/staff/videos'
+    | '/staff/equipe';
   label: string;
   /** Capability que mostra o item. É só conveniência: o servidor protege cada rota. */
   needs: Capability;
@@ -21,6 +27,7 @@ const NAV: NavItem[] = [
   { to: '/staff', label: 'Início', needs: 'staff.read' },
   { to: '/staff/cursos', label: 'Cursos', needs: 'staff.read' },
   { to: '/staff/operacao', label: 'Operação', needs: 'staff.read' },
+  { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
   { to: '/staff/videos', label: 'Vídeo', needs: 'integration.credentials' },
   { to: '/staff/equipe', label: 'Equipe', needs: 'staff.manage' },
 ];

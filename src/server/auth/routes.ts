@@ -34,6 +34,7 @@ import { catalogRoutes } from '../catalog/routes';
 import { studentCatalogRoutes } from '../catalog/student-routes';
 import { courseAccessRoutes } from '../access/routes';
 import { enrollmentStaffRoutes } from '../access/staff-routes';
+import { discussionRoutes, discussionStaffRoutes } from '../discussion/routes';
 import { operationsRoutes } from '../ops/routes';
 import { videoRoutes } from '../video/routes';
 import { emailQuotaExhausted } from '../email/quota-store';
@@ -396,6 +397,9 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   // Conexões com providers de vídeo (M5-01): /api/staff/video/* (só Admin; segredo nunca volta).
   routes.route('/staff', videoRoutes({ withDatabase }));
 
+  // Moderação e resposta da equipe nas discussões (M5-05): /api/staff/discussions (grant discussion.moderate).
+  routes.route('/staff', discussionStaffRoutes({ withDatabase }));
+
   // Catálogo do aluno (M2-04): /api/catalog/courses (com sessão e termos aceitos).
   routes.route('/catalog', studentCatalogRoutes({ withDatabase }));
 
@@ -406,6 +410,12 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   routes.route(
     '/',
     learningRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
+  );
+
+  // Discussão por aula (M5-05): /api/lessons/:id/discussion (a mesma aula que abre para a pessoa).
+  routes.route(
+    '/',
+    discussionRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
   );
 
   // Senha e Google (M1-07): login, retorno do Google e "Segurança da conta".

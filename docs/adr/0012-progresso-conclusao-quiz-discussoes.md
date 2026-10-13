@@ -25,6 +25,12 @@ O legado passou por ranges, posição máxima e fronteira linear anti-seek (limi
 - Sem anti-seek, conclusão por 90% é honesta, não antifraude.
 - Reabrir a exceção manual se surgirem chamados "assisti e não concluiu".
 
+## Emenda (2026-10-13): tentativas do quiz depois de aprovado e quando esgotam
+
+- **Decisão (responsável delegou ao agente, "decida o melhor para o projeto"):** a aprovação é DEFINITIVA. Depois de aprovada, a pessoa não faz novas tentativas (409 `quiz_already_passed`): a conclusão da aula é append-only e a nota não entra no certificado, então refazer só criaria histórico sem efeito.
+- **Tentativas esgotadas:** não há "reset por pessoa" nem correção manual (continua valendo "sem exceção de conclusão manual pela Staff"). A Staff reabre aumentando o máximo (ou deixando-o em branco = ilimitadas) no próprio quiz e publicando: o limite é comparado com as tentativas já feitas, então vale na hora e para todas as pessoas. O padrão do produto continua sendo ilimitadas, então o caso é raro.
+- **Quando reabrir esta decisão:** se surgirem pedidos de "quero melhorar minha nota" ou o certificado passar a exibir nota. Aí entram nota máxima por aula e novas tentativas pós-aprovação, numa nova emenda.
+
 ## Como validar
 
 - spike M0-13 (player JMVStream real: `ended`, duração, restrição de domínio) e contrato dos adapters.

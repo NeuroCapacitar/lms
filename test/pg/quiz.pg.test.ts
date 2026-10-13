@@ -450,6 +450,18 @@ describe('tentativas', () => {
     expect(view.lesson.quiz).toMatchObject({ attemptsLeft: 0, canAttempt: false });
   });
 
+  it('esgotadas: a Staff reabre aumentando o máximo (vale na hora, a numeração continua); em branco = ilimitadas', async () => {
+    const { courseId, offerId, quizLesson } = await quizCourse(makeQuiz({ maxAttempts: 1 }));
+    const student = await enrolled(courseId, offerId);
+    expect((await submit(student.headers, quizLesson, WRONG)).status).toBe(201);
+    expect((await submit(student.headers, quizLesson, RIGHT)).status).toBe(409);
+    await setQuiz(quizLesson, makeQuiz({ maxAttempts: 2 }));
+    const view = await json(await call('GET', `/lessons/${quizLesson}`, student.headers));
+    expect(view.lesson.quiz).toMatchObject({ attemptsLeft: 1, canAttempt: true });
+    const second = await json(await submit(student.headers, quizLesson, RIGHT));
+    expect(second.attempt).toMatchObject({ number: 2, passed: true });
+  });
+
   it('ilimitadas por padrão: muitas tentativas seguidas numeram 1..N', async () => {
     const { courseId, offerId, quizLesson } = await quizCourse();
     const student = await enrolled(courseId, offerId);

@@ -70,7 +70,7 @@
 
 ### M5-05 — Discussões mínimas por aula
 
-**Dependências:** M2-02, M1-03 · **Estado:** `not_started`
+**Dependências:** M2-02, M1-03 · **Estado:** `implemented` (2026-10-13; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** o aluno pergunta na aula; a Staff responde e modera; assíncrono, sem tempo real.
 **Passos:**

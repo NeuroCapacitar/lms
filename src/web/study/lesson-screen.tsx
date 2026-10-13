@@ -8,6 +8,7 @@ import { RichTextView } from '../components/rich-text/rich-text-view';
 import { StudyNotice, lockMessage } from '../components/study-notice';
 import { Button } from '../components/ui/button';
 import { VideoPlayer } from '../video/video-player';
+import { DiscussionPanel } from './discussion-panel';
 import { QuizPanel } from './quiz-panel';
 import { LessonLink, OutlineLink, PreviewBanner, type StudyMode } from './study-links';
 
@@ -238,6 +239,7 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
           ) : null}
         </div>
       )}
+      {preview ? null : <DiscussionPanel key={lessonId} lessonId={lessonId} />}
       <nav aria-label="Navegação entre aulas" className="flex flex-wrap justify-between gap-4">
         {previous ? (
           <LessonLink mode={mode} lessonId={previous.id}>
