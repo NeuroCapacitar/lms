@@ -142,3 +142,15 @@ export const createOrderInputSchema = z.strictObject({
   offerId: z.uuid(),
   attemptId: z.uuid(),
 });
+
+/** Quantas leituras da página de retorno cada pedido pode provocar (cada uma gasta cota do Asaas). */
+export const MAX_ORDER_CHECKS = 10;
+
+/** O pedido como a pessoa dona o vê: estado resumido, nada interno. */
+export interface OrderDto {
+  id: string;
+  status: OrderStatus;
+  courseTitle: string;
+  priceCents: number;
+  expiresAt: string;
+}

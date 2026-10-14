@@ -58,7 +58,7 @@
 
 ### M6-07 — Matriz de liberação e Payment autoritativo
 
-**Dependências:** M6-03, M3-01, M4-04 · **Estado:** `not_started`
+**Dependências:** M6-03, M3-01, M4-04 · **Estado:** `implemented` (2026-10-14; só com o dublê do Asaas, o sandbox real NÃO foi exercitado; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** um único caso de uso idempotente, usado pelo webhook, pela página de retorno e pelo reconciliador, que lê o Payment **na API do Asaas** e decide o que fazer.
 **Passos:**

@@ -5,8 +5,14 @@ import { checkoutHostsFor } from '../../features/commerce/checkout';
 import { createOrderInputSchema } from '../../features/commerce/commerce';
 import type { AuthVars } from '../auth/types';
 import { APP_ENV } from '../release';
-import { createAsaasCheckoutProvider } from './asaas-client';
 import type { CheckoutProvider } from './checkout-provider';
+import { checkoutProviderFor, paymentReaderFor } from './factory';
+import { getOrderForUser, checkOrderForUser } from './order-view';
+import {
+  PaymentReadPermanentError,
+  PaymentReadTransientError,
+  type PaymentReader,
+} from './payment-reader';
 import {
   AccountSuspendedError,
   AlreadyHasAccessError,
@@ -25,18 +31,6 @@ import {
 } from './order-store';
 
 type CommerceContext = Context<{ Bindings: Env; Variables: AuthVars }>;
-
-const DEFAULT_ASAAS_BASE_URL = 'https://api-sandbox.asaas.com';
-
-/** O provider do ambiente: sem `ASAAS_API_KEY` não há compra (503), nunca "meio configurada". */
-function checkoutProviderFor(env: Env): CheckoutProvider | undefined {
-  const apiKey = env.ASAAS_API_KEY?.trim();
-  if (!apiKey) return undefined;
-  return createAsaasCheckoutProvider({
-    apiKey,
-    baseUrl: env.ASAAS_API_BASE_URL?.trim() || DEFAULT_ASAAS_BASE_URL,
-  });
-}
 
 function failure(c: CommerceContext, error: unknown): Response {
   const conflict = (code: string) => c.json({ error: { code } }, 409);
@@ -69,6 +63,8 @@ function failure(c: CommerceContext, error: unknown): Response {
 export function commerceRoutes(deps: {
   withDatabase: MiddlewareHandler<{ Bindings: Env; Variables: AuthVars }>;
   provider?: (c: CommerceContext) => CheckoutProvider | undefined;
+  /** Leitor de pagamentos (dublê nos testes; em produção vem de `ASAAS_API_KEY`). */
+  reader?: (c: CommerceContext) => PaymentReader | undefined;
   clock?: () => Date;
 }) {
   const routes = new Hono<{ Bindings: Env; Variables: AuthVars }>();
@@ -98,6 +94,50 @@ export function commerceRoutes(deps: {
       });
     } catch (error) {
       return failure(c, error);
+    }
+  });
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  /** O estado do pedido da PRÓPRIA pessoa (a de outra pessoa é indistinguível de uma inexistente: 404). */
+  routes.get('/me/orders/:id', deps.withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const id = c.req.param('id');
+    if (!UUID.test(id)) return c.json({ error: { code: 'not_found' } }, 404);
+    c.header('Cache-Control', 'no-store');
+    const order = await getOrderForUser(c.var.db, session.user.id, id);
+    return order ? c.json({ order }) : c.json({ error: { code: 'not_found' } }, 404);
+  });
+
+  /**
+   * A página de retorno pede a conferência do pedido: o MESMO caso de uso do webhook lê o pagamento na API do Asaas e
+   * decide. O corpo não traz nada (a pessoa não informa resultado); no máximo 10 conferências por pedido.
+   */
+  routes.post('/me/orders/:id/check', deps.withDatabase, async (c) => {
+    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
+    const id = c.req.param('id');
+    if (!UUID.test(id)) return c.json({ error: { code: 'not_found' } }, 404);
+    const reader = (deps.reader ?? ((context) => paymentReaderFor(context.env)))(c);
+    if (!reader) return c.json({ error: { code: 'checkout_not_configured' } }, 503);
+    c.header('Cache-Control', 'no-store');
+    try {
+      const checked = await checkOrderForUser(
+        c.var.db,
+        { reader, ...(deps.clock ? { now: deps.clock } : {}) },
+        { userId: session.user.id, orderId: id },
+      );
+      if (!checked) return c.json({ error: { code: 'not_found' } }, 404);
+      return c.json({ order: checked.order, limited: checked.limited });
+    } catch (error) {
+      if (error instanceof PaymentReadTransientError) {
+        return c.json({ error: { code: 'payment_provider_unavailable' } }, 503);
+      }
+      if (error instanceof PaymentReadPermanentError) {
+        return c.json({ error: { code: 'payment_provider_error' } }, 502);
+      }
+      throw error;
     }
   });
 
