@@ -1,7 +1,8 @@
 import { eq, sql } from 'drizzle-orm';
 
 import type { Database } from '../../db/client';
-import { emailMessage, user } from '../../db/schema';
+import { emailMessage, supportRequest, user } from '../../db/schema';
+import { isSafeReplyTo } from '../../features/help/help';
 import { queuedContract } from '../../features/email/templates';
 import {
   DeferError,
@@ -138,6 +139,28 @@ export function createEmailHandler(deps: EmailHandlerDeps) {
       throw new PermanentError('idempotency_window_expired');
     }
 
+    // `support-request`: o Reply-To é a conta de QUEM PEDIU (lido agora, nunca guardado no e-mail). Endereço
+    // inseguro (quebra de linha, vários destinatários) nunca vai ao cabeçalho: falha PERMANENTE.
+    let replyTo = contract.replyTo;
+    if (message.template === 'support-request') {
+      const [requester] = await db
+        .select({ email: user.email })
+        .from(supportRequest)
+        .innerJoin(user, eq(user.id, supportRequest.userId))
+        .where(
+          eq(supportRequest.id, String((variables.data as Record<string, string>).REQUEST_ID)),
+        );
+      if (!requester) {
+        await setState(db, message.id, 'failed', { errorCode: 'support_request_missing' });
+        throw new PermanentError('support_request_missing');
+      }
+      if (!isSafeReplyTo(requester.email)) {
+        await setState(db, message.id, 'failed', { errorCode: 'reply_to_invalid' });
+        throw new PermanentError('reply_to_invalid');
+      }
+      replyTo = requester.email;
+    }
+
     let mailer: Mailer;
     try {
       mailer = deps.getMailer();
@@ -187,7 +210,7 @@ export function createEmailHandler(deps: EmailHandlerDeps) {
       },
       idempotencyKey,
       from: contract.from ?? deps.from,
-      replyTo: contract.replyTo,
+      replyTo,
       correlationId: context.correlationId,
     });
 

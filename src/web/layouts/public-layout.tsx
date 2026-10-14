@@ -21,6 +21,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           >
             <Link to="/">Início</Link>
             <Link to="/cursos">Cursos</Link>
+            <Link to="/ajuda">Ajuda</Link>
             <Link to="/sobre">Sobre</Link>
             <Link to="/base-visual">Base visual</Link>
             <Link to="/entrar">Entrar</Link>

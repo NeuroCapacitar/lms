@@ -142,7 +142,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await main.db.execute(
-    sql`truncate table email_message, email_send_ledger, outbox_message, inbox_event, system_flag, job_run`,
+    sql`truncate table support_request, email_message, email_send_ledger, outbox_message, inbox_event, system_flag, job_run`,
   );
   await main.db.delete(schema.user);
 });
@@ -274,12 +274,22 @@ describe('envio pelo handler', () => {
 
   it('o modelo de suporte vai para a caixa de suporte; sem ela configurada, falha sem enviar', async () => {
     const mailer = new ScriptedMailer();
+    // M5-14: o pedido existe (o Reply-To sai da conta de quem pediu, lido no envio).
+    const requesterId = await createUser('pedinte@example.com', 'Pedinte');
+    const [request] = await main.db
+      .insert(schema.supportRequest)
+      .values({ userId: requesterId, category: 'acesso', message: 'Preciso de ajuda.' })
+      .returning();
     const { emailMessageId } = await queue({
       template: 'support-request',
-      variables: { REQUEST_ID: uuid(), CATEGORY: 'acesso' },
+      variables: { REQUEST_ID: request!.id, CATEGORY: 'acesso' },
     });
     await deliver(emailMessageId, deps(mailer));
-    expect(mailer.calls[0]).toMatchObject({ to: SUPPORT, templateAlias: 'vnext-support-request' });
+    expect(mailer.calls[0]).toMatchObject({
+      to: SUPPORT,
+      templateAlias: 'vnext-support-request',
+      replyTo: 'pedinte@example.com',
+    });
     expect(mailer.calls[0]!.variables.NAME).toBeUndefined();
 
     const other = await queue({

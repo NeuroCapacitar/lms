@@ -10,6 +10,7 @@ import {
 import { safeReturnTo } from '../../features/identity/return-to';
 import { rememberReturnTo } from '../return-to';
 import { PasswordSignIn } from '../components/password-sign-in';
+import { SupportAddress } from '../components/support-address';
 import { Turnstile } from '../components/turnstile';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
@@ -161,6 +162,10 @@ function SignIn() {
           </div>
         )}
       </section>
+
+      <div className="mt-8 max-w-md">
+        <SupportAddress prefix="Não consegue entrar? Escreva para" />
+      </div>
     </>
   );
 }
