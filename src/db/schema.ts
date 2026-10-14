@@ -1739,3 +1739,44 @@ export const financialEvent = pgTable(
     ),
   ],
 );
+
+/**
+ * Revisão financeira (M6-07; resolução e telas no M6-04): valor, identidade ou estado divergente, correlação incerta,
+ * status desconhecido ou resultado ambíguo. Bloqueia a concessão insegura (o pedido vai a `review`); a REVOGAÇÃO por
+ * reembolso ou chargeback nunca espera revisão. No máximo UMA revisão ABERTA por (tipo, pagamento do provider).
+ */
+export const financialReview = pgTable(
+  'financial_review',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid().references(() => purchaseOrder.id, { onDelete: 'restrict' }),
+    providerPaymentId: text(),
+    type: text().notNull(),
+    state: text().notNull().default('open'),
+    reason: text().notNull(),
+    details: jsonb().notNull().default({}),
+    resolution: text(),
+    resolvedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    resolvedAt: timestamp({ withTimezone: true }),
+    ...stamps,
+  },
+  (table) => [
+    uniqueIndex('financial_review_open_idx')
+      .on(
+        table.type,
+        sql`coalesce(${table.providerPaymentId}, '')`,
+        sql`coalesce(${table.orderId}::text, '')`,
+      )
+      .where(sql`${table.state} = 'open'`),
+    index('financial_review_state_idx').on(table.state, table.createdAt),
+    check(
+      'financial_review_type_check',
+      sql`${table.type} in ('amount_mismatch', 'terminal_conflict', 'event_anomaly', 'partial_refund', 'uncertain_result', 'unknown_checkout', 'duplicate_purchase')`,
+    ),
+    check('financial_review_state_check', sql`${table.state} in ('open', 'resolved')`),
+    check(
+      'financial_review_resolved_check',
+      sql`(${table.state} = 'open' and ${table.resolvedAt} is null) or (${table.state} = 'resolved' and ${table.resolvedAt} is not null and ${table.resolution} is not null)`,
+    ),
+  ],
+);

@@ -164,37 +164,42 @@ export function grantEntitlement(db: Database, input: GrantInput): Promise<Grant
  * Revoga um direito (definitivo; o gatilho impede desfazer) e recalcula a matrícula na mesma
  * transação. Revogar de novo o que já está revogado é um no-op (`revoked: false`). Não apaga nada.
  */
+export async function revokeEntitlementIn(
+  tx: Tx,
+  input: { entitlementId: string; reason: string; actorId: string | null; now: Date },
+): Promise<{ revoked: boolean }> {
+  const [row] = await tx
+    .select({ userId: entitlement.userId, courseId: entitlement.courseId })
+    .from(entitlement)
+    .where(eq(entitlement.id, input.entitlementId));
+  if (!row) throw new EntitlementNotFoundError();
+  await tx
+    .select({ userId: enrollment.userId })
+    .from(enrollment)
+    .where(and(eq(enrollment.userId, row.userId), eq(enrollment.courseId, row.courseId)))
+    .for('update');
+  const updated = await tx
+    .update(entitlement)
+    .set({ revokedAt: input.now, revokedReason: input.reason, revokedBy: input.actorId })
+    .where(and(eq(entitlement.id, input.entitlementId), isNull(entitlement.revokedAt)))
+    .returning({ id: entitlement.id });
+  if (updated.length === 0) return { revoked: false };
+  await recompute(tx, row.userId, row.courseId);
+  await auditEvent(tx, {
+    actorId: input.actorId,
+    action: 'entitlement.revoke',
+    targetType: 'entitlement',
+    targetId: input.entitlementId,
+    details: { userId: row.userId, courseId: row.courseId, reason: input.reason },
+  });
+  return { revoked: true };
+}
+
 export async function revokeEntitlement(
   db: Database,
   input: { entitlementId: string; reason: string; actorId: string | null; now: Date },
 ): Promise<{ revoked: boolean }> {
-  return db.transaction(async (tx) => {
-    const [row] = await tx
-      .select({ userId: entitlement.userId, courseId: entitlement.courseId })
-      .from(entitlement)
-      .where(eq(entitlement.id, input.entitlementId));
-    if (!row) throw new EntitlementNotFoundError();
-    await tx
-      .select({ userId: enrollment.userId })
-      .from(enrollment)
-      .where(and(eq(enrollment.userId, row.userId), eq(enrollment.courseId, row.courseId)))
-      .for('update');
-    const updated = await tx
-      .update(entitlement)
-      .set({ revokedAt: input.now, revokedReason: input.reason, revokedBy: input.actorId })
-      .where(and(eq(entitlement.id, input.entitlementId), isNull(entitlement.revokedAt)))
-      .returning({ id: entitlement.id });
-    if (updated.length === 0) return { revoked: false };
-    await recompute(tx, row.userId, row.courseId);
-    await auditEvent(tx, {
-      actorId: input.actorId,
-      action: 'entitlement.revoke',
-      targetType: 'entitlement',
-      targetId: input.entitlementId,
-      details: { userId: row.userId, courseId: row.courseId, reason: input.reason },
-    });
-    return { revoked: true };
-  });
+  return db.transaction((tx) => revokeEntitlementIn(tx, input));
 }
 
 /**

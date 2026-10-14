@@ -1,11 +1,25 @@
 import { openDatabase, type OpenDatabase } from '../../db/client';
 import { logAlert, type Alert } from './alerts';
+import { createAsaasEventHandler } from '../commerce/asaas-events';
+import { paymentReaderFor } from '../commerce/factory';
 import { resendEventHandler } from '../email/resend-events';
 import { createCronJobs, runCycle, type CronJob } from './jobs';
 import { recordCycle } from './job-store';
 
 /** Teto para o Neon acordar: passou disso, o ciclo termina com erro em vez de pendurar. */
 const CRON_CONNECT_TIMEOUT_MS = 20_000;
+
+/**
+ * Handlers da inbox deste ambiente. O do Asaas só existe com a chave configurada: sem ela os eventos ficam
+ * `pending` (sem gastar tentativa) até a configuração chegar.
+ */
+function inboxHandlersFor(env: Env) {
+  const reader = paymentReaderFor(env);
+  return {
+    resend: resendEventHandler,
+    ...(reader ? { asaas: createAsaasEventHandler({ reader }) } : {}),
+  };
+}
 
 export interface ScheduledDeps {
   openDb?: () => Promise<OpenDatabase>;
@@ -40,7 +54,7 @@ export async function handleScheduled(env: Env, deps: ScheduledDeps = {}): Promi
   try {
     const summary = await runCycle(
       { db: opened.db, env, alert, owner: `cron:${crypto.randomUUID()}` },
-      deps.jobs ?? createCronJobs({ resend: resendEventHandler }),
+      deps.jobs ?? createCronJobs(inboxHandlersFor(env)),
     );
     await recordCycle(opened.db, {
       durationMs: Date.now() - startedAt,

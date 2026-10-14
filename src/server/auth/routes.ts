@@ -38,6 +38,7 @@ import { discussionRoutes, discussionStaffRoutes } from '../discussion/routes';
 import { interestRoutes, interestStaffRoutes } from '../interest/routes';
 import { bannerRoutes, bannerStaffRoutes } from '../banner/routes';
 import type { CheckoutProvider } from '../commerce/checkout-provider';
+import type { PaymentReader } from '../commerce/payment-reader';
 import { commerceRoutes } from '../commerce/routes';
 import { helpRoutes, helpStaffRoutes } from '../help/routes';
 import { createR2Storage } from '../media/r2-storage';
@@ -82,6 +83,8 @@ export interface AuthRouteOverrides {
   mediaStorage?: ObjectStorage;
   /** Provider de checkout nos testes (dublê do Asaas); em produção vem de `ASAAS_API_KEY` (`undefined` = compra desligada). */
   checkoutProvider?: CheckoutProvider;
+  /** Leitor de pagamentos nos testes (dublê do Asaas); em produção vem de `ASAAS_API_KEY`. */
+  paymentReader?: PaymentReader;
 }
 
 type Vars = AuthVars;
@@ -456,6 +459,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     commerceRoutes({
       withDatabase,
       ...(overrides.checkoutProvider ? { provider: () => overrides.checkoutProvider } : {}),
+      ...(overrides.paymentReader ? { reader: () => overrides.paymentReader } : {}),
       ...(overrides.clock ? { clock: overrides.clock } : {}),
     }),
   );

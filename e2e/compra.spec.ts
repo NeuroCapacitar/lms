@@ -168,44 +168,168 @@ test.describe('compra (M6-02)', () => {
   }
 });
 
-test.describe('retorno do checkout (M6-02)', () => {
-  let apiCalls: string[];
-  test.beforeEach(async ({ page }) => {
-    apiCalls = [];
+test.describe('retorno do checkout (M6-02 e M6-07)', () => {
+  async function stubReturn(
+    page: Page,
+    options: { answers?: { status: number; json: unknown }[] } = {},
+  ) {
     await page.route('**/api/me/legal', (route) =>
       route.fulfill({ json: { accepted: true, documents: [] } }),
     );
-    page.on('request', (request) => {
-      const path = new URL(request.url()).pathname;
-      if (path.startsWith('/api/') && path !== '/api/me/legal') apiCalls.push(path);
+    const checks: string[] = [];
+    const answers = [...(options.answers ?? [])];
+    await page.route('**/api/me/orders/*/check', (route) => {
+      checks.push(new URL(route.request().url()).pathname);
+      const answer = answers.length > 1 ? answers.shift()! : answers[0];
+      return route.fulfill(
+        answer
+          ? { status: answer.status, json: answer.json }
+          : { status: 200, json: { order: order('pending'), limited: false } },
+      );
     });
+    return checks;
+  }
+  const order = (status: string) => ({
+    id: ORDER_ID,
+    status,
+    courseTitle: 'Curso pago',
+    priceCents: 19_700,
+    expiresAt: '2026-10-14T13:00:00.000Z',
+  });
+  const url = (resultado: string, pedido: string | null = ORDER_ID) =>
+    `/compra/retorno?${pedido ? `pedido=${pedido}&` : ''}resultado=${resultado}`;
+
+  test('sucesso: pede UMA conferência ao servidor; pago mostra confirmado e leva aos cursos', async ({
+    page,
+  }) => {
+    const checks = await stubReturn(page, {
+      answers: [{ status: 200, json: { order: order('paid'), limited: false } }],
+    });
+    await page.goto(url('sucesso'));
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Pagamento confirmado' }),
+    ).toBeVisible();
+    await expect(page.getByText('Seu acesso ao curso está liberado.')).toBeVisible();
+    expect(checks).toEqual([`/api/me/orders/${ORDER_ID}/check`]);
+    await expect(page.getByRole('button', { name: 'Conferir de novo' })).toHaveCount(0);
+    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+    expect(results.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  test('pendente: "estamos confirmando" e "Conferir de novo" faz outra conferência; depois confirma', async ({
+    page,
+  }) => {
+    const checks = await stubReturn(page, {
+      answers: [
+        { status: 200, json: { order: order('pending'), limited: false } },
+        { status: 200, json: { order: order('paid'), limited: false } },
+      ],
+    });
+    await page.goto(url('sucesso'));
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Estamos confirmando o seu pagamento' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Conferir de novo' }).click();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Pagamento confirmado' }),
+    ).toBeVisible();
+    expect(checks).toHaveLength(2);
+  });
+
+  test('o limite de conferências esconde o botão e explica', async ({ page }) => {
+    await stubReturn(page, {
+      answers: [{ status: 200, json: { order: order('pending'), limited: true } }],
+    });
+    await page.goto(url('sucesso'));
+    await expect(page.getByText('Já conferimos várias vezes.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Conferir de novo' })).toHaveCount(0);
+  });
+
+  test('em análise, vencido e cancelado: texto próprio, sem falar de acesso liberado', async ({
+    page,
+  }) => {
+    for (const [status, title] of [
+      ['review', 'Seu pedido está em análise'],
+      ['disputed', 'Seu pedido está em análise'],
+      ['expired', 'Este pedido não foi concluído'],
+      ['canceled', 'Este pedido não foi concluído'],
+    ] as const) {
+      const fresh = await page.context().newPage();
+      await stubReturn(fresh, {
+        answers: [{ status: 200, json: { order: order(status), limited: false } }],
+      });
+      await fresh.goto(url('sucesso'));
+      await expect(fresh.getByRole('heading', { level: 1, name: title }), status).toBeVisible();
+      await expect(fresh.getByText(/acesso ao curso está liberado/i)).toHaveCount(0);
+    }
+  });
+
+  test('falha do Asaas (503): avisa que não cancela nada e deixa conferir de novo', async ({
+    page,
+  }) => {
+    await stubReturn(page, {
+      answers: [
+        { status: 503, json: { error: { code: 'payment_provider_unavailable' } } },
+        { status: 200, json: { order: order('paid'), limited: false } },
+      ],
+    });
+    await page.goto(url('sucesso'));
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Ainda não conseguimos confirmar' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Conferir de novo' }).click();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Pagamento confirmado' }),
+    ).toBeVisible();
+  });
+
+  test('pedido de outra pessoa ou inexistente (404) e sem pedido na URL: "Pedido não encontrado"; sem sessão: convite para entrar', async ({
+    page,
+  }) => {
+    await stubReturn(page, { answers: [{ status: 404, json: { error: { code: 'not_found' } } }] });
+    await page.goto(url('sucesso'));
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Pedido não encontrado' }),
+    ).toBeVisible();
+
+    const none = await page.context().newPage();
+    const checks = await stubReturn(none);
+    await none.goto(url('sucesso', null));
+    await expect(
+      none.getByRole('heading', { level: 1, name: 'Pedido não encontrado' }),
+    ).toBeVisible();
+    expect(checks).toHaveLength(0);
+
+    const anonymous = await page.context().newPage();
+    await stubReturn(anonymous, {
+      answers: [{ status: 401, json: { error: { code: 'unauthenticated' } } }],
+    });
+    await anonymous.goto(url('sucesso'));
+    await expect(anonymous.getByRole('link', { name: 'Entrar' })).toBeVisible();
   });
 
   for (const [resultado, title] of [
-    ['sucesso', 'Estamos confirmando o seu pagamento'],
     ['cancelado', 'Pagamento cancelado'],
     ['expirado', 'O pagamento expirou'],
   ] as const) {
-    test(`resultado=${resultado}: só informa e nunca diz que o acesso foi liberado`, async ({
-      page,
-    }) => {
-      await page.goto(`/compra/retorno?pedido=${ORDER_ID}&resultado=${resultado}`);
+    test(`resultado=${resultado}: só informa e NÃO chama a conferência`, async ({ page }) => {
+      const checks = await stubReturn(page);
+      await page.goto(url(resultado));
       await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
-      await expect(page.getByText(/acesso (foi )?liberado\.?$/i)).toHaveCount(0);
+      expect(checks).toHaveLength(0);
       const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
       expect(results.violations.map((v) => v.id)).toEqual([]);
     });
   }
 
-  test('resultado desconhecido cai no texto neutro de confirmação e a página não chama a API de compra', async ({
+  test('resultado desconhecido na URL cai em "sucesso" (e o servidor decide o estado de verdade)', async ({
     page,
   }) => {
-    await page.goto('/compra/retorno?pedido=nao-e-uuid&resultado=pago');
+    const checks = await stubReturn(page);
+    await page.goto(`/compra/retorno?pedido=${ORDER_ID}&resultado=pago`);
     await expect(
       page.getByRole('heading', { level: 1, name: 'Estamos confirmando o seu pagamento' }),
     ).toBeVisible();
-    expect(apiCalls.filter((path) => path.includes('checkout') || path.includes('order'))).toEqual(
-      [],
-    );
+    expect(checks).toHaveLength(1);
   });
 });
