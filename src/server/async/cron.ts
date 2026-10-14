@@ -1,7 +1,7 @@
 import { openDatabase, type OpenDatabase } from '../../db/client';
 import { logAlert, type Alert } from './alerts';
 import { createAsaasEventHandler } from '../commerce/asaas-events';
-import { paymentReaderFor } from '../commerce/factory';
+import { payerEnricherFor, paymentReaderFor } from '../commerce/factory';
 import { resendEventHandler } from '../email/resend-events';
 import { createCronJobs, runCycle, type CronJob } from './jobs';
 import { recordCycle } from './job-store';
@@ -17,7 +17,9 @@ function inboxHandlersFor(env: Env) {
   const reader = paymentReaderFor(env);
   return {
     resend: resendEventHandler,
-    ...(reader ? { asaas: createAsaasEventHandler({ reader }) } : {}),
+    ...(reader
+      ? { asaas: createAsaasEventHandler({ reader, afterGrant: payerEnricherFor(env, reader) }) }
+      : {}),
   };
 }
 
@@ -54,7 +56,11 @@ export async function handleScheduled(env: Env, deps: ScheduledDeps = {}): Promi
   try {
     const summary = await runCycle(
       { db: opened.db, env, alert, owner: `cron:${crypto.randomUUID()}` },
-      deps.jobs ?? createCronJobs(inboxHandlersFor(env), { reader: paymentReaderFor(env) }),
+      deps.jobs ??
+        createCronJobs(inboxHandlersFor(env), {
+          reader: paymentReaderFor(env),
+          masterKey: env.FINANCE_SECRETS_MASTER_KEY,
+        }),
     );
     await recordCycle(opened.db, {
       durationMs: Date.now() - startedAt,

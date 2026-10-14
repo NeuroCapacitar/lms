@@ -1,0 +1,1 @@
+ALTER TABLE "payment" DROP COLUMN "payer_document";

@@ -1,6 +1,7 @@
 import { createAsaasCheckoutProvider } from './asaas-client';
 import type { CheckoutProvider } from './checkout-provider';
 import { createAsaasRefundProvider } from './asaas-refund';
+import { createPayerEnricher } from './payer-store';
 import { createAsaasPaymentReader } from './payment-reader';
 import type { RefundProvider } from './refund-provider';
 import type { PaymentReader } from './payment-reader';
@@ -8,6 +9,7 @@ import type { PaymentReader } from './payment-reader';
 const DEFAULT_ASAAS_BASE_URL = 'https://api-sandbox.asaas.com';
 
 type AsaasEnv = Pick<Env, 'ASAAS_API_KEY' | 'ASAAS_API_BASE_URL'>;
+type PayerEnv = Pick<Env, 'FINANCE_SECRETS_MASTER_KEY'>;
 
 function credentials(env: AsaasEnv): { apiKey: string; baseUrl: string } | undefined {
   const apiKey = env.ASAAS_API_KEY?.trim();
@@ -31,4 +33,9 @@ export function paymentReaderFor(env: AsaasEnv): PaymentReader | undefined {
 export function refundProviderFor(env: AsaasEnv): RefundProvider | undefined {
   const found = credentials(env);
   return found ? createAsaasRefundProvider(found) : undefined;
+}
+
+/** Lê o pagador depois da confirmação (M6-08). Sem `FINANCE_SECRETS_MASTER_KEY` o CPF/CNPJ NÃO é guardado (só o nome). */
+export function payerEnricherFor(env: PayerEnv, reader: PaymentReader) {
+  return createPayerEnricher({ reader, masterKey: env.FINANCE_SECRETS_MASTER_KEY });
 }

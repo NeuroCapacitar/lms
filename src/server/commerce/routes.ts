@@ -6,7 +6,7 @@ import { createOrderInputSchema } from '../../features/commerce/commerce';
 import type { AuthVars } from '../auth/types';
 import { APP_ENV } from '../release';
 import type { CheckoutProvider } from './checkout-provider';
-import { checkoutProviderFor, paymentReaderFor } from './factory';
+import { checkoutProviderFor, payerEnricherFor, paymentReaderFor } from './factory';
 import { getOrderForUser, checkOrderForUser } from './order-view';
 import {
   PaymentReadPermanentError,
@@ -125,7 +125,11 @@ export function commerceRoutes(deps: {
     try {
       const checked = await checkOrderForUser(
         c.var.db,
-        { reader, ...(deps.clock ? { now: deps.clock } : {}) },
+        {
+          reader,
+          afterGrant: payerEnricherFor(c.env, reader),
+          ...(deps.clock ? { now: deps.clock } : {}),
+        },
         { userId: session.user.id, orderId: id },
       );
       if (!checked) return c.json({ error: { code: 'not_found' } }, 404);

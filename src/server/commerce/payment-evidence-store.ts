@@ -59,6 +59,8 @@ export interface ApplyResult {
 interface ApplyDeps {
   reader: PaymentReader;
   now?: () => Date;
+  /** Depois da concessão (fora de transação, melhor esforço): lê o pagador (M6-08). Nunca afeta o acesso. */
+  afterGrant?: (db: Database, read: ProviderPayment) => Promise<void>;
 }
 
 type OrderRowDb = typeof purchaseOrder.$inferSelect;
@@ -153,7 +155,11 @@ export async function applyPaymentEvidence(
   const read = await deps.reader.getPayment(input.paymentId);
   if (!read) return { outcome: 'not_found', orderId: null };
   const now = (deps.now ?? (() => new Date()))();
-  return db.transaction((tx) => applyReadIn(tx, read, { ...input, source, now }));
+  const result = await db.transaction((tx) => applyReadIn(tx, read, { ...input, source, now }));
+  if (deps.afterGrant && (result.outcome === 'granted' || result.outcome === 'already_granted')) {
+    await deps.afterGrant(db, read).catch(() => undefined);
+  }
+  return result;
 }
 
 export async function applyReadIn(

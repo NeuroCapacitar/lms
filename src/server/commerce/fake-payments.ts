@@ -12,6 +12,8 @@ export interface FakePaymentReader extends PaymentReader {
   set(payment: Partial<ProviderPayment> & { id: string }): ProviderPayment;
   /** Consultas feitas: `getPayment` e `listPaymentIds`. */
   readonly reads: string[];
+  /** Pagadores existentes do lado do provider, por id do cliente. */
+  readonly customers: Map<string, { name: string | null; document: string | null }>;
   /** Falha infra programada nas próximas N leituras (rede, 429, 5xx). */
   failNext: number;
   /** O motivo da falha programada (`network`, `http_429`, `http_503`...). */
@@ -23,6 +25,7 @@ export interface FakePaymentReader extends PaymentReader {
 export function createFakePaymentReader(): FakePaymentReader {
   const reader: FakePaymentReader = {
     payments: new Map(),
+    customers: new Map(),
     reads: [],
     failNext: 0,
     failReason: 'network',
@@ -37,6 +40,7 @@ export function createFakePaymentReader(): FakePaymentReader {
         installmentId: null,
         externalReference: null,
         paidAt: null,
+        customerId: null,
         ...reader.payments.get(payment.id),
         ...payment,
       };
@@ -51,6 +55,15 @@ export function createFakePaymentReader(): FakePaymentReader {
         throw new PaymentReadTransientError(reader.failReason);
       }
       const found = reader.payments.get(paymentId);
+      return found ? { ...found } : null;
+    },
+    async getCustomer(customerId) {
+      reader.reads.push(`customer:${customerId}`);
+      if (reader.failNext > 0) {
+        reader.failNext -= 1;
+        throw new PaymentReadTransientError(reader.failReason);
+      }
+      const found = reader.customers.get(customerId);
       return found ? { ...found } : null;
     },
     async listPaymentIds(checkoutSessionId) {

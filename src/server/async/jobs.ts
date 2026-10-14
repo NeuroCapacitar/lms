@@ -8,6 +8,7 @@ import { acquireJob, finishJob, type JobResult } from './job-store';
 import { deadLetterExhausted, hasPurgeableRows } from './lease';
 import { hasRepublishable, listRepublishable, markOutboxDead, purgeOutbox } from './outbox-store';
 import { evaluateAlerts } from '../../features/ops/operations';
+import { createPayerEnricher } from '../commerce/payer-store';
 import { hasReconcileWork, reconcilePending } from '../commerce/reconciler';
 import type { PaymentReader } from '../commerce/payment-reader';
 import { createR2Storage } from '../media/r2-storage';
@@ -144,12 +145,13 @@ const mediaCleanupJob: CronJob = {
  * intermediário, com backoff e teto por execução. 429 do Asaas interrompe o lote SEM erro do job; falha do provider
  * deixa o código `provider_unavailable`. Só existe com o leitor do Asaas configurado.
  */
-function reconcileJob(reader: PaymentReader): CronJob {
+function reconcileJob(reader: PaymentReader, masterKey: string | undefined): CronJob {
+  const afterGrant = createPayerEnricher({ reader, masterKey });
   return {
     name: 'finance.reconcile',
     probe: ({ db }) => hasReconcileWork(db, new Date()),
     async run({ db }) {
-      const result = await reconcilePending(db, { reader, now: new Date() });
+      const result = await reconcilePending(db, { reader, now: new Date(), afterGrant });
       const count = result.orders + result.payments;
       return result.stopped === 'provider_unavailable'
         ? { count, errorCode: 'provider_unavailable' }
@@ -161,12 +163,12 @@ function reconcileJob(reader: PaymentReader): CronJob {
 /** Os jobs do Cron, na ordem. `handlers` são os dos eventos da inbox; o leitor do Asaas liga a reconciliação. */
 export function createCronJobs(
   handlers: InboxHandlers,
-  options: { reader?: PaymentReader | undefined } = {},
+  options: { reader?: PaymentReader | undefined; masterKey?: string | undefined } = {},
 ): readonly CronJob[] {
   return [
     republishJob,
     inboxJob(handlers),
-    ...(options.reader ? [reconcileJob(options.reader)] : []),
+    ...(options.reader ? [reconcileJob(options.reader, options.masterKey)] : []),
     purgeJob,
     mediaCleanupJob,
     alertsJob,

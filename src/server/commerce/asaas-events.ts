@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { Database } from '../../db/client';
+import type { ProviderPayment } from '../../features/commerce/payment-evidence';
 import { PermanentError, TransientError } from '../async/handler-types';
 import type { InboxHandler } from '../async/inbox-processor';
 import { applyPaymentEvidence } from './payment-evidence-store';
@@ -25,6 +27,7 @@ const payloadSchema = z.object({
 export function createAsaasEventHandler(deps: {
   reader: PaymentReader;
   now?: () => Date;
+  afterGrant?: (db: Database, read: ProviderPayment) => Promise<void>;
 }): InboxHandler {
   return async ({ db, payload }) => {
     const parsed = payloadSchema.safeParse(payload);

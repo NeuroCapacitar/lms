@@ -19,6 +19,8 @@ export interface ProviderPayment {
   installmentId: string | null;
   externalReference: string | null;
   paidAt: Date | null;
+  /** Id do cliente no Asaas (para ler o pagador depois da confirmação, M6-08). */
+  customerId: string | null;
 }
 
 /** Valor decimal do Asaas para centavos inteiros, sem erro de ponto flutuante (`197.05` vira `19705`). */

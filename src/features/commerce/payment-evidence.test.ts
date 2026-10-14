@@ -21,6 +21,7 @@ const payment = (overrides: Partial<ProviderPayment> = {}): ProviderPayment => (
   installmentId: null,
   externalReference: null,
   paidAt: null,
+  customerId: null,
   ...overrides,
 });
 

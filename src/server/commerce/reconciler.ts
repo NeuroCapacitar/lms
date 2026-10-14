@@ -9,6 +9,7 @@ import {
   RECONCILE_MIN_AGE_MS,
   reconcileBackoffMs,
 } from '../../features/commerce/commerce';
+import type { ProviderPayment } from '../../features/commerce/payment-evidence';
 import type { DomainTx } from '../async/outbox-store';
 import { recordFinancialEventIn, transitionOrderIn } from './order-store';
 import { applyPaymentEvidence } from './payment-evidence-store';
@@ -40,6 +41,7 @@ export interface ReconcileResult {
 interface Deps {
   reader: PaymentReader;
   now: Date;
+  afterGrant?: (db: Database, read: ProviderPayment) => Promise<void>;
 }
 
 const ACTIVE_STATES = ['creating', 'open', 'unknown'] as const;
@@ -162,7 +164,7 @@ export async function reconcilePending(db: Database, deps: Deps): Promise<Reconc
       for (const paymentId of paymentIds) {
         await applyPaymentEvidence(
           db,
-          { reader: deps.reader, now: () => now },
+          { reader: deps.reader, now: () => now, afterGrant: deps.afterGrant },
           { paymentId, eventHint: null, source: 'reconciliation' },
         );
         result.payments += 1;
@@ -238,7 +240,7 @@ export async function reconcilePending(db: Database, deps: Deps): Promise<Reconc
     for (const item of stale) {
       await applyPaymentEvidence(
         db,
-        { reader: deps.reader, now: () => now },
+        { reader: deps.reader, now: () => now, afterGrant: deps.afterGrant },
         { paymentId: item.providerPaymentId, eventHint: null, source: 'reconciliation' },
       );
       result.payments += 1;

@@ -102,7 +102,7 @@
 
 ### M6-08 — Dados financeiros para a Staff e o contador
 
-**Dependências:** M6-07, M5-01 (utilitário AES-GCM) · **Estado:** `not_started`
+**Dependências:** M6-07, M5-01 (utilitário AES-GCM) · **Estado:** `implemented` (2026-10-14; só com o dublê do Asaas, o sandbox real NÃO foi exercitado; sem a exportação CSV e sem Recharts; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** a Staff com permissão vê pedidos e pagamentos com o que o contador precisa; a nota fiscal é feita fora do Hub.
 **Passos:**
