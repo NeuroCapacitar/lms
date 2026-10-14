@@ -103,6 +103,7 @@ export function demoHandlers(provider: FakeProvider): HandlerRegistry {
     'email.send': async () => {},
     'interest.fanout': async () => {},
     'finance.refund': async () => {},
+    'certificate.render': async () => {},
     'system.demo': async ({ idempotencyKey }) => {
       if (await provider.lookup(idempotencyKey)) return;
       try {

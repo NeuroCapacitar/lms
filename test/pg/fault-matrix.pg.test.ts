@@ -132,6 +132,7 @@ describe('Fault matrix (M4-06)', () => {
         'email.send': async () => {},
         'interest.fanout': async () => {},
         'finance.refund': async () => {},
+        'certificate.render': async () => {},
         'system.demo': async (context) => {
           await gate;
           return demoHandlers(provider)['system.demo'](context);
@@ -483,6 +484,7 @@ describe('Fault matrix (M4-06)', () => {
         'system.demo': async () => {},
         'interest.fanout': async () => {},
         'finance.refund': async () => {},
+        'certificate.render': async () => {},
         'email.send': createEmailHandler(emailDeps),
       }),
     );
@@ -575,6 +577,7 @@ describe('Fault matrix (M4-06)', () => {
       'system.demo': async () => {},
       'interest.fanout': async () => {},
       'finance.refund': async () => {},
+      'certificate.render': async () => {},
       'email.send': createEmailHandler({
         getMailer: () => mailer,
         quota: createQuotaGate(policy),

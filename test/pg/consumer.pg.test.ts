@@ -91,6 +91,7 @@ function harness(
     'email.send': async () => {},
     'interest.fanout': async () => {},
     'finance.refund': async () => {},
+    'certificate.render': async () => {},
     'system.demo': async (context) => {
       calls.push(context);
       await behavior(context);

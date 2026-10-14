@@ -14,7 +14,7 @@ Ordem sugerida: M7-01 → M7-06 → M7-02 → M7-07 → M7-03 → M7-09 → M7-0
 
 ### M7-01 — Domínio Certificate e CourseCompletion → intenção única de emissão
 
-**Dependências:** M3-04 (CourseCompletion), M4-01 (outbox), M5-04 (quiz obrigatório compõe a conclusão) · **Estado:** `not_started`
+**Dependências:** M3-04 (CourseCompletion), M4-01 (outbox), M5-04 (quiz obrigatório compõe a conclusão) · **Estado:** `implemented` (2026-10-14; sem renderer e sem tela; a política não exige template porque o M7-03 não existe; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** A primeira conclusão elegível de (pessoa, curso) cria **uma** intenção de emissão na mesma transação; falha de PDF nunca remove a conclusão nem duplica o certificado.
 

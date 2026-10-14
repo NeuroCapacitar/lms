@@ -469,6 +469,7 @@ describe('correlação de ponta a ponta (HTTP → outbox → Queue → handler �
         'system.demo': async () => {},
         'interest.fanout': async () => {},
         'finance.refund': async () => {},
+        'certificate.render': async () => {},
         'email.send': createEmailHandler({
           getMailer: () => mailer,
           quota: createQuotaGate(),
