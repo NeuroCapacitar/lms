@@ -56,7 +56,7 @@ Ordem sugerida: M7-01 → M7-06 → M7-02 → M7-07 → M7-03 → M7-09 → M7-0
 
 ### M7-03 — Editor visual de template A4 (mantido)
 
-**Dependências:** M7-02, M7-06, M0-07 (base visual) · **Estado:** `not_started`
+**Dependências:** M7-02, M7-06, M0-07 (base visual) · **Estado:** `implemented` (2026-10-14; sem a prévia em PDF real e com a prévia da tela em DOM, não em iframe; evidência e desvios em `docs/implementation/STATUS.md`)
 
 **Objetivo.** O Admin posiciona campos pré-definidos sobre um fundo A4 com ponteiro **e** teclado, e publica o template do curso.
 

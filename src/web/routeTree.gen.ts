@@ -26,13 +26,14 @@ import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffAjudaRouteImport } from './routes/staff.ajuda'
 import { Route as StaffBannersRouteImport } from './routes/staff.banners'
-import { Route as StaffCertificadosRouteImport } from './routes/staff.certificados'
 import { Route as StaffDiscussoesRouteImport } from './routes/staff.discussoes'
 import { Route as StaffEquipeRouteImport } from './routes/staff.equipe'
 import { Route as StaffFinanceiroRouteImport } from './routes/staff.financeiro'
 import { Route as StaffOperacaoRouteImport } from './routes/staff.operacao'
 import { Route as StaffVideosRouteImport } from './routes/staff.videos'
 import { Route as EstudarCourseIdIndexRouteImport } from './routes/estudar.$courseId.index'
+import { Route as StaffCertificadosIndexRouteImport } from './routes/staff.certificados.index'
+import { Route as StaffCertificadosCourseIdRouteImport } from './routes/staff.certificados.$courseId'
 import { Route as StaffCursosIndexRouteImport } from './routes/staff.cursos.index'
 import { Route as StaffCursosCourseIdRouteImport } from './routes/staff.cursos.$courseId'
 import { Route as EstudarCourseIdAulasLessonIdRouteImport } from './routes/estudar.$courseId.aulas.$lessonId'
@@ -124,11 +125,6 @@ const StaffBannersRoute = StaffBannersRouteImport.update({
   path: '/banners',
   getParentRoute: () => StaffRoute,
 } as any)
-const StaffCertificadosRoute = StaffCertificadosRouteImport.update({
-  id: '/certificados',
-  path: '/certificados',
-  getParentRoute: () => StaffRoute,
-} as any)
 const StaffDiscussoesRoute = StaffDiscussoesRouteImport.update({
   id: '/discussoes',
   path: '/discussoes',
@@ -159,6 +155,17 @@ const EstudarCourseIdIndexRoute = EstudarCourseIdIndexRouteImport.update({
   path: '/estudar/$courseId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffCertificadosIndexRoute = StaffCertificadosIndexRouteImport.update({
+  id: '/certificados/',
+  path: '/certificados/',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffCertificadosCourseIdRoute =
+  StaffCertificadosCourseIdRouteImport.update({
+    id: '/certificados/$courseId',
+    path: '/certificados/$courseId',
+    getParentRoute: () => StaffRoute,
+  } as any)
 const StaffCursosIndexRoute = StaffCursosIndexRouteImport.update({
   id: '/cursos/',
   path: '/cursos/',
@@ -202,7 +209,6 @@ export interface FileRoutesByFullPath {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/banners': typeof StaffBannersRoute
-  '/staff/certificados': typeof StaffCertificadosRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
@@ -212,8 +218,10 @@ export interface FileRoutesByFullPath {
   '/cursos/': typeof CursosIndexRoute
   '/entrar/': typeof EntrarIndexRoute
   '/staff/': typeof StaffIndexRoute
+  '/staff/certificados/$courseId': typeof StaffCertificadosCourseIdRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
   '/estudar/$courseId/': typeof EstudarCourseIdIndexRoute
+  '/staff/certificados/': typeof StaffCertificadosIndexRoute
   '/staff/cursos/': typeof StaffCursosIndexRoute
   '/estudar/$courseId/aulas/$lessonId': typeof EstudarCourseIdAulasLessonIdRoute
   '/staff/previa/$courseId/': typeof StaffPreviaCourseIdIndexRoute
@@ -232,7 +240,6 @@ export interface FileRoutesByTo {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/banners': typeof StaffBannersRoute
-  '/staff/certificados': typeof StaffCertificadosRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
@@ -242,8 +249,10 @@ export interface FileRoutesByTo {
   '/cursos': typeof CursosIndexRoute
   '/entrar': typeof EntrarIndexRoute
   '/staff': typeof StaffIndexRoute
+  '/staff/certificados/$courseId': typeof StaffCertificadosCourseIdRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
   '/estudar/$courseId': typeof EstudarCourseIdIndexRoute
+  '/staff/certificados': typeof StaffCertificadosIndexRoute
   '/staff/cursos': typeof StaffCursosIndexRoute
   '/estudar/$courseId/aulas/$lessonId': typeof EstudarCourseIdAulasLessonIdRoute
   '/staff/previa/$courseId': typeof StaffPreviaCourseIdIndexRoute
@@ -264,7 +273,6 @@ export interface FileRoutesById {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/banners': typeof StaffBannersRoute
-  '/staff/certificados': typeof StaffCertificadosRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
@@ -274,8 +282,10 @@ export interface FileRoutesById {
   '/cursos/': typeof CursosIndexRoute
   '/entrar/': typeof EntrarIndexRoute
   '/staff/': typeof StaffIndexRoute
+  '/staff/certificados/$courseId': typeof StaffCertificadosCourseIdRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
   '/estudar/$courseId/': typeof EstudarCourseIdIndexRoute
+  '/staff/certificados/': typeof StaffCertificadosIndexRoute
   '/staff/cursos/': typeof StaffCursosIndexRoute
   '/estudar/$courseId/aulas/$lessonId': typeof EstudarCourseIdAulasLessonIdRoute
   '/staff/previa/$courseId/': typeof StaffPreviaCourseIdIndexRoute
@@ -297,7 +307,6 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/ajuda'
     | '/staff/banners'
-    | '/staff/certificados'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/financeiro'
@@ -307,8 +316,10 @@ export interface FileRouteTypes {
     | '/cursos/'
     | '/entrar/'
     | '/staff/'
+    | '/staff/certificados/$courseId'
     | '/staff/cursos/$courseId'
     | '/estudar/$courseId/'
+    | '/staff/certificados/'
     | '/staff/cursos/'
     | '/estudar/$courseId/aulas/$lessonId'
     | '/staff/previa/$courseId/'
@@ -327,7 +338,6 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/ajuda'
     | '/staff/banners'
-    | '/staff/certificados'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/financeiro'
@@ -337,8 +347,10 @@ export interface FileRouteTypes {
     | '/cursos'
     | '/entrar'
     | '/staff'
+    | '/staff/certificados/$courseId'
     | '/staff/cursos/$courseId'
     | '/estudar/$courseId'
+    | '/staff/certificados'
     | '/staff/cursos'
     | '/estudar/$courseId/aulas/$lessonId'
     | '/staff/previa/$courseId'
@@ -358,7 +370,6 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/ajuda'
     | '/staff/banners'
-    | '/staff/certificados'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/financeiro'
@@ -368,8 +379,10 @@ export interface FileRouteTypes {
     | '/cursos/'
     | '/entrar/'
     | '/staff/'
+    | '/staff/certificados/$courseId'
     | '/staff/cursos/$courseId'
     | '/estudar/$courseId/'
+    | '/staff/certificados/'
     | '/staff/cursos/'
     | '/estudar/$courseId/aulas/$lessonId'
     | '/staff/previa/$courseId/'
@@ -516,13 +529,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffBannersRouteImport
       parentRoute: typeof StaffRoute
     }
-    '/staff/certificados': {
-      id: '/staff/certificados'
-      path: '/certificados'
-      fullPath: '/staff/certificados'
-      preLoaderRoute: typeof StaffCertificadosRouteImport
-      parentRoute: typeof StaffRoute
-    }
     '/staff/discussoes': {
       id: '/staff/discussoes'
       path: '/discussoes'
@@ -565,6 +571,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EstudarCourseIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/certificados/': {
+      id: '/staff/certificados/'
+      path: '/certificados'
+      fullPath: '/staff/certificados/'
+      preLoaderRoute: typeof StaffCertificadosIndexRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff/certificados/$courseId': {
+      id: '/staff/certificados/$courseId'
+      path: '/certificados/$courseId'
+      fullPath: '/staff/certificados/$courseId'
+      preLoaderRoute: typeof StaffCertificadosCourseIdRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/cursos/': {
       id: '/staff/cursos/'
       path: '/cursos'
@@ -606,14 +626,15 @@ declare module '@tanstack/react-router' {
 interface StaffRouteChildren {
   StaffAjudaRoute: typeof StaffAjudaRoute
   StaffBannersRoute: typeof StaffBannersRoute
-  StaffCertificadosRoute: typeof StaffCertificadosRoute
   StaffDiscussoesRoute: typeof StaffDiscussoesRoute
   StaffEquipeRoute: typeof StaffEquipeRoute
   StaffFinanceiroRoute: typeof StaffFinanceiroRoute
   StaffOperacaoRoute: typeof StaffOperacaoRoute
   StaffVideosRoute: typeof StaffVideosRoute
   StaffIndexRoute: typeof StaffIndexRoute
+  StaffCertificadosCourseIdRoute: typeof StaffCertificadosCourseIdRoute
   StaffCursosCourseIdRoute: typeof StaffCursosCourseIdRoute
+  StaffCertificadosIndexRoute: typeof StaffCertificadosIndexRoute
   StaffCursosIndexRoute: typeof StaffCursosIndexRoute
   StaffPreviaCourseIdIndexRoute: typeof StaffPreviaCourseIdIndexRoute
   StaffPreviaCourseIdAulasLessonIdRoute: typeof StaffPreviaCourseIdAulasLessonIdRoute
@@ -622,14 +643,15 @@ interface StaffRouteChildren {
 const StaffRouteChildren: StaffRouteChildren = {
   StaffAjudaRoute: StaffAjudaRoute,
   StaffBannersRoute: StaffBannersRoute,
-  StaffCertificadosRoute: StaffCertificadosRoute,
   StaffDiscussoesRoute: StaffDiscussoesRoute,
   StaffEquipeRoute: StaffEquipeRoute,
   StaffFinanceiroRoute: StaffFinanceiroRoute,
   StaffOperacaoRoute: StaffOperacaoRoute,
   StaffVideosRoute: StaffVideosRoute,
   StaffIndexRoute: StaffIndexRoute,
+  StaffCertificadosCourseIdRoute: StaffCertificadosCourseIdRoute,
   StaffCursosCourseIdRoute: StaffCursosCourseIdRoute,
+  StaffCertificadosIndexRoute: StaffCertificadosIndexRoute,
   StaffCursosIndexRoute: StaffCursosIndexRoute,
   StaffPreviaCourseIdIndexRoute: StaffPreviaCourseIdIndexRoute,
   StaffPreviaCourseIdAulasLessonIdRoute: StaffPreviaCourseIdAulasLessonIdRoute,

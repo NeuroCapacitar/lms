@@ -260,6 +260,13 @@
       "when": 1792001165533,
       "tag": "0036_certificate_signer",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792017138151,
+      "tag": "0037_certificate_template",
+      "breakpoints": true
     }
   ]
 }

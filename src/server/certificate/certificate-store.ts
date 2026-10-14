@@ -21,6 +21,7 @@ import { auditEvent } from '../auth/access-store';
 import { PermanentError, TransientError, type HandlerRegistry } from '../async/handler-types';
 import { enqueueIntent, type DomainTx } from '../async/outbox-store';
 import { getIssuer, getSignatory } from './signer-store';
+import { readPublishedTemplateIn } from './template-store';
 
 /**
  * Certificado (M7-01), parte do servidor. A emissão roda DENTRO da transação que cria a `course_completion`: só o
@@ -67,6 +68,9 @@ export async function issueCertificateIn(
   source: CertificateSource,
 ): Promise<string | null> {
   if (!(await policyEnabledIn(tx, source.courseId))) return null;
+  // Sem template PUBLICADO do curso (M7-03) não há o que imprimir: a conclusão existe e nada nasce.
+  const template = await readPublishedTemplateIn(tx, source.courseId);
+  if (!template) return null;
   const holder = await holderIn(tx, source.userId);
   const issuerRow = await getIssuer(tx);
   const signatoryRow = await getSignatory(tx, source.courseId);
@@ -89,6 +93,8 @@ export async function issueCertificateIn(
       requiredTotal: source.requiredTotal,
       issuer,
       signatory,
+      layout: template.layout,
+      backgroundMediaId: template.backgroundMediaId,
     });
   } catch (error) {
     if (!(error instanceof SnapshotInvalidError)) throw error;

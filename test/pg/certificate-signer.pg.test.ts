@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import * as schema from '../../src/db/schema.ts';
 import { grantEntitlement } from '../../src/server/access/entitlement-store.ts';
 import { grantRole } from '../../src/server/auth/access-store.ts';
-import { setCertificatePolicy } from '../../src/server/certificate/certificate-store.ts';
+import { enableCertificates } from '../helpers/certificate-template.ts';
 import { completeLesson } from '../../src/server/learning/completion.ts';
 import { createFakeEmailSender } from '../../src/server/email/fake.ts';
 import { createMemoryStorage, type MemoryStorage } from '../../src/server/media/memory-storage.ts';
@@ -403,11 +403,7 @@ describe('o snapshot do certificado', () => {
       ...SIGNATORY,
       signatureMediaId: media,
     });
-    await setCertificatePolicy(tools.db, {
-      actorId: admin.id,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(tools.db, { actorId: admin.id, courseId: fixture.courseId });
 
     const holder = await student(fixture);
     await finishCourse(fixture, holder.id);
@@ -435,11 +431,7 @@ describe('o snapshot do certificado', () => {
   it('sem emitente nem signatário cadastrados, o snapshot leva null (o renderer do M7-02 recusa)', async () => {
     const fixture = await course();
     const admin = await newPerson('admin');
-    await setCertificatePolicy(tools.db, {
-      actorId: admin.id,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(tools.db, { actorId: admin.id, courseId: fixture.courseId });
     const holder = await student(fixture);
     await finishCourse(fixture, holder.id);
     const [issued] = await tools.db.select().from(schema.certificate);

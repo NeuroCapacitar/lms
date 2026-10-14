@@ -1,7 +1,11 @@
 import { Hono } from 'hono';
-import type { MiddlewareHandler } from 'hono';
+import type { Context, MiddlewareHandler } from 'hono';
 
 import { issuerInputSchema, signatoryInputSchema } from '../../features/certificate/issuer';
+import {
+  templateDraftInputSchema,
+  templatePublishInputSchema,
+} from '../../features/certificate/template';
 import { requireCapability } from '../auth/authorization';
 import type { AuthVars } from '../auth/types';
 import { MediaNotReadyError, MediaPurposeMismatchError } from '../media/references';
@@ -12,6 +16,16 @@ import {
   saveIssuer,
   saveSignatory,
 } from './signer-store';
+import {
+  TemplateConflictError,
+  TemplateCourseNotFoundError,
+  TemplateDraftMissingError,
+  TemplateLayoutInvalidError,
+  discardTemplateDraft,
+  getTemplates,
+  publishTemplate,
+  saveTemplateDraft,
+} from './template-store';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -68,6 +82,84 @@ export function certificateStaffRoutes(deps: {
         return c.json({ error: { code: 'invalid_media' } }, 422);
       }
       throw error;
+    }
+  });
+
+  // --- Template (M7-03): rascunho, publicação e descarte; só o Admin ---------------------------------------
+  const templateFailure = (c: Context<{ Bindings: Env; Variables: AuthVars }>, error: unknown) => {
+    if (error instanceof TemplateCourseNotFoundError) {
+      return c.json({ error: { code: 'not_found' } }, 404);
+    }
+    if (error instanceof TemplateDraftMissingError) {
+      return c.json({ error: { code: 'draft_missing' } }, 409);
+    }
+    if (error instanceof TemplateConflictError) {
+      return c.json({ error: { code: 'conflict', currentVersion: error.currentVersion } }, 409);
+    }
+    if (error instanceof TemplateLayoutInvalidError) {
+      return c.json({ error: { code: 'layout_invalid', problems: error.problems } }, 422);
+    }
+    if (error instanceof MediaNotReadyError) {
+      return c.json({ error: { code: 'media_not_ready' } }, 409);
+    }
+    if (error instanceof MediaPurposeMismatchError) {
+      return c.json({ error: { code: 'invalid_media' } }, 422);
+    }
+    throw error;
+  };
+
+  routes.get('/courses/:courseId/certificate/template', ...admin, async (c) => {
+    const courseId = c.req.param('courseId');
+    if (!UUID.test(courseId)) return c.json({ error: { code: 'not_found' } }, 404);
+    c.header('Cache-Control', 'no-store');
+    return c.json(await getTemplates(c.var.db, courseId));
+  });
+
+  routes.put('/courses/:courseId/certificate/template', ...admin, async (c) => {
+    const courseId = c.req.param('courseId');
+    if (!UUID.test(courseId)) return c.json({ error: { code: 'not_found' } }, 404);
+    const parsed = templateDraftInputSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    try {
+      const draft = await saveTemplateDraft(c.var.db, {
+        ...parsed.data,
+        courseId,
+        actorId: c.var.access!.userId,
+      });
+      return c.json({ draft });
+    } catch (error) {
+      return templateFailure(c, error);
+    }
+  });
+
+  routes.post('/courses/:courseId/certificate/template/publish', ...admin, async (c) => {
+    const courseId = c.req.param('courseId');
+    if (!UUID.test(courseId)) return c.json({ error: { code: 'not_found' } }, 404);
+    const parsed = templatePublishInputSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    try {
+      const published = await publishTemplate(c.var.db, {
+        courseId,
+        expectedVersion: parsed.data.expectedVersion,
+        actorId: c.var.access!.userId,
+      });
+      return c.json({ published });
+    } catch (error) {
+      return templateFailure(c, error);
+    }
+  });
+
+  routes.post('/courses/:courseId/certificate/template/discard', ...admin, async (c) => {
+    const courseId = c.req.param('courseId');
+    if (!UUID.test(courseId)) return c.json({ error: { code: 'not_found' } }, 404);
+    try {
+      const discarded = await discardTemplateDraft(c.var.db, {
+        courseId,
+        actorId: c.var.access!.userId,
+      });
+      return c.json({ discarded });
+    } catch (error) {
+      return templateFailure(c, error);
     }
   });
 
