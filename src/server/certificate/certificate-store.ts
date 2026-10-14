@@ -14,11 +14,13 @@ import {
   buildCertificateSnapshot,
   certificateSnapshotSchema,
   generateCertificateCode,
+  SnapshotInvalidError,
   type CertificateSnapshot,
 } from '../../features/certificate/certificate';
 import { auditEvent } from '../auth/access-store';
 import { PermanentError, TransientError, type HandlerRegistry } from '../async/handler-types';
 import { enqueueIntent, type DomainTx } from '../async/outbox-store';
+import { getIssuer, getSignatory } from './signer-store';
 
 /**
  * Certificado (M7-01), parte do servidor. A emissão roda DENTRO da transação que cria a `course_completion`: só o
@@ -66,14 +68,41 @@ export async function issueCertificateIn(
 ): Promise<string | null> {
   if (!(await policyEnabledIn(tx, source.courseId))) return null;
   const holder = await holderIn(tx, source.userId);
-  const snapshot = buildCertificateSnapshot({
-    certificateName: holder.certificateName,
-    displayName: holder.displayName,
-    courseTitle: source.courseTitle,
-    workloadHours: source.workloadHours,
-    completedAt: source.completedAt,
-    requiredTotal: source.requiredTotal,
-  });
+  const issuerRow = await getIssuer(tx);
+  const signatoryRow = await getSignatory(tx, source.courseId);
+  const issuer = issuerRow ? { legalName: issuerRow.legalName, cnpj: issuerRow.cnpj } : null;
+  const signatory = signatoryRow
+    ? {
+        name: signatoryRow.name,
+        title: signatoryRow.title,
+        signatureMediaId: signatoryRow.signatureMediaId,
+      }
+    : null;
+  let snapshot: CertificateSnapshot;
+  try {
+    snapshot = buildCertificateSnapshot({
+      certificateName: holder.certificateName,
+      displayName: holder.displayName,
+      courseTitle: source.courseTitle,
+      workloadHours: source.workloadHours,
+      completedAt: source.completedAt,
+      requiredTotal: source.requiredTotal,
+      issuer,
+      signatory,
+    });
+  } catch (error) {
+    if (!(error instanceof SnapshotInvalidError)) throw error;
+    // Dado que não cabe no certificado (nome gigante...): a CONCLUSÃO do curso fica intacta, o certificado não nasce e
+    // a Staff vê a falha na auditoria. Nunca derruba a transação da conclusão.
+    await auditEvent(tx, {
+      actorId: null,
+      action: 'certificate.issue_failed',
+      targetType: 'course',
+      targetId: source.courseId,
+      details: { userId: source.userId, code: 'snapshot_invalid' },
+    });
+    return null;
+  }
 
   const inserted = await tx
     .insert(certificate)

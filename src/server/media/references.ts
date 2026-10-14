@@ -38,7 +38,13 @@ export class MediaNotPublishedError extends Error {
 export async function setReferenceIn(
   tx: DomainTx,
   input: {
-    ownerType: 'course_draft' | 'course_content' | 'lesson' | 'panel_banner' | 'login_media';
+    ownerType:
+      | 'course_draft'
+      | 'course_content'
+      | 'lesson'
+      | 'panel_banner'
+      | 'login_media'
+      | 'certificate_signatory';
     ownerId: string;
     slot: string;
     mediaId: string | null;

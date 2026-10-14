@@ -50,7 +50,7 @@ const MAX_TEXT = 200;
 
 /**
  * O que o PDF vai dizer, congelado quando o certificado passa a `queued`. Versão 1: nome do titular, título do
- * curso, carga horária e datas. Emitente, signatário e layout entram em versões seguintes (M7-06 e M7-03); um
+ * curso, carga horária, datas, emitente e signatário (M7-06). O layout entra com o M7-03; um
  * certificado emitido mantém SEMPRE o snapshot com que nasceu.
  */
 export const certificateSnapshotSchema = z.strictObject({
@@ -60,6 +60,21 @@ export const certificateSnapshotSchema = z.strictObject({
   workloadHours: z.number().int().positive().nullable(),
   completedAt: z.iso.datetime(),
   requiredTotal: z.number().int().positive(),
+  /** Emitente no momento da emissão (M7-06); `null` = ainda não cadastrado (o renderer do M7-02 recusa). */
+  issuer: z
+    .strictObject({
+      legalName: z.string().min(1).max(MAX_TEXT),
+      cnpj: z.string().regex(/^[0-9]{14}$/),
+    })
+    .nullable(),
+  /** Signatário do CURSO no momento da emissão; a assinatura é só o id da mídia privada. */
+  signatory: z
+    .strictObject({
+      name: z.string().min(1).max(MAX_TEXT),
+      title: z.string().min(1).max(MAX_TEXT),
+      signatureMediaId: z.uuid().nullable(),
+    })
+    .nullable(),
 });
 export type CertificateSnapshot = z.infer<typeof certificateSnapshotSchema>;
 
@@ -77,6 +92,8 @@ export function buildCertificateSnapshot(input: {
   workloadHours: number | null;
   completedAt: Date;
   requiredTotal: number;
+  issuer?: CertificateSnapshot['issuer'];
+  signatory?: CertificateSnapshot['signatory'];
 }): CertificateSnapshot {
   const holder = input.certificateName?.trim() ? input.certificateName : input.displayName;
   const parsed = certificateSnapshotSchema.safeParse({
@@ -86,6 +103,8 @@ export function buildCertificateSnapshot(input: {
     workloadHours: input.workloadHours,
     completedAt: input.completedAt.toISOString(),
     requiredTotal: input.requiredTotal,
+    issuer: input.issuer ?? null,
+    signatory: input.signatory ?? null,
   });
   if (!parsed.success) throw new SnapshotInvalidError();
   return parsed.data;

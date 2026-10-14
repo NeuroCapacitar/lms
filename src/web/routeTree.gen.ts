@@ -26,6 +26,7 @@ import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffAjudaRouteImport } from './routes/staff.ajuda'
 import { Route as StaffBannersRouteImport } from './routes/staff.banners'
+import { Route as StaffCertificadosRouteImport } from './routes/staff.certificados'
 import { Route as StaffDiscussoesRouteImport } from './routes/staff.discussoes'
 import { Route as StaffEquipeRouteImport } from './routes/staff.equipe'
 import { Route as StaffFinanceiroRouteImport } from './routes/staff.financeiro'
@@ -123,6 +124,11 @@ const StaffBannersRoute = StaffBannersRouteImport.update({
   path: '/banners',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffCertificadosRoute = StaffCertificadosRouteImport.update({
+  id: '/certificados',
+  path: '/certificados',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffDiscussoesRoute = StaffDiscussoesRouteImport.update({
   id: '/discussoes',
   path: '/discussoes',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/banners': typeof StaffBannersRoute
+  '/staff/certificados': typeof StaffCertificadosRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/banners': typeof StaffBannersRoute
+  '/staff/certificados': typeof StaffCertificadosRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
   '/staff/banners': typeof StaffBannersRoute
+  '/staff/certificados': typeof StaffCertificadosRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
@@ -288,6 +297,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/ajuda'
     | '/staff/banners'
+    | '/staff/certificados'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/financeiro'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/ajuda'
     | '/staff/banners'
+    | '/staff/certificados'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/financeiro'
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/entrar/confirmar'
     | '/staff/ajuda'
     | '/staff/banners'
+    | '/staff/certificados'
     | '/staff/discussoes'
     | '/staff/equipe'
     | '/staff/financeiro'
@@ -504,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffBannersRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/certificados': {
+      id: '/staff/certificados'
+      path: '/certificados'
+      fullPath: '/staff/certificados'
+      preLoaderRoute: typeof StaffCertificadosRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/discussoes': {
       id: '/staff/discussoes'
       path: '/discussoes'
@@ -587,6 +606,7 @@ declare module '@tanstack/react-router' {
 interface StaffRouteChildren {
   StaffAjudaRoute: typeof StaffAjudaRoute
   StaffBannersRoute: typeof StaffBannersRoute
+  StaffCertificadosRoute: typeof StaffCertificadosRoute
   StaffDiscussoesRoute: typeof StaffDiscussoesRoute
   StaffEquipeRoute: typeof StaffEquipeRoute
   StaffFinanceiroRoute: typeof StaffFinanceiroRoute
@@ -602,6 +622,7 @@ interface StaffRouteChildren {
 const StaffRouteChildren: StaffRouteChildren = {
   StaffAjudaRoute: StaffAjudaRoute,
   StaffBannersRoute: StaffBannersRoute,
+  StaffCertificadosRoute: StaffCertificadosRoute,
   StaffDiscussoesRoute: StaffDiscussoesRoute,
   StaffEquipeRoute: StaffEquipeRoute,
   StaffFinanceiroRoute: StaffFinanceiroRoute,

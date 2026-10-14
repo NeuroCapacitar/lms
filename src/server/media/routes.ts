@@ -122,6 +122,7 @@ export function mediaRoutes(deps: {
       const file = await openPrivateMedia(c.var.db, storageOf(c), {
         userId: session.user.id,
         canStaffRead: hasCapability(access, 'staff.read'),
+        canStaffManage: hasCapability(access, 'staff.manage'),
         mediaId: id,
         now: now(),
       });

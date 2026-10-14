@@ -241,14 +241,24 @@ export interface PrivateDownload {
 export async function openPrivateMedia(
   db: Database,
   storage: ObjectStorage,
-  input: { userId: string; canStaffRead: boolean; mediaId: string; now?: Date },
+  input: {
+    userId: string;
+    canStaffRead: boolean;
+    /** Só o Admin (`staff.manage`) abre ativo do certificado (assinatura): nunca por acesso a aula nem pelo Suporte. */
+    canStaffManage?: boolean;
+    mediaId: string;
+    now?: Date;
+  },
 ): Promise<PrivateDownload> {
   const [asset] = await db.select().from(mediaAsset).where(eq(mediaAsset.id, input.mediaId));
   if (!asset || asset.state !== 'ready' || asset.visibility !== 'private') {
     throw new MediaNotFoundError();
   }
-  let allowed = input.canStaffRead;
-  if (!allowed) {
+  if (asset.purpose === 'certificate_asset') {
+    if (input.canStaffManage !== true) throw new MediaNotFoundError();
+  }
+  let allowed = asset.purpose === 'certificate_asset' ? true : input.canStaffRead;
+  if (!allowed && asset.purpose !== 'certificate_asset') {
     const lessons = await db
       .select({ lessonId: mediaReference.ownerId })
       .from(mediaReference)
