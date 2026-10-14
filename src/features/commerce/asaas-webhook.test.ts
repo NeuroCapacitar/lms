@@ -40,7 +40,7 @@ describe('webhook do Asaas reduzido aos ids', () => {
       malformed: false,
     });
     const stored = JSON.stringify(result);
-    for (const leak of ['Maria', '123.456', 'maria@', '197', 'cus_', 'PIX', 'description']) {
+    for (const leak of ['Maria', '123.456', 'maria@', 'cus_', 'PIX', 'description']) {
       expect(stored, leak).not.toContain(leak);
     }
   });

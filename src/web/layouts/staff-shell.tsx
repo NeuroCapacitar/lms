@@ -18,6 +18,7 @@ interface NavItem {
     | '/staff/discussoes'
     | '/staff/ajuda'
     | '/staff/banners'
+    | '/staff/financeiro'
     | '/staff/videos'
     | '/staff/equipe';
   label: string;
@@ -32,6 +33,7 @@ const NAV: NavItem[] = [
   { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
   { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },
   { to: '/staff/banners', label: 'Banners', needs: 'staff.manage' },
+  { to: '/staff/financeiro', label: 'Financeiro', needs: 'finance.review' },
   { to: '/staff/videos', label: 'Vídeo', needs: 'integration.credentials' },
   { to: '/staff/equipe', label: 'Equipe', needs: 'staff.manage' },
 ];

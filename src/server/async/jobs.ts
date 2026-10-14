@@ -8,6 +8,8 @@ import { acquireJob, finishJob, type JobResult } from './job-store';
 import { deadLetterExhausted, hasPurgeableRows } from './lease';
 import { hasRepublishable, listRepublishable, markOutboxDead, purgeOutbox } from './outbox-store';
 import { evaluateAlerts } from '../../features/ops/operations';
+import { hasReconcileWork, reconcilePending } from '../commerce/reconciler';
+import type { PaymentReader } from '../commerce/payment-reader';
 import { createR2Storage } from '../media/r2-storage';
 import { cleanupMedia, hasMediaWork } from '../media/store';
 import { loadOperationsSnapshot } from '../ops/operations-store';
@@ -137,9 +139,38 @@ const mediaCleanupJob: CronJob = {
   },
 };
 
-/** Os jobs do Cron, na ordem. M6-04 registra o seu aqui; `handlers` são os dos eventos da inbox. */
-export function createCronJobs(handlers: InboxHandlers): readonly CronJob[] {
-  return [republishJob, inboxJob(handlers), purgeJob, mediaCleanupJob, alertsJob];
+/**
+ * Reconciliação financeira (M6-04): só pedidos pendentes com sessão ativa há mais de 10 min e pagamentos em estado
+ * intermediário, com backoff e teto por execução. 429 do Asaas interrompe o lote SEM erro do job; falha do provider
+ * deixa o código `provider_unavailable`. Só existe com o leitor do Asaas configurado.
+ */
+function reconcileJob(reader: PaymentReader): CronJob {
+  return {
+    name: 'finance.reconcile',
+    probe: ({ db }) => hasReconcileWork(db, new Date()),
+    async run({ db }) {
+      const result = await reconcilePending(db, { reader, now: new Date() });
+      const count = result.orders + result.payments;
+      return result.stopped === 'provider_unavailable'
+        ? { count, errorCode: 'provider_unavailable' }
+        : { count };
+    },
+  };
+}
+
+/** Os jobs do Cron, na ordem. `handlers` são os dos eventos da inbox; o leitor do Asaas liga a reconciliação. */
+export function createCronJobs(
+  handlers: InboxHandlers,
+  options: { reader?: PaymentReader | undefined } = {},
+): readonly CronJob[] {
+  return [
+    republishJob,
+    inboxJob(handlers),
+    ...(options.reader ? [reconcileJob(options.reader)] : []),
+    purgeJob,
+    mediaCleanupJob,
+    alertsJob,
+  ];
 }
 
 export interface CycleSummary {

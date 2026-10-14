@@ -78,6 +78,12 @@ const snapshot = () => ({
   ],
   suppressedRecipients: 1,
   emailAcceptedLast24h: 5,
+  finance: {
+    pendingOver30Min: 0,
+    pendingOver2Hours: 0,
+    openReviews: 0,
+    oldestOpenReviewAgeSeconds: null,
+  },
   paused: { finance: false, general: false },
 });
 

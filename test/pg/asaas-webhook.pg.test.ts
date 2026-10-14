@@ -141,9 +141,18 @@ describe('inbox antes do ACK', () => {
     });
     // sem PII, sem valor e sem corpo bruto na inbox
     const stored = JSON.stringify(rows[0]!.payload);
-    for (const leak of ['Maria', 'maria@', 'description', '197']) {
+    for (const leak of ['Maria', 'maria@', 'description']) {
       expect(stored, leak).not.toContain(leak);
     }
+    // o valor não é guardado: o conjunto de campos é exatamente o dos ids (sem substring, o id da sessão é aleatório)
+    expect(Object.keys(rows[0]!.payload as object).sort()).toEqual([
+      'checkoutSessionId',
+      'event',
+      'installmentId',
+      'malformed',
+      'paymentId',
+      'statusHint',
+    ]);
     expect(Number(rows[0]!.correlationId.length)).toBeGreaterThan(0);
   });
 

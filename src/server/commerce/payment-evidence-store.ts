@@ -152,10 +152,10 @@ export async function applyPaymentEvidence(
   const read = await deps.reader.getPayment(input.paymentId);
   if (!read) return { outcome: 'not_found', orderId: null };
   const now = (deps.now ?? (() => new Date()))();
-  return db.transaction((tx) => applyIn(tx, read, { ...input, source, now }));
+  return db.transaction((tx) => applyReadIn(tx, read, { ...input, source, now }));
 }
 
-async function applyIn(
+export async function applyReadIn(
   tx: DomainTx,
   read: ProviderPayment,
   input: { paymentId: string; eventHint: string | null; source: FinancialEventSource; now: Date },
@@ -188,8 +188,20 @@ async function applyIn(
     .for('update');
   if (!order) throw new Error('order_missing_for_session');
 
-  const reviewOutcome = async (type: ReviewType, reason: string): Promise<ApplyResult> => {
-    await openReview(tx, { orderId: order.id, paymentId: key, type, reason, source });
+  const reviewOutcome = async (
+    type: ReviewType,
+    reason: string,
+    extra: Record<string, unknown> = {},
+  ): Promise<ApplyResult> => {
+    // `orderStatusBefore` permite devolver o pedido ao estado anterior quando a revisão for resolvida.
+    await openReview(tx, {
+      orderId: order.id,
+      paymentId: key,
+      type,
+      reason,
+      source,
+      details: { orderStatusBefore: order.status, ...extra },
+    });
     await sendToReview(tx, order, source);
     return { outcome: 'review', orderId: order.id, reviewType: type };
   };
@@ -271,7 +283,18 @@ async function applyIn(
     case 'wait':
       return { outcome: 'waiting', orderId: order.id };
     case 'review':
-      return reviewOutcome(decision.type, decision.reason);
+      return reviewOutcome(
+        decision.type,
+        decision.reason,
+        // O valor observado fica gravado: é o que a aprovação humana confere (só `amount_mismatch` admite aprovar).
+        decision.type === 'amount_mismatch'
+          ? {
+              observedCents: read.totalCents,
+              expectedCents: order.priceCents,
+              providerStatus: read.status,
+            }
+          : {},
+      );
     case 'refund_started': {
       if (order.status === 'paid') {
         await moveFromPaid(tx, order, 'refund_requested', source, `${read.id}:${read.status}`);
@@ -315,12 +338,17 @@ async function applyIn(
   }
 }
 
-async function grantAccess(
+/** Concede o acesso do pedido (idempotente por pedido). Também usada pela aprovação humana de `amount_mismatch` (M6-04). */
+export async function grantAccess(
   tx: DomainTx,
   order: OrderRowDb,
   read: ProviderPayment,
   context: { source: FinancialEventSource; now: Date },
-  reviewOutcome: (type: ReviewType, reason: string) => Promise<ApplyResult>,
+  reviewOutcome: (
+    type: ReviewType,
+    reason: string,
+    extra?: Record<string, unknown>,
+  ) => Promise<ApplyResult>,
 ): Promise<ApplyResult> {
   const { source, now } = context;
   // Serializa as compras da mesma pessoa e curso (a matrícula é a trava) e procura OUTRA compra ainda válida.
@@ -351,7 +379,7 @@ async function grantAccess(
     grantedBy: null,
   });
   let becamePaid = false;
-  if (order.status === 'pending') {
+  if (order.status === 'pending' || order.status === 'review') {
     await transitionOrderIn(tx, {
       orderId: order.id,
       to: 'paid',

@@ -39,6 +39,7 @@ import { interestRoutes, interestStaffRoutes } from '../interest/routes';
 import { bannerRoutes, bannerStaffRoutes } from '../banner/routes';
 import type { CheckoutProvider } from '../commerce/checkout-provider';
 import type { PaymentReader } from '../commerce/payment-reader';
+import { financeStaffRoutes } from '../commerce/finance-routes';
 import { commerceRoutes } from '../commerce/routes';
 import { helpRoutes, helpStaffRoutes } from '../help/routes';
 import { createR2Storage } from '../media/r2-storage';
@@ -421,6 +422,16 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
 
   // Contagens de interessados por curso e ciclo (M5-06): /api/staff/courses/:id/interests (staff.read).
   routes.route('/staff', interestStaffRoutes({ withDatabase }));
+
+  // Revisões financeiras (M6-04): /api/staff/finance (grant finance.review; leitor do Asaas do ambiente).
+  routes.route(
+    '/staff',
+    financeStaffRoutes({
+      withDatabase,
+      ...(overrides.paymentReader ? { reader: () => overrides.paymentReader } : {}),
+      ...(overrides.clock ? { clock: overrides.clock } : {}),
+    }),
+  );
 
   // Ajuda da Staff (M5-14): /api/staff/help (FAQ com help.edit; pedidos com staff.read).
   routes.route('/staff', helpStaffRoutes({ withDatabase }));

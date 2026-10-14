@@ -1601,6 +1601,9 @@ export const purchaseOrder = pgTable(
     maxInstallments: integer().notNull(),
     paymentMethods: text().array().notNull(),
     expiresAt: timestamp({ withTimezone: true }).notNull(),
+    /** Reconciliação (M6-04): quantas consultas ao provider já foram feitas e quando a próxima vale (backoff). */
+    reconcileAttempts: integer().notNull().default(0),
+    reconcileNextAt: timestamp({ withTimezone: true }),
     ...stamps,
   },
   (table) => [
@@ -1612,6 +1615,9 @@ export const purchaseOrder = pgTable(
     unique('purchase_order_user_attempt_unique').on(table.userId, table.attemptId),
     index('purchase_order_user_status_idx').on(table.userId, table.status),
     index('purchase_order_status_expires_idx').on(table.status, table.expiresAt),
+    index('purchase_order_reconcile_idx')
+      .on(table.reconcileNextAt)
+      .where(sql`${table.status} = 'pending'`),
     check(
       'purchase_order_status_check',
       sql`${table.status} in ('pending', 'paid', 'expired', 'canceled', 'refund_requested', 'refunded', 'disputed', 'review')`,

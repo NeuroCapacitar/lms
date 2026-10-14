@@ -66,6 +66,18 @@ export interface OperationsSnapshot {
   /** E-mails aceitos pelo Resend nas últimas 24 h (para o alerta de silêncio do webhook). */
   emailAcceptedLast24h: number;
   paused: Record<LaneName, boolean>;
+  /** Dinheiro (M6-04): pedidos que não andam e revisões que esperam a Staff. Só contagens e idades. */
+  finance: FinanceSnapshot;
+}
+
+interface FinanceSnapshot {
+  /** Pedidos `pending` com mais de 30 minutos. */
+  pendingOver30Min: number;
+  /** Pedidos `pending` com mais de 2 horas (a reconciliação já devia ter fechado). */
+  pendingOver2Hours: number;
+  openReviews: number;
+  /** Idade (s) da revisão aberta mais antiga, ou `null`. */
+  oldestOpenReviewAgeSeconds: number | null;
 }
 
 type Severity = 'P0' | 'P1' | 'P2' | 'P3';
@@ -90,6 +102,10 @@ export const OPS_THRESHOLDS = {
   oldestOpenCriticalSeconds: 180 * 60,
   cronSilenceSeconds: 90 * 60,
   webhookSilenceSeconds: 24 * 60 * 60,
+  /** Silêncio do webhook do Asaas COM pedido esperando: o Pix costuma avisar em minutos; 6 h é anormal. */
+  asaasSilenceSeconds: 6 * 60 * 60,
+  /** Revisão financeira aberta há mais de 24 h sobe de P2 para P1 (é dinheiro de cliente parado). */
+  reviewStaleSeconds: 24 * 60 * 60,
 } as const;
 
 const SEVERITY_ORDER: Record<Severity, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
@@ -201,6 +217,40 @@ export function evaluateAlerts(
       severity: 'P2',
       message:
         'Há e-mails aceitos nas últimas 24 h, mas o webhook do Resend não entregou nenhum evento.',
+    });
+  }
+
+  const finance = snapshot.finance;
+  if (finance.pendingOver2Hours > 0) {
+    alerts.push({
+      code: 'finance_orders_stuck',
+      severity: 'P1',
+      message: `${finance.pendingOver2Hours} pedido(s) pendente(s) há mais de 2 horas: a reconciliação não os fechou (Asaas fora do ar ou job parado).`,
+    });
+  }
+  if (finance.openReviews > 0) {
+    const stale =
+      finance.oldestOpenReviewAgeSeconds !== null &&
+      finance.oldestOpenReviewAgeSeconds > OPS_THRESHOLDS.reviewStaleSeconds;
+    alerts.push({
+      code: 'finance_review_open',
+      severity: stale ? 'P1' : 'P2',
+      message: `${finance.openReviews} revisão(ões) financeira(s) esperam decisão da Staff${stale ? ' (a mais antiga há mais de 24 h)' : ''}.`,
+    });
+  }
+  const asaas = snapshot.inbox.find((provider) => provider.provider === 'asaas');
+  const asaasSilentFor = asaas?.lastReceivedAt
+    ? (nowMs - new Date(asaas.lastReceivedAt).getTime()) / 1000
+    : null;
+  if (
+    finance.pendingOver30Min > 0 &&
+    (asaasSilentFor === null || asaasSilentFor > OPS_THRESHOLDS.asaasSilenceSeconds)
+  ) {
+    alerts.push({
+      code: 'webhook_silent:asaas',
+      severity: 'P3',
+      message:
+        'Há pedido pendente há mais de 30 minutos e o webhook do Asaas não entrega evento há mais de 6 horas (ou nunca entregou): confira o endpoint e o token.',
     });
   }
 

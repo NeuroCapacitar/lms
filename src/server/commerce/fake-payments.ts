@@ -14,6 +14,8 @@ export interface FakePaymentReader extends PaymentReader {
   readonly reads: string[];
   /** Falha infra programada nas próximas N leituras (rede, 429, 5xx). */
   failNext: number;
+  /** O motivo da falha programada (`network`, `http_429`, `http_503`...). */
+  failReason: string;
   /** Espera antes de responder (para corridas). */
   delayMs: number;
 }
@@ -23,6 +25,7 @@ export function createFakePaymentReader(): FakePaymentReader {
     payments: new Map(),
     reads: [],
     failNext: 0,
+    failReason: 'network',
     delayMs: 0,
     set(payment) {
       const merged: ProviderPayment = {
@@ -45,7 +48,7 @@ export function createFakePaymentReader(): FakePaymentReader {
       if (reader.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, reader.delayMs));
       if (reader.failNext > 0) {
         reader.failNext -= 1;
-        throw new PaymentReadTransientError('network');
+        throw new PaymentReadTransientError(reader.failReason);
       }
       const found = reader.payments.get(paymentId);
       return found ? { ...found } : null;
@@ -54,7 +57,7 @@ export function createFakePaymentReader(): FakePaymentReader {
       reader.reads.push(`session:${checkoutSessionId}`);
       if (reader.failNext > 0) {
         reader.failNext -= 1;
-        throw new PaymentReadTransientError('network');
+        throw new PaymentReadTransientError(reader.failReason);
       }
       return [...reader.payments.values()]
         .filter((payment) => payment.checkoutSessionId === checkoutSessionId)
