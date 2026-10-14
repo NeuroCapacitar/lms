@@ -13,6 +13,7 @@ import {
   CertificateRenderRejectedError,
   CertificateRenderTransientError,
   createCertificateRenderHandler,
+  issueCertificateIn,
   issuePendingCertificates,
   retryCertificate,
   setCertificatePolicy,
@@ -176,7 +177,9 @@ describe('emissão pela conclusão do curso', () => {
       'completedAt',
       'courseTitle',
       'holderName',
+      'issuer',
       'requiredTotal',
+      'signatory',
       'version',
       'workloadHours',
     ]);
@@ -299,6 +302,37 @@ describe('emissão pela conclusão do curso', () => {
       }),
     );
     expect(await certificates()).toHaveLength(1);
+  });
+});
+
+describe('dado que não cabe no certificado', () => {
+  it('snapshot inválido (título gigante): nenhum certificado nasce, a transação segue e a falha fica na auditoria', async () => {
+    const fixture = await demo();
+    const admin = await student(fixture);
+    await setCertificatePolicy(main.db, {
+      actorId: admin,
+      courseId: fixture.courseId,
+      enabled: true,
+    });
+    const userId = await student(fixture);
+    const id = await main.db.transaction((tx) =>
+      issueCertificateIn(tx, {
+        userId,
+        courseId: fixture.courseId,
+        completedAt: LATE,
+        requiredTotal: 5,
+        courseTitle: 'x'.repeat(300),
+        workloadHours: 10,
+      }),
+    );
+    expect(id).toBeNull();
+    expect(await certificates()).toHaveLength(0);
+    expect(await intents()).toHaveLength(0);
+    const audits = await main.db
+      .select()
+      .from(schema.auditLog)
+      .where(eq(schema.auditLog.targetId, fixture.courseId));
+    expect(audits.map((item) => item.action)).toContain('certificate.issue_failed');
   });
 });
 

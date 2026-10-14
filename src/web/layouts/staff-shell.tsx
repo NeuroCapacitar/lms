@@ -18,6 +18,7 @@ interface NavItem {
     | '/staff/discussoes'
     | '/staff/ajuda'
     | '/staff/banners'
+    | '/staff/certificados'
     | '/staff/financeiro'
     | '/staff/videos'
     | '/staff/equipe';
@@ -33,6 +34,7 @@ const NAV: NavItem[] = [
   { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
   { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },
   { to: '/staff/banners', label: 'Banners', needs: 'staff.manage' },
+  { to: '/staff/certificados', label: 'Certificados', needs: 'staff.manage' },
   {
     to: '/staff/financeiro',
     label: 'Financeiro',

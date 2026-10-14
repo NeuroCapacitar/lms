@@ -253,6 +253,13 @@
       "when": 1791999354413,
       "tag": "0035_certificate",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792001165533,
+      "tag": "0036_certificate_signer",
+      "breakpoints": true
     }
   ]
 }

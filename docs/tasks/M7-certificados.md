@@ -121,7 +121,7 @@ Ordem sugerida: M7-01 → M7-06 → M7-02 → M7-07 → M7-03 → M7-09 → M7-0
 
 ### M7-06 — Emitente, signatário e assinatura privada
 
-**Dependências:** M7-01, M5-07, M1-03 · **Estado:** `not_started`
+**Dependências:** M7-01, M5-07, M1-03 · **Estado:** `implemented` (2026-10-14; R2 real NÃO exercitado; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** Admin cadastra o emitente (razão social, CNPJ) e, por curso, signatário (nome, cargo, imagem de assinatura) sem que a assinatura vaze.
 

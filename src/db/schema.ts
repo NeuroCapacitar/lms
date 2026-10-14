@@ -849,6 +849,48 @@ export const certificate = pgTable(
 );
 
 /**
+ * Emitente do certificado (M7-06): UMA linha só (`singleton` é sempre verdadeiro). Razão social e CNPJ (14 dígitos,
+ * dígitos verificadores validados no servidor). Só o Admin edita; cada certificado copia estes dados para o snapshot.
+ */
+export const certificateIssuer = pgTable(
+  'certificate_issuer',
+  {
+    singleton: boolean().primaryKey().default(true),
+    legalName: text().notNull(),
+    cnpj: text().notNull(),
+    updatedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    ...stamps,
+  },
+  (table) => [
+    check('certificate_issuer_singleton_check', sql`${table.singleton}`),
+    check('certificate_issuer_cnpj_check', sql`${table.cnpj} ~ '^[0-9]{14}$'`),
+    check('certificate_issuer_name_check', sql`char_length(${table.legalName}) between 3 and 200`),
+  ],
+);
+
+/**
+ * Signatário POR CURSO (M7-06), sem fallback global. A assinatura é mídia PRIVADA (`certificate_asset`) amarrada por
+ * `media_reference` (dono `certificate_signatory`, espaço `signature`); a coluna guarda só o id para o snapshot.
+ */
+export const certificateSignatory = pgTable(
+  'certificate_signatory',
+  {
+    courseId: uuid()
+      .primaryKey()
+      .references(() => course.id, { onDelete: 'cascade' }),
+    name: text().notNull(),
+    title: text().notNull(),
+    signatureMediaId: uuid().references(() => mediaAsset.id, { onDelete: 'restrict' }),
+    updatedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    ...stamps,
+  },
+  (table) => [
+    check('certificate_signatory_name_check', sql`char_length(${table.name}) between 2 and 120`),
+    check('certificate_signatory_title_check', sql`char_length(${table.title}) between 2 and 120`),
+  ],
+);
+
+/**
  * Outbox (M4-01): a FONTE DA VERDADE das intenções (e-mail, chamada a provider, tarefa). Nasce na MESMA
  * transação da mudança de domínio; a Queue só acelera (ADR 0006). O payload leva só IDs. A linha é
  * reivindicada com `FOR UPDATE SKIP LOCKED` e um LEASE cujo tempo vem do `now()` do banco; cada claim
@@ -1510,7 +1552,7 @@ export const mediaReference = pgTable(
     index('media_reference_media_idx').on(table.mediaId),
     check(
       'media_reference_owner_check',
-      sql`${table.ownerType} in ('course_draft', 'course_content', 'lesson', 'panel_banner', 'login_media')`,
+      sql`${table.ownerType} in ('course_draft', 'course_content', 'lesson', 'panel_banner', 'login_media', 'certificate_signatory')`,
     ),
   ],
 );
