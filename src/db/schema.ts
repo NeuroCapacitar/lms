@@ -891,6 +891,46 @@ export const certificateSignatory = pgTable(
 );
 
 /**
+ * Template do certificado POR CURSO (M7-03): o layout (campos pré-definidos em mm, validado por Zod no servidor) e o
+ * fundo A4 opcional (mídia privada `certificate_asset`). No máximo UM `draft` e UM `published` por curso; publicar
+ * congela o layout (gatilho) e o `published` anterior vira `superseded`. `version` é o controle otimista do
+ * rascunho (dois Admins no mesmo rascunho). Certificados já emitidos mantêm o layout do SEU snapshot.
+ */
+export const certificateTemplate = pgTable(
+  'certificate_template',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    courseId: uuid()
+      .notNull()
+      .references(() => course.id, { onDelete: 'restrict' }),
+    status: text().notNull().default('draft'),
+    layout: jsonb().notNull(),
+    backgroundMediaId: uuid().references(() => mediaAsset.id, { onDelete: 'restrict' }),
+    version: integer().notNull().default(1),
+    publishedAt: timestamp({ withTimezone: true }),
+    updatedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    ...stamps,
+  },
+  (table) => [
+    uniqueIndex('certificate_template_draft_idx')
+      .on(table.courseId)
+      .where(sql`${table.status} = 'draft'`),
+    uniqueIndex('certificate_template_published_idx')
+      .on(table.courseId)
+      .where(sql`${table.status} = 'published'`),
+    check(
+      'certificate_template_status_check',
+      sql`${table.status} in ('draft', 'published', 'superseded')`,
+    ),
+    check(
+      'certificate_template_published_check',
+      sql`(${table.status} = 'draft') = (${table.publishedAt} is null)`,
+    ),
+    check('certificate_template_version_check', sql`${table.version} >= 1`),
+  ],
+);
+
+/**
  * Outbox (M4-01): a FONTE DA VERDADE das intenções (e-mail, chamada a provider, tarefa). Nasce na MESMA
  * transação da mudança de domínio; a Queue só acelera (ADR 0006). O payload leva só IDs. A linha é
  * reivindicada com `FOR UPDATE SKIP LOCKED` e um LEASE cujo tempo vem do `now()` do banco; cada claim
@@ -1552,7 +1592,7 @@ export const mediaReference = pgTable(
     index('media_reference_media_idx').on(table.mediaId),
     check(
       'media_reference_owner_check',
-      sql`${table.ownerType} in ('course_draft', 'course_content', 'lesson', 'panel_banner', 'login_media', 'certificate_signatory')`,
+      sql`${table.ownerType} in ('course_draft', 'course_content', 'lesson', 'panel_banner', 'login_media', 'certificate_signatory', 'certificate_template')`,
     ),
   ],
 );

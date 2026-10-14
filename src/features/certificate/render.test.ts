@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildCertificateSnapshot, type CertificateSnapshot } from './certificate';
+import { defaultLayout } from './layout';
 import {
   CertificateRenderInputError,
   certificateValidationUrl,
@@ -82,13 +83,44 @@ describe('conteúdo', () => {
     expect(render()).toBe(render());
   });
 
-  it('nome longo diminui o corpo em vez de estourar: 4 faixas', () => {
+  it('nome longo diminui o corpo em vez de estourar (o corpo escolhido no layout é o teto)', () => {
     const size = (name: string) =>
-      /class="holder (n\d)"/.exec(render(snapshot({ displayName: name })))![1];
-    expect(size('Ana Souza')).toBe('n1');
-    expect(size('A'.repeat(40))).toBe('n2');
-    expect(size('A'.repeat(70))).toBe('n3');
-    expect(size('A'.repeat(120))).toBe('n4');
+      Number(
+        /class="f holderName" style="[^"]*font-size:([0-9.]+)pt/.exec(
+          render(snapshot({ displayName: name })),
+        )![1],
+      );
+    expect(size('Ana Souza')).toBe(32);
+    expect(size('A'.repeat(70))).toBeLessThan(32);
+    expect(size('A'.repeat(200))).toBeLessThan(size('A'.repeat(70)));
+    expect(size('A'.repeat(200))).toBeGreaterThanOrEqual(32 * 0.55 - 0.01);
+  });
+
+  it('o layout do snapshot manda: posição em mm, corpo, cor e alinhamento vêm dele', () => {
+    const layout = defaultLayout();
+    const holder = layout.fields.find((field) => field.id === 'holderName')!;
+    Object.assign(holder, {
+      x: 40,
+      y: 60,
+      w: 200,
+      h: 30,
+      fontSize: 20,
+      color: '#aa0000',
+      align: 'left',
+    });
+    const html = render({ ...snapshot(), layout });
+    expect(html).toMatch(
+      /class="f holderName" style="left:40mm;top:60mm;width:200mm;height:30mm;font-size:20pt;font-weight:600;color:#aa0000;text-align:left/,
+    );
+  });
+
+  it('com fundo, ele entra como <img> data: antes dos campos; fundo inválido é recusado', () => {
+    expect(render(snapshot(), { backgroundDataUri: PNG })).toContain(
+      '<img class="bg" src="data:image/png;base64,',
+    );
+    expect(() => render(snapshot(), { backgroundDataUri: 'https://x/y.png' })).toThrow(
+      'background_invalid',
+    );
   });
 });
 

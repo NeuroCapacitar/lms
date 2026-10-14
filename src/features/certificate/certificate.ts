@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { certificateLayoutSchema } from './layout';
+
 /**
  * Domínio do certificado (M7-01), parte PURA: estados, código opaco e o snapshot congelado. Sem SQL, Hono nem SDK.
  * O certificado nasce de uma `CourseCompletion` e é EVIDÊNCIA: depois de congelado o snapshot não muda; mudar o nome
@@ -75,6 +77,10 @@ export const certificateSnapshotSchema = z.strictObject({
       signatureMediaId: z.uuid().nullable(),
     })
     .nullable(),
+  /** Layout do template publicado no momento da emissão (M7-03); `null` = o modelo padrão. */
+  layout: certificateLayoutSchema.nullable(),
+  /** Fundo A4 do template (mídia privada) no momento da emissão; o renderer o lê do R2. */
+  backgroundMediaId: z.uuid().nullable(),
 });
 export type CertificateSnapshot = z.infer<typeof certificateSnapshotSchema>;
 
@@ -94,6 +100,8 @@ export function buildCertificateSnapshot(input: {
   requiredTotal: number;
   issuer?: CertificateSnapshot['issuer'];
   signatory?: CertificateSnapshot['signatory'];
+  layout?: CertificateSnapshot['layout'];
+  backgroundMediaId?: string | null;
 }): CertificateSnapshot {
   const holder = input.certificateName?.trim() ? input.certificateName : input.displayName;
   const parsed = certificateSnapshotSchema.safeParse({
@@ -105,6 +113,8 @@ export function buildCertificateSnapshot(input: {
     requiredTotal: input.requiredTotal,
     issuer: input.issuer ?? null,
     signatory: input.signatory ?? null,
+    layout: input.layout ?? null,
+    backgroundMediaId: input.backgroundMediaId ?? null,
   });
   if (!parsed.success) throw new SnapshotInvalidError();
   return parsed.data;

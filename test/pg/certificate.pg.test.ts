@@ -19,6 +19,7 @@ import {
   setCertificatePolicy,
   type CertificateRenderer,
 } from '../../src/server/certificate/certificate-store.ts';
+import { enableCertificates } from '../helpers/certificate-template.ts';
 import { completeLesson } from '../../src/server/learning/completion.ts';
 import { createDemoCourse, type DemoFixture } from '../helpers/demo-course.ts';
 import { createTestSchema, type TestSchema } from '../helpers/pg-schema.ts';
@@ -150,11 +151,7 @@ describe('emissão pela conclusão do curso', () => {
   it('com a política ligada: UM certificado queued, UMA intenção só com o id, snapshot congelado e código opaco', async () => {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture, { certificateName: 'Ana Maria de Souza' });
     await finishCourse(fixture, userId);
 
@@ -174,10 +171,12 @@ describe('emissão pela conclusão do curso', () => {
       completedAt: LATE.toISOString(),
     });
     expect(Object.keys(row!.snapshot as object).sort()).toEqual([
+      'backgroundMediaId',
       'completedAt',
       'courseTitle',
       'holderName',
       'issuer',
+      'layout',
       'requiredTotal',
       'signatory',
       'version',
@@ -198,11 +197,7 @@ describe('emissão pela conclusão do curso', () => {
   it('sem nome confirmado, usa o nome de exibição do perfil', async () => {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture);
     await finishCourse(fixture, userId);
     const [profileRow] = await main.db
@@ -216,11 +211,7 @@ describe('emissão pela conclusão do curso', () => {
   it('duas conclusões SIMULTÂNEAS da última aula (conexões separadas): 1 conclusão, 1 certificado, 1 intenção', async () => {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture);
     for (const title of REQUIRED.slice(0, -1)) {
       await completeLesson(main.db, {
@@ -247,11 +238,7 @@ describe('emissão pela conclusão do curso', () => {
   it('concluir de novo (aula já concluída) não cria outro certificado nem outra intenção', async () => {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture);
     await finishCourse(fixture, userId);
     await finishCourse(fixture, userId);
@@ -262,11 +249,7 @@ describe('emissão pela conclusão do curso', () => {
   it('aula obrigatória pendente impede a conclusão e, portanto, o certificado', async () => {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture);
     for (const title of REQUIRED.slice(0, -1)) {
       await completeLesson(main.db, {
@@ -282,11 +265,7 @@ describe('emissão pela conclusão do curso', () => {
   it('perder o acesso depois da conclusão (direito revogado) não apaga o certificado', async () => {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture);
     await finishCourse(fixture, userId);
     const [grant] = await main.db
@@ -309,11 +288,7 @@ describe('dado que não cabe no certificado', () => {
   it('snapshot inválido (título gigante): nenhum certificado nasce, a transação segue e a falha fica na auditoria', async () => {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture);
     const id = await main.db.transaction((tx) =>
       issueCertificateIn(tx, {
@@ -340,11 +315,7 @@ describe('política e emissão de pendentes', () => {
   it('ligar e desligar grava auditoria; curso inexistente é recusado', async () => {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     await setCertificatePolicy(main.db, {
       actorId: admin,
       courseId: fixture.courseId,
@@ -358,11 +329,7 @@ describe('política e emissão de pendentes', () => {
     expect(actions).toContain('certificate.policy.enable');
     expect(actions).toContain('certificate.policy.disable');
     await expect(
-      setCertificatePolicy(main.db, {
-        actorId: admin,
-        courseId: crypto.randomUUID(),
-        enabled: true,
-      }),
+      enableCertificates(main.db, { actorId: admin, courseId: crypto.randomUUID() }),
     ).rejects.toBeInstanceOf(PermanentError);
   });
 
@@ -385,11 +352,7 @@ describe('política e emissão de pendentes', () => {
     expect(await issuePendingCertificates(main.db, input)).toEqual({ issued: 0, skipped: 2 });
     expect(await certificates()).toHaveLength(0);
 
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     expect(await issuePendingCertificates(main.db, input)).toEqual({ issued: 2, skipped: 0 });
     expect(await certificates()).toHaveLength(2);
     expect(await intents()).toHaveLength(2);
@@ -410,11 +373,7 @@ describe('renderização (handler do certificate.render)', () => {
   async function queued() {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture);
     await finishCourse(fixture, userId);
     const [row] = await certificates().then((all) => all.filter((item) => item.userId === userId));
@@ -537,11 +496,7 @@ describe('restrições do banco', () => {
   async function issued() {
     const fixture = await demo();
     const admin = await student(fixture);
-    await setCertificatePolicy(main.db, {
-      actorId: admin,
-      courseId: fixture.courseId,
-      enabled: true,
-    });
+    await enableCertificates(main.db, { actorId: admin, courseId: fixture.courseId });
     const userId = await student(fixture);
     await finishCourse(fixture, userId);
     const [row] = await certificates().then((all) => all.filter((item) => item.userId === userId));

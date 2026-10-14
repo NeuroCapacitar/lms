@@ -131,12 +131,15 @@ test('o tema "Sistema" segue prefers-color-scheme sem script inline', async ({ p
   expect(await page.locator('script:not([src])').count()).toBe(0);
 });
 
-test('tudo é servido da própria origem: fonte autohospedada, sem CDN', async ({ page }) => {
+test('tudo é servido da própria origem: fonte autohospedada, sem CDN', async ({
+  page,
+  baseURL,
+}) => {
   const origins = new Set<string>();
   page.on('request', (request) => origins.add(new URL(request.url()).origin));
   await page.goto('/');
   await page.waitForLoadState('networkidle');
-  expect([...origins]).toEqual(['http://localhost:4173']);
+  expect([...origins]).toEqual([new URL(baseURL!).origin]);
   const font = await page.evaluate(async () => {
     await document.fonts.ready;
     return document.fonts.check("1rem 'Lexend Deca Variable'");

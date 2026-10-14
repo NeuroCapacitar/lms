@@ -3,7 +3,7 @@ import { loadEnv } from 'vite';
 
 const fileEnv = loadEnv('test', process.cwd(), '');
 const testDatabaseUrl = process.env.TEST_DATABASE_URL ?? fileEnv.TEST_DATABASE_URL ?? '';
-const port = 4173;
+const port = Number(process.env.E2E_PORT ?? 4173);
 
 // Smoke em Chromium contra o build servido pelo `vite preview` (workerd local) com o banco de TESTE.
 export default defineConfig({

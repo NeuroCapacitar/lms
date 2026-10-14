@@ -44,7 +44,8 @@ export async function setReferenceIn(
       | 'lesson'
       | 'panel_banner'
       | 'login_media'
-      | 'certificate_signatory';
+      | 'certificate_signatory'
+      | 'certificate_template';
     ownerId: string;
     slot: string;
     mediaId: string | null;

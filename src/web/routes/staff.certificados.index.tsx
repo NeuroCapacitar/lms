@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState, type FormEvent } from 'react';
 
 import { MIME_BY_KIND } from '../../features/media/media';
@@ -17,7 +17,7 @@ import { ForbiddenError } from '../api/staff';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
 
-export const Route = createFileRoute('/staff/certificados')({ component: StaffCertificates });
+export const Route = createFileRoute('/staff/certificados/')({ component: StaffCertificates });
 
 const FAILURES: Record<string, string> = {
   invalid_request:
@@ -174,7 +174,20 @@ function SignatorySection() {
               ))}
             </select>
           </label>
-          {courseId ? <SignatoryLoader key={courseId} courseId={courseId} /> : null}
+          {courseId ? (
+            <>
+              <p>
+                <Link
+                  to="/staff/certificados/$courseId"
+                  params={{ courseId }}
+                  className="underline"
+                >
+                  Editar o template do certificado deste curso
+                </Link>
+              </p>
+              <SignatoryLoader key={courseId} courseId={courseId} />
+            </>
+          ) : null}
         </>
       )}
     </section>
