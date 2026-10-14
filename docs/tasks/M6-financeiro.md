@@ -42,7 +42,7 @@
 
 ### M6-03 — Webhook Asaas: inbox antes do ACK
 
-**Dependências:** M6-02, M4-02 · **Estado:** `not_started`
+**Dependências:** M6-02, M4-02 · **Estado:** `implemented` (2026-10-14; webhook real do Asaas NÃO exercitado; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** receber eventos do Asaas sem perder nenhum e sem agir sobre eles dentro da requisição.
 **Passos:**

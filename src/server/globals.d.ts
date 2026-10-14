@@ -48,6 +48,8 @@ interface Env {
   MEDIA_PUBLIC_BASE_URL?: string;
   /** Chave de API do Asaas do ambiente (SEGREDO do Worker; sandbox em Staging). Ausente = compra desligada (503). */
   ASAAS_API_KEY?: string;
+  /** Token do webhook do Asaas (SEGREDO do Worker; 32 a 255 caracteres, igual ao cadastrado na conta). Ausente = webhook recusa com 500. */
+  ASAAS_WEBHOOK_TOKEN?: string;
   /** Base da API do Asaas (variável, não segredo); padrão: o sandbox. */
   ASAAS_API_BASE_URL?: string;
 }
