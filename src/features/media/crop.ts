@@ -8,6 +8,8 @@ import { MEDIA_PURPOSES } from './media';
 export const CROP_TARGETS = {
   course_cover: { width: 1280, height: 720 },
   course_banner: { width: 1680, height: 420 },
+  panel_banner: { width: 1680, height: 420 },
+  login_media: { width: 900, height: 1200 },
 } as const;
 
 export type CroppablePurpose = keyof typeof CROP_TARGETS;

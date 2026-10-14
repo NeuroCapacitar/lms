@@ -63,6 +63,7 @@
     "test/pg/interest.pg.test.ts",
     "test/pg/media.pg.test.ts",
     "test/pg/help.pg.test.ts",
+    "test/pg/banner.pg.test.ts",
     "test/helpers/media-bytes.ts",
     "test/pg/video-connections.pg.test.ts",
     "test/pg/operations.pg.test.ts",

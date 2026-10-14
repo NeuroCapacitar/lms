@@ -9,6 +9,7 @@ import {
 } from '../api/auth';
 import { safeReturnTo } from '../../features/identity/return-to';
 import { rememberReturnTo } from '../return-to';
+import { LoginMediaLayout } from '../components/login-media';
 import { PasswordSignIn } from '../components/password-sign-in';
 import { SupportAddress } from '../components/support-address';
 import { Turnstile } from '../components/turnstile';
@@ -99,7 +100,7 @@ function SignIn() {
   }
 
   return (
-    <>
+    <LoginMediaLayout>
       <h1 className="mb-2 text-3xl font-semibold">Entrar</h1>
       <p className="mb-8 max-w-prose text-[var(--text-muted)]">
         Informe seu e-mail e enviaremos um link de acesso. Não é preciso criar senha.
@@ -166,6 +167,6 @@ function SignIn() {
       <div className="mt-8 max-w-md">
         <SupportAddress prefix="Não consegue entrar? Escreva para" />
       </div>
-    </>
+    </LoginMediaLayout>
   );
 }

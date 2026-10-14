@@ -197,6 +197,13 @@
       "when": 1791934948222,
       "tag": "0027_help_support",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791937992245,
+      "tag": "0028_banners",
+      "breakpoints": true
     }
   ]
 }

@@ -55,8 +55,19 @@ async function newActor(browser: import('@playwright/test').Browser) {
 
 const counts = async () => (await (await control.get('/__test/counts')).json()) as Counts;
 
-/** Pede o link pela tela, lê o link na caixa falsa e o confirma (o clique em "Entrar" consome o link). */
+/** O último link de acesso na caixa falsa para o e-mail, ou `undefined` se ainda não há nenhum. */
+async function latestLink(email: string): Promise<string | undefined> {
+  const response = await control.get(`/__test/link?email=${encodeURIComponent(email)}`);
+  return response.ok() ? ((await response.json()) as { link: string }).link : undefined;
+}
+
+/**
+ * Pede o link pela tela, lê o link na caixa falsa e o confirma (o clique em "Entrar" consome o link). O e-mail sai
+ * pela outbox, depois da resposta do pedido: quem já entrou antes tem um link ANTIGO (já consumido) na caixa, então
+ * só vale um link DIFERENTE do que havia antes do pedido.
+ */
 async function signIn(page: Page, email: string) {
+  const previous = await latestLink(email);
   await page.goto('/entrar');
   await page.getByLabel('E-mail').fill(email);
   await page.getByRole('button', { name: 'Enviar link de acesso' }).click();
@@ -64,8 +75,8 @@ async function signIn(page: Page, email: string) {
   let link: string | undefined;
   await expect
     .poll(async () => {
-      const response = await control.get(`/__test/link?email=${encodeURIComponent(email)}`);
-      link = response.ok() ? ((await response.json()) as { link: string }).link : undefined;
+      const current = await latestLink(email);
+      link = current !== previous ? current : undefined;
       return link;
     })
     .toBeTruthy();

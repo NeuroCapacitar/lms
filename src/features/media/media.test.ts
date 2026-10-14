@@ -314,6 +314,7 @@ describe('entrega pública', () => {
       'banner_wide',
       'cover_card',
       'cover_hero',
+      'login_side',
     ]);
     expect(isVariantName('cover_card')).toBe(true);
     for (const bad of ['width=99999', '640', 'master', '__proto__', 'constructor', '']) {

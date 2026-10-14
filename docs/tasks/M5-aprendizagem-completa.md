@@ -210,7 +210,7 @@
 
 ### M5-15 — Banners do painel e mídia da tela de login
 
-**Dependências:** M5-07, M2-03 · **Estado:** `not_started`
+**Dependências:** M5-07, M2-03 · **Estado:** `implemented` (2026-10-13; evidência e limites em `docs/implementation/STATUS.md`)
 
 **Objetivo:** Staff publica banners no painel do aluno e imagens na tela de acesso, sem violar acessibilidade.
 **Passos:**

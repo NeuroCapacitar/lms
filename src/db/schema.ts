@@ -1399,7 +1399,7 @@ export const mediaAsset = pgTable(
     index('media_asset_state_idx').on(table.state, table.createdAt),
     check(
       'media_asset_purpose_check',
-      sql`${table.purpose} in ('course_cover', 'course_banner', 'lesson_material', 'certificate_asset')`,
+      sql`${table.purpose} in ('course_cover', 'course_banner', 'panel_banner', 'login_media', 'lesson_material', 'certificate_asset')`,
     ),
     check('media_asset_visibility_check', sql`${table.visibility} in ('public', 'private')`),
     check(
@@ -1445,7 +1445,7 @@ export const mediaReference = pgTable(
     index('media_reference_media_idx').on(table.mediaId),
     check(
       'media_reference_owner_check',
-      sql`${table.ownerType} in ('course_draft', 'course_content', 'lesson')`,
+      sql`${table.ownerType} in ('course_draft', 'course_content', 'lesson', 'panel_banner', 'login_media')`,
     ),
   ],
 );
@@ -1511,5 +1511,66 @@ export const supportRequest = pgTable(
       'support_request_message_check',
       sql`char_length(${table.message}) between 1 and 2000 and ${table.message} = btrim(${table.message})`,
     ),
+  ],
+);
+
+/**
+ * Banner do painel do aluno (M5-15). A imagem é um `media_asset` PÚBLICO (propósito `panel_banner`); o texto
+ * alternativo é OBRIGATÓRIO; o link é só interno ou https de host permitido; a janela de exibição é opcional.
+ * Publicar copia a imagem para o bucket público ANTES de o estado mudar. A ordem é por `position`.
+ */
+export const panelBanner = pgTable(
+  'panel_banner',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    mediaId: uuid()
+      .notNull()
+      .references(() => mediaAsset.id, { onDelete: 'restrict' }),
+    alt: text().notNull(),
+    linkUrl: text(),
+    startsAt: timestamp({ withTimezone: true }),
+    endsAt: timestamp({ withTimezone: true }),
+    position: integer().notNull(),
+    state: text().notNull().default('draft'),
+    ...stamps,
+  },
+  (table) => [
+    index('panel_banner_state_idx').on(table.state, table.position),
+    check('panel_banner_state_check', sql`${table.state} in ('draft', 'published')`),
+    check(
+      'panel_banner_alt_check',
+      sql`char_length(${table.alt}) between 1 and 200 and ${table.alt} = btrim(${table.alt})`,
+    ),
+    check(
+      'panel_banner_link_check',
+      sql`${table.linkUrl} is null or char_length(${table.linkUrl}) between 1 and 500`,
+    ),
+    check(
+      'panel_banner_window_check',
+      sql`${table.startsAt} is null or ${table.endsAt} is null or ${table.endsAt} > ${table.startsAt}`,
+    ),
+    check('panel_banner_position_check', sql`${table.position} >= 0`),
+  ],
+);
+
+/**
+ * Imagem decorativa da tela de login (M5-15): até 5 PUBLICADAS (conferido sob trava da tabela), sem texto
+ * alternativo (decorativa). Mesma regra de publicação do banner do painel.
+ */
+export const loginMedia = pgTable(
+  'login_media',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    mediaId: uuid()
+      .notNull()
+      .references(() => mediaAsset.id, { onDelete: 'restrict' }),
+    position: integer().notNull(),
+    state: text().notNull().default('draft'),
+    ...stamps,
+  },
+  (table) => [
+    index('login_media_state_idx').on(table.state, table.position),
+    check('login_media_state_check', sql`${table.state} in ('draft', 'published')`),
+    check('login_media_position_check', sql`${table.position} >= 0`),
   ],
 );
