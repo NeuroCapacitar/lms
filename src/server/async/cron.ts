@@ -54,7 +54,7 @@ export async function handleScheduled(env: Env, deps: ScheduledDeps = {}): Promi
   try {
     const summary = await runCycle(
       { db: opened.db, env, alert, owner: `cron:${crypto.randomUUID()}` },
-      deps.jobs ?? createCronJobs(inboxHandlersFor(env)),
+      deps.jobs ?? createCronJobs(inboxHandlersFor(env), { reader: paymentReaderFor(env) }),
     );
     await recordCycle(opened.db, {
       durationMs: Date.now() - startedAt,

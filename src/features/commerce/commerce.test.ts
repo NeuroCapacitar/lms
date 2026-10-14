@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ORDER_STATUSES,
+  RECONCILE_MAX_ORDERS_PER_RUN,
+  RECONCILE_MAX_PAYMENTS_PER_RUN,
   buildOrderSnapshot,
   canTransitionOrder,
   createOrderInputSchema,
   maxInstallmentsForPrice,
   orderExpiresAt,
+  reconcileBackoffMs,
   validatePaidPublication,
   type OrderStatus,
 } from './commerce';
@@ -120,5 +123,24 @@ describe('snapshot e pedido de compra', () => {
       createOrderInputSchema.safeParse({ offerId: 'x', attemptId: ids.attemptId }).success,
     ).toBe(false);
     expect(createOrderInputSchema.safeParse({ offerId: ids.offerId }).success).toBe(false);
+  });
+});
+
+describe('reconciliação: backoff e teto', () => {
+  it('o intervalo dobra a cada tentativa (10 min, 20, 40...) e para em 6 horas', () => {
+    expect(reconcileBackoffMs(0)).toBe(10 * 60_000);
+    expect(reconcileBackoffMs(1)).toBe(20 * 60_000);
+    expect(reconcileBackoffMs(2)).toBe(40 * 60_000);
+    expect(reconcileBackoffMs(5)).toBe(320 * 60_000);
+    expect(reconcileBackoffMs(6)).toBe(6 * 3_600_000);
+    expect(reconcileBackoffMs(50)).toBe(6 * 3_600_000);
+    expect(reconcileBackoffMs(-3)).toBe(10 * 60_000);
+  });
+
+  it('o teto por execução cabe na quota do Asaas (25.000 por 12 h) com folga enorme', () => {
+    const runsIn12Hours = 24;
+    const worstCase =
+      runsIn12Hours * (RECONCILE_MAX_ORDERS_PER_RUN + RECONCILE_MAX_PAYMENTS_PER_RUN) * 3;
+    expect(worstCase).toBeLessThan(25_000 / 5);
   });
 });

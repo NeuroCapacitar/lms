@@ -120,6 +120,17 @@ export async function loadOperationsSnapshot(
                where state = 'accepted' and accepted_at > now() - interval '24 hours')::int as accepted24`),
   )[0];
 
+  const financeRow = rowsOf(
+    await db.execute(sql`
+      select (select count(*) from purchase_order
+               where status = 'pending' and created_at < now() - interval '30 minutes')::int as over30,
+             (select count(*) from purchase_order
+               where status = 'pending' and created_at < now() - interval '2 hours')::int as over2h,
+             (select count(*) from financial_review where state = 'open')::int as open_reviews,
+             (select floor(extract(epoch from (now() - min(created_at))))::int
+                from financial_review where state = 'open') as oldest_review`),
+  )[0];
+
   const flags = await db
     .select({ key: systemFlag.key, enabled: systemFlag.enabled })
     .from(systemFlag);
@@ -138,6 +149,12 @@ export async function loadOperationsSnapshot(
     suppressedRecipients: (extra?.suppressed as number | undefined) ?? 0,
     emailAcceptedLast24h: (extra?.accepted24 as number | undefined) ?? 0,
     paused: { finance: isPaused('finance'), general: isPaused('general') },
+    finance: {
+      pendingOver30Min: (financeRow?.over30 as number | undefined) ?? 0,
+      pendingOver2Hours: (financeRow?.over2h as number | undefined) ?? 0,
+      openReviews: (financeRow?.open_reviews as number | undefined) ?? 0,
+      oldestOpenReviewAgeSeconds: (financeRow?.oldest_review as number | null | undefined) ?? null,
+    },
   };
 }
 

@@ -22,6 +22,12 @@ const healthy = (): OperationsSnapshot => ({
   email: [],
   suppressedRecipients: 0,
   emailAcceptedLast24h: 0,
+  finance: {
+    pendingOver30Min: 0,
+    pendingOver2Hours: 0,
+    openReviews: 0,
+    oldestOpenReviewAgeSeconds: null,
+  },
   paused: { finance: false, general: false },
 });
 
@@ -156,5 +162,65 @@ describe('corpos das ações', () => {
       pauseBodySchema.safeParse({ paused: 'sim', reason: 'incidente no Resend' }).success,
     ).toBe(false);
     expect(pauseBodySchema.safeParse({ paused: true }).success).toBe(false);
+  });
+});
+
+describe('alertas financeiros (M6-04)', () => {
+  const finance = (overrides: Partial<OperationsSnapshot['finance']>) => ({
+    ...healthy(),
+    finance: { ...healthy().finance, ...overrides },
+  });
+
+  it('pedido pendente há mais de 2 horas: P1 (a reconciliação deveria ter fechado)', () => {
+    expect(codes(finance({ pendingOver2Hours: 1, pendingOver30Min: 1 }))).toContain(
+      'P1:finance_orders_stuck',
+    );
+  });
+
+  it('revisão aberta: P2; a mais antiga com mais de 24 h sobe para P1', () => {
+    expect(codes(finance({ openReviews: 2, oldestOpenReviewAgeSeconds: 3600 }))).toEqual([
+      'P2:finance_review_open',
+    ]);
+    expect(
+      codes(
+        finance({
+          openReviews: 1,
+          oldestOpenReviewAgeSeconds: OPS_THRESHOLDS.reviewStaleSeconds + 1,
+        }),
+      ),
+    ).toEqual(['P1:finance_review_open']);
+  });
+
+  it('silêncio do webhook do Asaas SÓ alerta com pedido esperando há mais de 30 minutos', () => {
+    // sem pedido esperando, o silêncio é normal (poucos alunos)
+    expect(codes({ ...healthy(), inbox: [] })).toEqual([]);
+    const waiting = finance({ pendingOver30Min: 1 });
+    expect(codes(waiting)).toEqual(['P3:webhook_silent:asaas']);
+    const recent = {
+      ...waiting,
+      inbox: [
+        {
+          provider: 'asaas',
+          lastReceivedAt: new Date(NOW - 60 * 60 * 1000).toISOString(),
+          pending: 0,
+          problems: 0,
+        },
+      ],
+    };
+    expect(codes(recent)).toEqual([]);
+    const old = {
+      ...waiting,
+      inbox: [
+        {
+          provider: 'asaas',
+          lastReceivedAt: new Date(
+            NOW - (OPS_THRESHOLDS.asaasSilenceSeconds + 60) * 1000,
+          ).toISOString(),
+          pending: 0,
+          problems: 0,
+        },
+      ],
+    };
+    expect(codes(old)).toEqual(['P3:webhook_silent:asaas']);
   });
 });

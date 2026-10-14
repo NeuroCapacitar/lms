@@ -73,7 +73,7 @@
 
 ### M6-04 — Reconciliação e FinancialReview
 
-**Dependências:** M6-07, M4-03 · **Estado:** `not_started`
+**Dependências:** M6-07, M4-03 · **Estado:** `implemented` (2026-10-14; só com o dublê do Asaas, o sandbox real NÃO foi exercitado; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** resolver o que o webhook não resolveu, gastando pouquíssimas consultas do Asaas.
 **Passos:**

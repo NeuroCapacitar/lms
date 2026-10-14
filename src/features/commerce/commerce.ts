@@ -154,3 +154,27 @@ export interface OrderDto {
   priceCents: number;
   expiresAt: string;
 }
+
+/**
+ * Reconciliação (M6-04). Só entram pedidos com sessão ativa há mais de 10 minutos (o webhook costuma chegar antes);
+ * o intervalo entre consultas do mesmo pedido dobra a cada tentativa (10 min, 20, 40... até 6 h); no máximo 20
+ * pedidos e 20 pagamentos por execução do Cron. Conta: 24 execuções em 12 h x 40 itens x até 3 chamadas = 2.880
+ * chamadas no pior caso, contra a quota de 25.000 por 12 h do Asaas (o polling constatado impede aumento).
+ */
+export const RECONCILE_MIN_AGE_MS = 10 * 60_000;
+export const RECONCILE_MAX_ORDERS_PER_RUN = 20;
+export const RECONCILE_MAX_PAYMENTS_PER_RUN = 20;
+const RECONCILE_MAX_BACKOFF_MS = 6 * 3_600_000;
+
+export function reconcileBackoffMs(attempts: number): number {
+  const exponent = Math.min(Math.max(attempts, 0), 10);
+  return Math.min(RECONCILE_MIN_AGE_MS * 2 ** exponent, RECONCILE_MAX_BACKOFF_MS);
+}
+
+/** Estados do provider em que o pagamento ainda pode mudar (vale reler). */
+export const INTERMEDIATE_PROVIDER_STATUSES = [
+  'PENDING',
+  'AWAITING_RISK_ANALYSIS',
+  'REFUND_REQUESTED',
+  'REFUND_IN_PROGRESS',
+] as const;

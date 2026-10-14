@@ -68,6 +68,7 @@
     "test/pg/checkout.pg.test.ts",
     "test/pg/asaas-webhook.pg.test.ts",
     "test/pg/payment-evidence.pg.test.ts",
+    "test/pg/reconciliation.pg.test.ts",
     "test/helpers/media-bytes.ts",
     "test/pg/video-connections.pg.test.ts",
     "test/pg/operations.pg.test.ts",
