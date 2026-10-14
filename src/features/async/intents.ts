@@ -21,6 +21,8 @@ export const INTENT_KINDS = {
   'email.send': { queue: 'general', payload: intentPayload({ emailMessageId: id }) },
   /** Aviso de abertura de vendas (M5-06): o payload é só o id do ciclo; os interessados vêm do banco, em lotes. */
   'interest.fanout': { queue: 'general', payload: intentPayload({ cycleId: id }) },
+  /** Reembolso integral (M6-05): o payload é só o id do `refund_request`; o executor lê o resto do banco e NUNCA reenvia às cegas. */
+  'finance.refund': { queue: 'finance', payload: intentPayload({ refundRequestId: id }) },
 } as const satisfies Record<string, { queue: QueueName; payload: z.ZodType }>;
 
 export type IntentKind = keyof typeof INTENT_KINDS;

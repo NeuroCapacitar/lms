@@ -7,6 +7,7 @@ import { grantRole } from '../../src/server/auth/access-store.ts';
 import { createOffer, setOfferStatus } from '../../src/server/catalog/catalog-store.ts';
 import { seedDemoCourse } from '../../src/server/catalog/demo-seed.ts';
 import { createFakeCheckoutProvider } from '../../src/server/commerce/fake-checkout.ts';
+import { createOrder } from '../../src/server/commerce/order-store.ts';
 import {
   createFakePaymentReader,
   type FakePaymentReader,
@@ -223,11 +224,22 @@ describe('reconciliador: quem entra e quando', () => {
   it('teto por execução: 25 pedidos vencidos, só 20 por vez; os outros ficam para a próxima', async () => {
     await fresh();
     const offerId = await paidOffer();
-    const ids: string[] = [];
+    // 25 pedidos criados direto no domínio (uma pessoa, tentativas diferentes): rápido e sem passar pela rota
+    const person = await newPerson();
     for (let i = 0; i < 25; i += 1) {
-      const person = await newPerson();
-      const bought = await buy(person, T0, offerId);
-      ids.push(bought.orderId);
+      const { order } = await createOrder(tools.db, {
+        userId: person.id,
+        offerId,
+        attemptId: crypto.randomUUID(),
+        now: T0,
+      });
+      await tools.db.insert(schema.checkoutSession).values({
+        orderId: order.id,
+        state: 'open',
+        providerSessionId: `chk-cap-${crypto.randomUUID()}`,
+        checkoutUrl: 'https://sandbox.asaas.com/x',
+        expiresAt: order.expiresAt,
+      });
     }
     const first = await reconcile(at(11));
     expect(first.orders).toBe(20);

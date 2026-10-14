@@ -39,6 +39,7 @@ import { interestRoutes, interestStaffRoutes } from '../interest/routes';
 import { bannerRoutes, bannerStaffRoutes } from '../banner/routes';
 import type { CheckoutProvider } from '../commerce/checkout-provider';
 import type { PaymentReader } from '../commerce/payment-reader';
+import type { RefundProvider } from '../commerce/refund-provider';
 import { financeStaffRoutes } from '../commerce/finance-routes';
 import { commerceRoutes } from '../commerce/routes';
 import { helpRoutes, helpStaffRoutes } from '../help/routes';
@@ -86,6 +87,8 @@ export interface AuthRouteOverrides {
   checkoutProvider?: CheckoutProvider;
   /** Leitor de pagamentos nos testes (dublê do Asaas); em produção vem de `ASAAS_API_KEY`. */
   paymentReader?: PaymentReader;
+  /** Provider de reembolso nos testes (dublê do Asaas); em produção vem de `ASAAS_API_KEY`. */
+  refundProvider?: RefundProvider;
 }
 
 type Vars = AuthVars;
@@ -429,6 +432,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     financeStaffRoutes({
       withDatabase,
       ...(overrides.paymentReader ? { reader: () => overrides.paymentReader } : {}),
+      ...(overrides.refundProvider ? { refundProvider: () => overrides.refundProvider } : {}),
       ...(overrides.clock ? { clock: overrides.clock } : {}),
     }),
   );

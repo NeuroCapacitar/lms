@@ -9,7 +9,15 @@ import {
   type ReviewDto,
 } from '../../features/commerce/review';
 import type { ActionOutcome } from '../api/action';
-import { fetchReviews, resolveReviewRequest } from '../api/finance';
+import {
+  fetchRefunds,
+  fetchReviews,
+  requestRefundRequest,
+  resolveReviewRequest,
+} from '../api/finance';
+import { REFUND_STATE_LABELS } from '../../features/commerce/refund';
+import { ReauthPanel } from '../components/reauth-panel';
+import { TextField } from '../components/ui/field';
 import { ForbiddenError } from '../api/staff';
 import { Button } from '../components/ui/button';
 import { TextArea } from '../components/ui/text-area';
@@ -31,7 +39,11 @@ const FAILURES: Record<string, string> = {
   checkout_not_configured: 'O Asaas não está configurado neste ambiente.',
   not_found: 'A revisão não existe mais. Atualize a lista.',
   forbidden: 'Você não tem a permissão de resolver revisões financeiras.',
-  invalid_request: 'O motivo precisa de pelo menos 5 caracteres.',
+  invalid_request: 'Confira o número do pedido e o motivo (pelo menos 5 caracteres).',
+  order_not_refundable:
+    'Este pedido não pode ser reembolsado agora (só pedidos pagos, com acesso ativo).',
+  refund_already_active: 'Já existe um reembolso em andamento para este pedido.',
+  refund_window_closed: 'Passaram os 7 dias: só o Admin pode reembolsar depois do prazo.',
 };
 
 function failureText(outcome: ActionOutcome<unknown>): string {
@@ -75,6 +87,7 @@ function StaffFinance() {
         Revisões de pagamentos que o sistema não pôde decidir sozinho. Nada é liberado por dúvida: o
         acesso só sai depois de uma evidência segura ou de uma decisão sua, com motivo.
       </p>
+      <RefundSection />
       {reviews.error instanceof ForbiddenError ? (
         <p role="alert">Você não tem a permissão de ver as revisões financeiras.</p>
       ) : reviews.isPending ? (
@@ -225,5 +238,127 @@ function ReviewCard({
         ) : null}
       </div>
     </article>
+  );
+}
+
+/**
+ * Reembolsos (M6-05): pedido INTEGRAL, com motivo, só com o grant `refund.execute` e reautenticação recente. Enquanto não
+ * há a tela de pedidos (M6-08) o pedido é identificado pelo número. Dentro de 7 dias qualquer Suporte com o grant; depois,
+ * só o Admin. Ao pedir, o acesso da pessoa é suspenso; se o Asaas recusar, é devolvido.
+ */
+function RefundSection() {
+  const queryClient = useQueryClient();
+  const refunds = useQuery({ queryKey: ['finance-refunds'], queryFn: fetchRefunds, retry: false });
+  const [orderId, setOrderId] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [needsReauth, setNeedsReauth] = useState(false);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | undefined>();
+
+  async function submit() {
+    setBusy(true);
+    setMessage(undefined);
+    setNeedsReauth(false);
+    const outcome = await requestRefundRequest(orderId.trim(), reason);
+    setBusy(false);
+    if (outcome.result === 'ok') {
+      setMessage({
+        kind: 'ok',
+        text: 'Reembolso pedido. O acesso da pessoa foi suspenso até o Asaas concluir.',
+      });
+      setOrderId('');
+      setReason('');
+      await queryClient.invalidateQueries({ queryKey: ['finance-refunds'] });
+      return;
+    }
+    if (outcome.result === 'reauth_required') {
+      setNeedsReauth(true);
+      return;
+    }
+    setMessage({ kind: 'error', text: failureText(outcome) });
+  }
+
+  // Sem o grant a seção some (a API responde 403 e o resto da página segue).
+  if (refunds.error instanceof ForbiddenError) return null;
+  return (
+    <section aria-labelledby="reembolsos-titulo" className="mb-10 grid gap-4">
+      <h2 id="reembolsos-titulo" className="text-xl font-semibold">
+        Reembolsos
+      </h2>
+      {needsReauth ? <ReauthPanel action="pedir um reembolso" /> : null}
+      <form
+        noValidate
+        aria-label="Pedir reembolso integral"
+        className="grid max-w-xl gap-3 rounded-lg border p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <TextField
+          label="Número do pedido"
+          description="O reembolso é sempre do valor INTEGRAL. Dentro de 7 dias qualquer Suporte com o grant; depois, só o Admin."
+          value={orderId}
+          maxLength={36}
+          onChange={(event) => setOrderId(event.target.value)}
+        />
+        <TextArea
+          id="motivo-reembolso"
+          label="Motivo do reembolso"
+          description="Obrigatório (mínimo de 5 caracteres). Fica na auditoria."
+          value={reason}
+          maxLength={500}
+          onChange={(event) => setReason(event.target.value)}
+        />
+        <div>
+          <Button
+            type="submit"
+            disabled={busy || orderId.trim() === '' || reason.trim().length < 5}
+          >
+            Pedir reembolso integral
+          </Button>
+        </div>
+        {message ? (
+          <p
+            role={message.kind === 'ok' ? 'status' : 'alert'}
+            className={
+              message.kind === 'ok'
+                ? 'font-medium text-[var(--text-success)]'
+                : 'font-medium text-[var(--text-danger)]'
+            }
+          >
+            {message.text}
+          </p>
+        ) : null}
+      </form>
+      {refunds.isPending ? (
+        <p role="status">Carregando…</p>
+      ) : refunds.isError ? (
+        <p role="alert" className="font-medium text-[var(--text-danger)]">
+          Não foi possível carregar os reembolsos agora.
+        </p>
+      ) : refunds.data.length === 0 ? (
+        <p className="text-[var(--text-muted)]">Nenhum reembolso pedido ainda.</p>
+      ) : (
+        <ul className="grid gap-3" aria-label="Reembolsos pedidos">
+          {refunds.data.map((refund) => (
+            <li key={refund.id} className="grid gap-1 rounded-lg border p-4 text-sm">
+              <p className="flex flex-wrap items-baseline gap-2">
+                <span className="font-semibold">{refund.buyerName}</span>
+                <span>{refund.courseTitle}</span>
+                <span className="rounded border px-1.5 text-xs font-medium">
+                  {REFUND_STATE_LABELS[refund.state] ?? refund.state}
+                </span>
+              </p>
+              <p className="text-[var(--text-muted)]">
+                {formatBrl(refund.priceCents)} · {dateFormat.format(new Date(refund.createdAt))}
+                {refund.failureCode ? ` · Motivo da falha: ${refund.failureCode}` : ''}
+              </p>
+              <p>{refund.reason}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

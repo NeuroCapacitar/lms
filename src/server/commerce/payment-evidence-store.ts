@@ -28,6 +28,7 @@ import {
 import type { DomainTx } from '../async/outbox-store';
 import { queueEmail } from '../email/email-store';
 import { recordFinancialEventIn, transitionOrderIn } from './order-store';
+import { completeRefundIn } from './refund-completion';
 import type { PaymentReader } from './payment-reader';
 
 /**
@@ -319,6 +320,8 @@ export async function applyReadIn(
           await moveFromPaid(tx, order, 'refunded', source, `${read.id}:${read.status}`);
         }
       }
+      // Se a Staff pediu este reembolso, ele está concluído: fecha o pedido de reembolso e avisa a pessoa (uma vez).
+      await completeRefundIn(tx, order, now);
       return { outcome: 'refunded', orderId: order.id };
     }
     case 'chargeback': {
@@ -326,7 +329,7 @@ export async function applyReadIn(
         return reviewOutcome('terminal_conflict', `chargeback_while_${order.status}`);
       }
       await revokePurchase(tx, order, 'chargeback', now);
-      if (order.status === 'paid') {
+      if (order.status === 'paid' || order.status === 'refund_requested') {
         await moveFromPaid(tx, order, 'disputed', source, `${read.id}:${read.status}`);
       }
       return { outcome: 'chargeback', orderId: order.id };

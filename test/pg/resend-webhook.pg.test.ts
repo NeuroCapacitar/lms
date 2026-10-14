@@ -329,6 +329,7 @@ describe('supressão por bounce permanente e reclamação', () => {
     const handlers = {
       'system.demo': async () => {},
       'interest.fanout': async () => {},
+      'finance.refund': async () => {},
       'email.send': createEmailHandler(emailDeps()),
     };
     await processBatch(

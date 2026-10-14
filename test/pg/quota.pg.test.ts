@@ -219,6 +219,7 @@ async function deliver(emailMessageId: string, mailer: Mailer, policy: QuotaPoli
     handlers: {
       'system.demo': async () => {},
       'interest.fanout': async () => {},
+      'finance.refund': async () => {},
       'email.send': createEmailHandler({
         getMailer: () => mailer,
         quota: createQuotaGate(policy),

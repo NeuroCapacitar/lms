@@ -73,7 +73,8 @@ const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   paid: ['refund_requested', 'disputed', 'review'],
   expired: ['review'],
   canceled: ['review'],
-  refund_requested: ['refunded', 'paid', 'review'],
+  // `disputed`: chargeback chegando com o reembolso em andamento prevalece (M6-05).
+  refund_requested: ['refunded', 'paid', 'disputed', 'review'],
   refunded: [],
   disputed: ['paid', 'refunded', 'review'],
   review: ['pending', 'paid', 'expired', 'canceled', 'refund_requested', 'refunded', 'disputed'],
