@@ -142,7 +142,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await main.db.execute(
-    sql`truncate table email_message, email_send_ledger, outbox_message, inbox_event, system_flag, job_run`,
+    sql`truncate table support_request, email_message, email_send_ledger, outbox_message, inbox_event, system_flag, job_run`,
   );
   await main.db.delete(schema.user);
 });
