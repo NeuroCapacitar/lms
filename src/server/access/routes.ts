@@ -23,7 +23,9 @@ const enrollBodySchema = z.strictObject({ offerId: z.string().regex(UUID) });
  */
 export function courseAccessRoutes(deps: {
   withDatabase: MiddlewareHandler<{ Bindings: Env; Variables: AuthVars }>;
+  clock?: () => Date;
 }) {
+  const now = deps.clock ?? (() => new Date());
   const routes = new Hono<{ Bindings: Env; Variables: AuthVars }>();
 
   /** O estado de acesso da própria pessoa neste curso. */
@@ -32,7 +34,7 @@ export function courseAccessRoutes(deps: {
     if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
     const courseId = c.req.param('id');
     if (!UUID.test(courseId)) return c.json({ error: { code: 'not_found' } }, 404);
-    const access = await resolveAccess(c.var.db, session.user.id, courseId, new Date());
+    const access = await resolveAccess(c.var.db, session.user.id, courseId, now());
     return c.json(toAccessDto(access));
   });
 
