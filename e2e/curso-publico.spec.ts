@@ -81,7 +81,7 @@ test.describe('página pública do curso', () => {
     await expect(page).toHaveURL(/\/entrar/);
   });
 
-  test('curso pago: mostra o preço e avisa que a compra não está disponível, sem ação de compra', async ({
+  test('curso pago sem sessão: mostra o preço e convida a entrar para comprar (sem botão de compra)', async ({
     page,
   }) => {
     await stubCourse(page, PAID);
@@ -89,7 +89,8 @@ test.describe('página pública do curso', () => {
     await expect(
       page.getByText('R$ 197,00 · acesso por 12 meses · até 12x sem juros'),
     ).toBeVisible();
-    await expect(page.getByText('A compra deste curso ainda não está disponível.')).toBeVisible();
+    const enter = page.getByRole('link', { name: 'Entrar para comprar' });
+    await expect(enter).toHaveAttribute('href', '/entrar?returnTo=%2Fcursos%2Fpago');
     await expect(page.getByRole('link', { name: 'Entrar para se inscrever' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /comprar|inscrever/i })).toHaveCount(0);
   });

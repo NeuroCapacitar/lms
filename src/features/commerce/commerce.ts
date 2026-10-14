@@ -12,7 +12,7 @@ const MIN_INSTALLMENT_CENTS = 1000;
 const MAX_PAID_INSTALLMENTS = 12;
 
 /** Quanto tempo um Order e a sessão de checkout ficam abertos. */
-const ORDER_TTL_MINUTES = 60;
+export const ORDER_TTL_MINUTES = 60;
 
 /** Meios de pagamento fixos (sem boleto). */
 const PAYMENT_METHODS = ['pix', 'card'] as const;

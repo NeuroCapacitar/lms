@@ -8,6 +8,7 @@ import { fetchPublicCourse } from '../api/courses';
 import { fetchCourseAccess } from '../api/enroll';
 import { UnauthenticatedError } from '../api/profile';
 import { ForbiddenError } from '../api/staff';
+import { BuyControl } from '../components/buy-control';
 import { AccessStatus, EnrollControl } from '../components/enroll-control';
 import { RichTextView } from '../components/rich-text/rich-text-view';
 import { Button } from '../components/ui/button';
@@ -127,6 +128,13 @@ function CoursePage() {
                 slug={data.slug}
                 access={access}
               />
+            ) : data.offer?.kind === 'paid' ? (
+              <PaidPurchase
+                courseId={data.id}
+                offerId={data.offer.id}
+                slug={data.slug}
+                access={access}
+              />
             ) : (
               <>
                 {access.data?.hasAccess ? (
@@ -141,6 +149,57 @@ function CoursePage() {
         )}
       </section>
     </article>
+  );
+}
+
+/** Compra na página pública: convite para entrar (sem sessão), estado ou botão "Comprar" (M6-02). */
+function PaidPurchase({
+  courseId,
+  offerId,
+  slug,
+  access,
+}: {
+  courseId: string;
+  offerId: string;
+  slug: string;
+  access: ReturnType<typeof useQuery<AccessDto>>;
+}) {
+  if (access.isPending) return <p role="status">Verificando o seu acesso…</p>;
+  if (access.error instanceof UnauthenticatedError) {
+    return (
+      <BuyControl
+        courseId={courseId}
+        offerId={offerId}
+        access={null}
+        returnTo={`/cursos/${slug}`}
+      />
+    );
+  }
+  if (access.error instanceof ForbiddenError) {
+    return (
+      <p role="alert" className="max-w-prose">
+        Para comprar, aceite os Termos de Uso e a Política de Privacidade em{' '}
+        <Link to="/conta" className="underline">
+          Minha conta
+        </Link>
+        .
+      </p>
+    );
+  }
+  if (access.isError || !access.data) {
+    return (
+      <p role="alert" className="font-medium text-[var(--text-danger)]">
+        Não foi possível verificar o seu acesso agora. Atualize a página.
+      </p>
+    );
+  }
+  return (
+    <BuyControl
+      courseId={courseId}
+      offerId={offerId}
+      access={access.data}
+      returnTo={`/cursos/${slug}`}
+    />
   );
 }
 

@@ -46,4 +46,8 @@ interface Env {
   R2_PRIVATE_BUCKET_NAME?: string;
   /** Domínio público da mídia (capa e banner), na zona Cloudflare; ausente = sem imagem pública. Variável, não segredo. */
   MEDIA_PUBLIC_BASE_URL?: string;
+  /** Chave de API do Asaas do ambiente (SEGREDO do Worker; sandbox em Staging). Ausente = compra desligada (503). */
+  ASAAS_API_KEY?: string;
+  /** Base da API do Asaas (variável, não segredo); padrão: o sandbox. */
+  ASAAS_API_BASE_URL?: string;
 }

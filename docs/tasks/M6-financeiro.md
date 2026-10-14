@@ -26,7 +26,7 @@
 
 ### M6-02 — Hosted Checkout Asaas
 
-**Dependências:** M6-01, M1-01 · **Estado:** `not_started`
+**Dependências:** M6-01, M1-01 · **Estado:** `implemented` (2026-10-14; só com o dublê do Asaas, o sandbox real NÃO foi exercitado; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** a pessoa autenticada e verificada é levada ao checkout hospedado com o preço correto, sem que o Hub toque em dados de cartão.
 **Passos:**

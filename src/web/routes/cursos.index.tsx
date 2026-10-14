@@ -12,6 +12,7 @@ import { formatBrl } from '../../features/catalog/money';
 import { fetchCatalog } from '../api/courses';
 import { ForbiddenError } from '../api/staff';
 import { UnauthenticatedError } from '../api/profile';
+import { BuyControl } from '../components/buy-control';
 import { AccessStatus, EnrollControl } from '../components/enroll-control';
 import { InterestControl } from '../components/interest-control';
 import { PanelBanners } from '../components/panel-banners';
@@ -171,6 +172,13 @@ function Catalog() {
                     <AccessStatus access={course.access} courseId={course.id} />
                   ) : course.availability === 'open' && course.offer?.kind === 'free' ? (
                     <EnrollControl
+                      courseId={course.id}
+                      offerId={course.offer.id}
+                      access={course.access}
+                      returnTo="/cursos"
+                    />
+                  ) : course.availability === 'open' && course.offer?.kind === 'paid' ? (
+                    <BuyControl
                       courseId={course.id}
                       offerId={course.offer.id}
                       access={course.access}

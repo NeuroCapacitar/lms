@@ -61,5 +61,6 @@ export async function sendAction<T = Record<string, never>>(
   if (response.status === 403) {
     return failure(code === 'reauth_required' ? 'reauth_required' : 'forbidden');
   }
-  return { result: 'unavailable' };
+  // 5xx e o resto: o corpo (quando é JSON) ainda traz o código, p. ex. `checkout_not_configured` no 503.
+  return failure('unavailable');
 }
