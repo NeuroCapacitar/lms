@@ -3,10 +3,10 @@ import { createMiddleware } from 'hono/factory';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
- * Caminhos que NÃO passam pelo CSRF (hoje só o webhook do Resend, M4-07, que autentica por assinatura Svix). Webhooks de provedores (M4/M6) entram aqui,
+ * Caminhos que NÃO passam pelo CSRF (hoje os webhooks do Resend, M4-07, que autentica por assinatura Svix, e do Asaas, M6-03, que autentica por token). Webhooks de provedores (M4/M6) entram aqui,
  * um a um e de forma EXPLÍCITA, porque se autenticam por token próprio e não por cookie.
  */
-const CSRF_EXEMPT_PATHS: readonly string[] = ['/api/webhooks/resend'];
+const CSRF_EXEMPT_PATHS: readonly string[] = ['/api/webhooks/resend', '/api/webhooks/asaas'];
 
 function isJson(contentType: string | undefined): boolean {
   return (contentType ?? '').split(';')[0]?.trim().toLowerCase() === 'application/json';

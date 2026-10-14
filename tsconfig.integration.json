@@ -66,6 +66,7 @@
     "test/pg/banner.pg.test.ts",
     "test/pg/commerce.pg.test.ts",
     "test/pg/checkout.pg.test.ts",
+    "test/pg/asaas-webhook.pg.test.ts",
     "test/helpers/media-bytes.ts",
     "test/pg/video-connections.pg.test.ts",
     "test/pg/operations.pg.test.ts",

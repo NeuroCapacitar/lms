@@ -13,6 +13,7 @@ import { RELEASE_ID } from './release';
 import { csrfProtection } from './security/csrf';
 import { securityHeaders } from './security/headers';
 import { sentryMiddleware } from './sentry';
+import { asaasWebhookRoutes } from './webhooks/asaas-routes';
 import { resendWebhookRoutes } from './webhooks/resend-routes';
 
 /**
@@ -63,6 +64,8 @@ export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
 
   // Webhooks de provedores (assinatura própria, fora do CSRF): só o do Resend por ora (M4-07).
   app.route('/api/webhooks', resendWebhookRoutes());
+  // Webhook do Asaas (M6-03): token próprio, inbox antes do ACK.
+  app.route('/api/webhooks', asaasWebhookRoutes());
 
   app.route('/api', authRoutes(options.auth));
 

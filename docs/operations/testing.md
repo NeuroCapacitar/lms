@@ -308,6 +308,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - Unit: `src/features/commerce/commerce.test.ts` (parcelas pelo preço, regras de publicação da Offer paga, máquina de estados, snapshot, corpo do pedido só com `offerId` e `attemptId`). Servidor: `test/pg/commerce.pg.test.ts` (snapshot imutável por gatilho, idempotência por `attemptId` inclusive em paralelo com conexões separadas, transições concorrentes, uma sessão ativa por pedido, id do provider único, `financial_event` append-only com UPDATE, DELETE e TRUNCATE recusados). O teste NÃO limpa as tabelas financeiras (fatos append-only e pedidos não se apagam): cada caso cria a sua pessoa e a sua oferta.
 - Nenhum teste chama o Asaas: o provider só entra a partir do M6-02.
 
+## Webhook do Asaas (M6-03)
+
+- Unit: `src/features/commerce/asaas-webhook.test.ts` (redução do evento aos ids, sem PII nem valor; evento sem id e JSON inválido; comparação em tempo constante). Servidor: `test/pg/asaas-webhook.pg.test.ts` (token ausente ou errado = 200 sem gravar e resposta idêntica à de sucesso, segredo ausente = 500, duplicata e entregas simultâneas = uma linha, evento desconhecido gravado, corpo gigante = 413, inbox indisponível = 500, nada consome o evento enquanto não há handler). O teste monta só a rota do webhook (como o do Resend).
+- Nenhum webhook real do Asaas foi recebido: o formato do payload segue a referência pública (spike 5 confirma).
+
 ## Compra: Checkout hospedado do Asaas (M6-02)
 
 - Unit: `src/features/commerce/checkout.test.ts` (valor decimal exato, truncamento por grafema, corpo do checkout, allowlist da URL por ambiente) e `src/server/commerce/asaas-client.test.ts` (cabeçalho `access_token`, 4xx = recusa conhecida, 5xx/rede/timeout/resposta ilegível = ambíguo). Servidor: `test/pg/checkout.pg.test.ts` com o DUBLÊ `createFakeCheckoutProvider` (injetado por `checkoutProvider` no `apiApp`): bloqueios antes da cobrança, preço do snapshot, repetição sem segunda chamada, cliques simultâneos, ambíguo que não recria, URL fora da allowlist, pedido vencido ou já não pendente. Telas: `e2e/compra.spec.ts` (botão "Comprar", tentativa repetida e renovada, erros, retorno do checkout; axe).
