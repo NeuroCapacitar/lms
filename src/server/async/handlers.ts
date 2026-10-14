@@ -1,3 +1,7 @@
+import {
+  createCertificateRenderHandler,
+  type CertificateHandlerDeps,
+} from '../certificate/certificate-store';
 import type { PaymentReader } from '../commerce/payment-reader';
 import { createRefundHandler } from '../commerce/refund-store';
 import type { RefundProvider } from '../commerce/refund-provider';
@@ -18,6 +22,8 @@ export interface HandlerDeps {
   email: EmailHandlerDeps;
   /** Reembolso (M6-05). Sem o Asaas configurado a intenção falha de forma PERMANENTE (a Staff refaz o pedido depois). */
   finance?: { provider: RefundProvider; reader: PaymentReader } | undefined;
+  /** Renderer do certificado (M7-02). Sem ele o certificado vai a `failed` com `renderer_not_configured` e pode ser repetido. */
+  certificate?: CertificateHandlerDeps | undefined;
 }
 
 /**
@@ -31,6 +37,7 @@ export function createHandlers(deps: HandlerDeps): HandlerRegistry {
     'system.demo': async () => {},
     'email.send': createEmailHandler(deps.email),
     'interest.fanout': createInterestFanoutHandler(),
+    'certificate.render': createCertificateRenderHandler(deps.certificate ?? {}),
     'finance.refund': deps.finance
       ? createRefundHandler(deps.finance)
       : async () => {

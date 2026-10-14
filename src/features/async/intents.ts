@@ -23,6 +23,8 @@ export const INTENT_KINDS = {
   'interest.fanout': { queue: 'general', payload: intentPayload({ cycleId: id }) },
   /** Reembolso integral (M6-05): o payload é só o id do `refund_request`; o executor lê o resto do banco e NUNCA reenvia às cegas. */
   'finance.refund': { queue: 'finance', payload: intentPayload({ refundRequestId: id }) },
+  /** Renderização do PDF do certificado (M7-01): o payload é só o id do `certificate`; o snapshot e o estado ficam no banco. */
+  'certificate.render': { queue: 'general', payload: intentPayload({ certificateId: id }) },
 } as const satisfies Record<string, { queue: QueueName; payload: z.ZodType }>;
 
 export type IntentKind = keyof typeof INTENT_KINDS;

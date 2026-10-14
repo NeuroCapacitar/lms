@@ -16,6 +16,7 @@ import type { SequenceMode } from '../../features/catalog/catalog';
 import { resolveAccessIn } from '../access/entitlement-store';
 import { auditEvent } from '../auth/access-store';
 import { readPublishedTree } from '../catalog/curriculum-store';
+import { issueCertificateIn } from '../certificate/certificate-store';
 
 /** Aula inexistente, retirada, de curso sem currículo publicado ou fora do currículo publicado. */
 export class LessonNotFoundError extends Error {
@@ -175,6 +176,15 @@ export async function recordCompletion(
         targetType: 'course',
         targetId: courseId,
         details: { userId: input.userId, requiredTotal: progress.total },
+      });
+      // M7-01: só o VENCEDOR do insert chega aqui; o certificado e a intenção nascem na mesma transação.
+      await issueCertificateIn(tx, {
+        userId: input.userId,
+        courseId,
+        completedAt: now,
+        requiredTotal: progress.total,
+        courseTitle: tree.details.displayTitle,
+        workloadHours: tree.details.workloadHours,
       });
     }
   }

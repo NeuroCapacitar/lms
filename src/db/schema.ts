@@ -784,6 +784,71 @@ export const courseCompletion = pgTable(
 );
 
 /**
+ * Política de certificado por curso (M7-01). Sem linha ou `enabled = false`: a conclusão existe e NENHUM certificado
+ * nasce. Ligar é decisão do Admin; o template publicado (M7-03) passa a ser exigido quando existir.
+ */
+export const certificatePolicy = pgTable('certificate_policy', {
+  courseId: uuid()
+    .primaryKey()
+    .references(() => course.id, { onDelete: 'cascade' }),
+  enabled: boolean().notNull().default(false),
+  ...stamps,
+});
+
+/**
+ * Certificado (M7-01). Nasce na MESMA transação da `course_completion` (só o vencedor do insert cria), com UMA
+ * intenção `certificate.render` na outbox. O `snapshot` congela no `queued` e nunca muda (gatilho); `code` é opaco
+ * e único; o PDF (M7-02) só aparece com `pdf_key` e `pdf_sha256` juntos, em `ready`. A reemissão (M7-04) cria outro
+ * certificado com `predecessor_id`: o índice parcial garante UM certificado original por conclusão. Falha de PDF
+ * nunca remove a conclusão nem duplica o certificado.
+ */
+export const certificate = pgTable(
+  'certificate',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text().notNull(),
+    courseId: uuid().notNull(),
+    code: text().notNull(),
+    status: text().notNull().default('queued'),
+    snapshot: jsonb().notNull(),
+    pdfKey: text(),
+    pdfSha256: text(),
+    predecessorId: uuid(),
+    /** Quantas vezes a renderização foi iniciada (compõe a chave de dedupe da nova tentativa). */
+    renderAttempts: integer().notNull().default(0),
+    failureCode: text(),
+    readyAt: timestamp({ withTimezone: true }),
+    ...stamps,
+  },
+  (table) => [
+    uniqueIndex('certificate_code_idx').on(table.code),
+    uniqueIndex('certificate_original_idx')
+      .on(table.userId, table.courseId)
+      .where(sql`${table.predecessorId} is null`),
+    index('certificate_status_idx').on(table.status, table.createdAt),
+    foreignKey({
+      name: 'certificate_completion_fk',
+      columns: [table.userId, table.courseId],
+      foreignColumns: [courseCompletion.userId, courseCompletion.courseId],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'certificate_predecessor_fk',
+      columns: [table.predecessorId],
+      foreignColumns: [table.id],
+    }).onDelete('restrict'),
+    check(
+      'certificate_status_check',
+      sql`${table.status} in ('awaiting_name', 'queued', 'rendering', 'ready', 'failed', 'revoked', 'superseded')`,
+    ),
+    check('certificate_code_check', sql`${table.code} ~ '^[A-Za-z0-9_-]{22}$'`),
+    check(
+      'certificate_pdf_check',
+      sql`(${table.pdfKey} is null) = (${table.pdfSha256} is null) and (${table.status} <> 'ready' or ${table.pdfKey} is not null)`,
+    ),
+  ],
+);
+
+/**
  * Outbox (M4-01): a FONTE DA VERDADE das intenções (e-mail, chamada a provider, tarefa). Nasce na MESMA
  * transação da mudança de domínio; a Queue só acelera (ADR 0006). O payload leva só IDs. A linha é
  * reivindicada com `FOR UPDATE SKIP LOCKED` e um LEASE cujo tempo vem do `now()` do banco; cada claim
