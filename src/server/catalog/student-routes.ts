@@ -21,13 +21,14 @@ import { listPublicCourses } from './catalog-store';
  */
 export function studentCatalogRoutes(deps: {
   withDatabase: MiddlewareHandler<{ Bindings: Env; Variables: AuthVars }>;
+  clock?: () => Date;
 }) {
   const routes = new Hono<{ Bindings: Env; Variables: AuthVars }>();
 
   routes.get('/courses', deps.withDatabase, async (c) => {
     const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: { code: 'unauthenticated' } }, 401);
-    const now = new Date();
+    const now = (deps.clock ?? (() => new Date()))();
     const visible = (await listPublicCourses(c.var.db))
       .map(toCatalogCourse)
       .filter((item): item is CatalogCourseDto => item !== null);

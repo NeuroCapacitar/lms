@@ -492,10 +492,16 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   );
 
   // Catálogo do aluno (M2-04): /api/catalog/courses (com sessão e termos aceitos).
-  routes.route('/catalog', studentCatalogRoutes({ withDatabase }));
+  routes.route(
+    '/catalog',
+    studentCatalogRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
+  );
 
   // Acesso do aluno a um curso (M3-02): /api/courses/:id/access e /enroll (termos aceitos).
-  routes.route('/', courseAccessRoutes({ withDatabase }));
+  routes.route(
+    '/',
+    courseAccessRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
+  );
 
   // Estudo (M3-03): o mapa do curso e a aula, com drip e sequência decididos no servidor.
   routes.route(

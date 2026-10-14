@@ -116,7 +116,7 @@
 
 ### M6-06 — End-to-end comercial e auditoria
 
-**Dependências:** M6-02, M6-03, M6-07, M6-04, M6-05, M6-08 · **Estado:** `not_started`
+**Dependências:** M6-02, M6-03, M6-07, M6-04, M6-05, M6-08 · **Estado:** `implemented` (2026-10-14; jornada E2E com o dublê do Asaas; o passo 2, smoke manual com o sandbox real, segue PENDENTE; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** provar a jornada de compra inteira e as adversariais, deixando trilha de auditoria completa.
 **Passos:**

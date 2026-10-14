@@ -3,7 +3,7 @@ import { loadEnv } from 'vite';
 
 const fileEnv = loadEnv('test', process.cwd(), '');
 const testDatabaseUrl = process.env.TEST_DATABASE_URL ?? fileEnv.TEST_DATABASE_URL ?? '';
-const port = 4174;
+const port = Number(process.env.JOURNEY_PORT ?? 4174);
 
 // Jornada E2E gratuita (M3-05): navegador real contra a API REAL (`createApp`) e o Postgres de TESTE.
 // Um servidor só, uma sequência só (os passos dependem uns dos outros): sem paralelismo nem retentativa,
@@ -16,6 +16,7 @@ export default defineConfig({
   retries: 0,
   forbidOnly: Boolean(process.env.CI),
   timeout: 90_000,
+  expect: { timeout: 15_000 },
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report-journey' }]]
     : 'list',
