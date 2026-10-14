@@ -90,6 +90,7 @@ function harness(
   const handlers: HandlerRegistry = {
     'email.send': async () => {},
     'interest.fanout': async () => {},
+    'finance.refund': async () => {},
     'system.demo': async (context) => {
       calls.push(context);
       await behavior(context);

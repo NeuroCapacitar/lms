@@ -1,6 +1,9 @@
+import type { PaymentReader } from '../commerce/payment-reader';
+import { createRefundHandler } from '../commerce/refund-store';
+import type { RefundProvider } from '../commerce/refund-provider';
 import { createEmailHandler, type EmailHandlerDeps } from '../email/send-handler';
 import { createInterestFanoutHandler } from '../interest/fanout';
-import { type HandlerRegistry } from './handler-types';
+import { PermanentError, type HandlerRegistry } from './handler-types';
 
 export {
   DeferError,
@@ -13,6 +16,8 @@ export {
 /** O que os handlers de produção precisam do ambiente (montado em `queue-entry.ts`). */
 export interface HandlerDeps {
   email: EmailHandlerDeps;
+  /** Reembolso (M6-05). Sem o Asaas configurado a intenção falha de forma PERMANENTE (a Staff refaz o pedido depois). */
+  finance?: { provider: RefundProvider; reader: PaymentReader } | undefined;
 }
 
 /**
@@ -26,5 +31,10 @@ export function createHandlers(deps: HandlerDeps): HandlerRegistry {
     'system.demo': async () => {},
     'email.send': createEmailHandler(deps.email),
     'interest.fanout': createInterestFanoutHandler(),
+    'finance.refund': deps.finance
+      ? createRefundHandler(deps.finance)
+      : async () => {
+          throw new PermanentError('refund_not_configured');
+        },
   };
 }

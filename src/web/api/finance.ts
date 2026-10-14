@@ -1,3 +1,4 @@
+import type { RefundRequestDto } from '../../features/commerce/refund';
 import type { ReviewDto } from '../../features/commerce/review';
 import { postAction } from './action';
 import { getJson } from './staff';
@@ -14,3 +15,10 @@ export const resolveReviewRequest = (
   action: 'approve' | 'reconcile' | 'dismiss',
   reason: string,
 ) => postAction(`/api/staff/finance/reviews/${encodeURIComponent(id)}/resolve`, { action, reason });
+
+export const fetchRefunds = async () =>
+  (await getJson<{ refunds: RefundRequestDto[] }>('/api/staff/finance/refunds')).refunds;
+
+/** Reembolso INTEGRAL: o corpo é só o motivo (nenhum campo de valor). */
+export const requestRefundRequest = (orderId: string, reason: string) =>
+  postAction(`/api/staff/finance/orders/${encodeURIComponent(orderId)}/refund`, { reason });

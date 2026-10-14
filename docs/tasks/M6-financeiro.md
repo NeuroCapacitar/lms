@@ -87,7 +87,7 @@
 
 ### M6-05 — Reembolso integral por RefundRequest
 
-**Dependências:** M6-04, M1-05 · **Estado:** `not_started`
+**Dependências:** M6-04, M1-05 · **Estado:** `implemented` (2026-10-14; só com o dublê do Asaas, o sandbox real NÃO foi exercitado; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo:** reembolsar integralmente, com política de 7 dias, sem estornar duas vezes e sem chamar o provider dentro de transação.
 **Passos:**

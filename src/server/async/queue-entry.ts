@@ -2,8 +2,16 @@ import { openDatabase, type Database, type OpenDatabase } from '../../db/client'
 import { laneOfQueueName } from '../../features/async/envelope';
 import { logAlert } from './alerts';
 import { processBatch, processDeadLetters } from './consumer';
+import { paymentReaderFor, refundProviderFor } from '../commerce/factory';
 import { emailHandlerDeps } from '../email/factory';
 import { createHandlers } from './handlers';
+
+/** Reembolso (M6-05): só existe com a chave do Asaas configurada. */
+function financeDeps(env: Env) {
+  const provider = refundProviderFor(env);
+  const reader = paymentReaderFor(env);
+  return provider && reader ? { provider, reader } : undefined;
+}
 
 /**
  * Entrada `queue()` do Worker (M4-02): roteia o lote pela lane do NOME da fila (`…-finance`,
@@ -31,7 +39,10 @@ export async function handleQueueBatch(batch: MessageBatch<unknown>, env: Env): 
       sendToDeadLetter: async (body) => {
         await deadLetterQueue.send(body, { contentType: 'json' });
       },
-      handlers: createHandlers({ email: emailHandlerDeps(env) }),
+      handlers: createHandlers({
+        email: emailHandlerDeps(env),
+        finance: financeDeps(env),
+      }),
       owner: `queue:${batch.queue}:${crypto.randomUUID()}`,
       alert: logAlert,
     });

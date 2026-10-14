@@ -56,6 +56,7 @@ function registry(handlerDeps: EmailHandlerDeps): HandlerRegistry {
     'system.demo': async () => {},
     'email.send': createEmailHandler(handlerDeps),
     'interest.fanout': async () => {},
+    'finance.refund': async () => {},
   };
 }
 

@@ -1,15 +1,27 @@
 import type { Context, MiddlewareHandler } from 'hono';
 import { Hono } from 'hono';
 
+import { requestRefundSchema } from '../../features/commerce/refund';
 import { resolveReviewSchema } from '../../features/commerce/review';
 import { requireCapability } from '../auth/authorization';
+import { requireRecentAuth } from '../auth/reauth';
+import { publishAfterCommit } from '../async/publisher';
 import type { AuthVars } from '../auth/types';
-import { paymentReaderFor } from './factory';
+import { paymentReaderFor, refundProviderFor } from './factory';
 import {
   PaymentReadPermanentError,
   PaymentReadTransientError,
   type PaymentReader,
 } from './payment-reader';
+import {
+  OrderNotRefundableError,
+  RefundAlreadyActiveError,
+  RefundOrderNotFoundError,
+  RefundWindowClosedError,
+  listRefunds,
+  requestRefund,
+} from './refund-store';
+import type { RefundProvider } from './refund-provider';
 import {
   OtherOpenReviewsError,
   ReviewActionNotAllowedError,
@@ -35,6 +47,13 @@ function failure(c: FinanceContext, error: unknown): Response {
   if (error instanceof ReviewStaleError) return conflict('stale');
   if (error instanceof OtherOpenReviewsError) return conflict('other_open_reviews');
   if (error instanceof ReviewStillDivergentError) return conflict('still_divergent');
+  if (error instanceof RefundOrderNotFoundError)
+    return c.json({ error: { code: 'not_found' } }, 404);
+  if (error instanceof OrderNotRefundableError) return conflict('order_not_refundable');
+  if (error instanceof RefundAlreadyActiveError) return conflict('refund_already_active');
+  if (error instanceof RefundWindowClosedError) {
+    return c.json({ error: { code: 'refund_window_closed' } }, 403);
+  }
   if (error instanceof PaymentReadTransientError) {
     return c.json({ error: { code: 'payment_provider_unavailable' } }, 503);
   }
@@ -51,6 +70,8 @@ function failure(c: FinanceContext, error: unknown): Response {
 export function financeStaffRoutes(deps: {
   withDatabase: MiddlewareHandler<{ Bindings: Env; Variables: AuthVars }>;
   reader?: (c: FinanceContext) => PaymentReader | undefined;
+  /** Provider de reembolso (dublê nos testes; em produção vem de `ASAAS_API_KEY`). */
+  refundProvider?: (c: FinanceContext) => RefundProvider | undefined;
   /** Relógio (só nos testes): o instante da concessão ao aprovar ou reconciliar. */
   clock?: () => Date;
 }) {
@@ -87,6 +108,59 @@ export function financeStaffRoutes(deps: {
       return failure(c, error);
     }
   });
+
+  /**
+   * Pedido de reembolso INTEGRAL (M6-05): grant `refund.execute` + reautenticação recente + motivo. O corpo é só o motivo
+   * (nenhum campo de valor). Dentro dos 7 dias qualquer Suporte com o grant; depois, só o Admin (403 para os demais).
+   * Suspende o acesso ao pedir; o executor roda na fila `finance`.
+   */
+  routes.post(
+    '/finance/orders/:id/refund',
+    deps.withDatabase,
+    requireCapability('refund.execute'),
+    requireRecentAuth(),
+    async (c) => {
+      const id = c.req.param('id');
+      if (!UUID.test(id)) return c.json({ error: { code: 'not_found' } }, 404);
+      const parsed = requestRefundSchema.safeParse(await c.req.json().catch(() => null));
+      if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+      const provider = (deps.refundProvider ?? ((context) => refundProviderFor(context.env)))(c);
+      if (!provider) return c.json({ error: { code: 'checkout_not_configured' } }, 503);
+      const access = c.var.access!;
+      try {
+        const created = await requestRefund(c.var.db, {
+          orderId: id,
+          actorId: access.userId,
+          actorIsAdmin: access.roles.has('admin'),
+          reason: parsed.data.reason,
+          ...(deps.clock ? { now: deps.clock() } : {}),
+        });
+        // Acelera pela fila (melhor esforço): o Cron republica se a mensagem se perder.
+        try {
+          if (c.env.QUEUE_FINANCE) {
+            publishAfterCommit(c.env, c.executionCtx, [
+              { id: created.intentId, kind: 'finance.refund', correlationId: created.id },
+            ]);
+          }
+        } catch {
+          // sem contexto de execução (teste) ou fila indisponível: o Cron cobre
+        }
+        return c.json({ id: created.id }, 201);
+      } catch (error) {
+        return failure(c, error);
+      }
+    },
+  );
+
+  routes.get(
+    '/finance/refunds',
+    deps.withDatabase,
+    requireCapability('refund.execute'),
+    async (c) => {
+      c.header('Cache-Control', 'no-store');
+      return c.json({ refunds: await listRefunds(c.var.db) });
+    },
+  );
 
   return routes;
 }

@@ -131,6 +131,7 @@ describe('Fault matrix (M4-06)', () => {
       const slow: HandlerRegistry = {
         'email.send': async () => {},
         'interest.fanout': async () => {},
+        'finance.refund': async () => {},
         'system.demo': async (context) => {
           await gate;
           return demoHandlers(provider)['system.demo'](context);
@@ -481,6 +482,7 @@ describe('Fault matrix (M4-06)', () => {
       h.consumerDeps(main.db, {
         'system.demo': async () => {},
         'interest.fanout': async () => {},
+        'finance.refund': async () => {},
         'email.send': createEmailHandler(emailDeps),
       }),
     );
@@ -572,6 +574,7 @@ describe('Fault matrix (M4-06)', () => {
     const handlers = () => ({
       'system.demo': async () => {},
       'interest.fanout': async () => {},
+      'finance.refund': async () => {},
       'email.send': createEmailHandler({
         getMailer: () => mailer,
         quota: createQuotaGate(policy),

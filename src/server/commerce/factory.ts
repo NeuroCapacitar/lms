@@ -1,6 +1,8 @@
 import { createAsaasCheckoutProvider } from './asaas-client';
 import type { CheckoutProvider } from './checkout-provider';
+import { createAsaasRefundProvider } from './asaas-refund';
 import { createAsaasPaymentReader } from './payment-reader';
+import type { RefundProvider } from './refund-provider';
 import type { PaymentReader } from './payment-reader';
 
 const DEFAULT_ASAAS_BASE_URL = 'https://api-sandbox.asaas.com';
@@ -23,4 +25,10 @@ export function checkoutProviderFor(env: AsaasEnv): CheckoutProvider | undefined
 export function paymentReaderFor(env: AsaasEnv): PaymentReader | undefined {
   const found = credentials(env);
   return found ? createAsaasPaymentReader(found) : undefined;
+}
+
+/** O provider de reembolso do ambiente (`undefined` sem a chave: o reembolso fica desligado, 503). */
+export function refundProviderFor(env: AsaasEnv): RefundProvider | undefined {
+  const found = credentials(env);
+  return found ? createAsaasRefundProvider(found) : undefined;
 }

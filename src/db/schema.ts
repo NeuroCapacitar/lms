@@ -1786,3 +1786,44 @@ export const financialReview = pgTable(
     ),
   ],
 );
+
+/**
+ * Pedido de reembolso INTEGRAL (M6-05). Durável: o executor (intenção `finance.refund`) lê daqui, nunca chama o
+ * provider dentro de transação e nunca reenvia às cegas (`unknown` só relê). No máximo UM ativo por pedido (índice único
+ * parcial). Sem campo de valor: é sempre o total. `reason` e quem pediu ficam para sempre (gatilho).
+ */
+export const refundRequest = pgTable(
+  'refund_request',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid()
+      .notNull()
+      .references(() => purchaseOrder.id, { onDelete: 'restrict' }),
+    paymentId: uuid()
+      .notNull()
+      .references(() => payment.id, { onDelete: 'restrict' }),
+    requestedBy: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    reason: text().notNull(),
+    state: text().notNull().default('requested'),
+    failureCode: text(),
+    completedAt: timestamp({ withTimezone: true }),
+    ...stamps,
+  },
+  (table) => [
+    uniqueIndex('refund_request_active_idx')
+      .on(table.orderId)
+      .where(sql`${table.state} not in ('done', 'failed')`),
+    index('refund_request_state_idx').on(table.state, table.createdAt),
+    check(
+      'refund_request_state_check',
+      sql`${table.state} in ('requested', 'submitting', 'submitted', 'unknown', 'awaiting_external_authorization', 'done', 'failed')`,
+    ),
+    check('refund_request_reason_check', sql`char_length(${table.reason}) between 5 and 500`),
+    check(
+      'refund_request_done_check',
+      sql`(${table.state} = 'done') = (${table.completedAt} is not null)`,
+    ),
+  ],
+);

@@ -65,7 +65,7 @@ describe('máquina de estados do pedido', () => {
     for (const from of ORDER_STATUSES) {
       for (const to of ORDER_STATUSES) if (canTransitionOrder(from, to)) permitted += 1;
     }
-    expect(permitted).toBe(22);
+    expect(permitted).toBe(23);
   });
 
   it('refunded é terminal; vencido e cancelado só saem por revisão; ninguém vai para si mesmo', () => {
