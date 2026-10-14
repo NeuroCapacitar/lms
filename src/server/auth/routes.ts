@@ -37,6 +37,8 @@ import { enrollmentStaffRoutes } from '../access/staff-routes';
 import { discussionRoutes, discussionStaffRoutes } from '../discussion/routes';
 import { interestRoutes, interestStaffRoutes } from '../interest/routes';
 import { bannerRoutes, bannerStaffRoutes } from '../banner/routes';
+import type { CheckoutProvider } from '../commerce/checkout-provider';
+import { commerceRoutes } from '../commerce/routes';
 import { helpRoutes, helpStaffRoutes } from '../help/routes';
 import { createR2Storage } from '../media/r2-storage';
 import { mediaRoutes } from '../media/routes';
@@ -78,6 +80,8 @@ export interface AuthRouteOverrides {
   clock?: () => Date;
   /** Armazenamento de mídia nos testes; em produção vem do R2 do ambiente (`undefined` = mídia desligada). */
   mediaStorage?: ObjectStorage;
+  /** Provider de checkout nos testes (dublê do Asaas); em produção vem de `ASAAS_API_KEY` (`undefined` = compra desligada). */
+  checkoutProvider?: CheckoutProvider;
 }
 
 type Vars = AuthVars;
@@ -444,6 +448,16 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   routes.route(
     '/',
     bannerRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
+  );
+
+  // Compra (M6-02): /api/me/checkout (sessão e termos; Asaas do ambiente).
+  routes.route(
+    '/',
+    commerceRoutes({
+      withDatabase,
+      ...(overrides.checkoutProvider ? { provider: () => overrides.checkoutProvider } : {}),
+      ...(overrides.clock ? { clock: overrides.clock } : {}),
+    }),
   );
 
   // Ajuda do aluno (M5-14): /api/me/help/faq e /api/me/help/requests (sessão e termos).
