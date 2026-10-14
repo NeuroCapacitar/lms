@@ -38,7 +38,7 @@ export function canTransitionCertificate(from: CertificateStatus, to: Certificat
 export const CERTIFICATE_CODE_PATTERN = /^[A-Za-z0-9_-]{22}$/;
 
 export function generateCertificateCode(
-  fill: (bytes: Uint8Array) => Uint8Array = (bytes) => crypto.getRandomValues(bytes),
+  fill: (bytes: Uint8Array<ArrayBuffer>) => Uint8Array = (bytes) => crypto.getRandomValues(bytes),
 ): string {
   const bytes = fill(new Uint8Array(16));
   let binary = '';

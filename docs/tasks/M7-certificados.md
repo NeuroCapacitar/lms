@@ -35,7 +35,7 @@ Ordem sugerida: M7-01 → M7-06 → M7-02 → M7-07 → M7-03 → M7-09 → M7-0
 
 ### M7-02 — Renderer HTML/CSS → Browser Run `/pdf` → R2 privado + SHA-256
 
-**Dependências:** M7-01, M5-07 (R2 privado), M0-15 (spike Browser Run) · **Estado:** `not_started`
+**Dependências:** M7-01, M5-07 (R2 privado), M0-15 (spike Browser Run) · **Estado:** PARCIAL (2026-10-14): o HTML puro e o QR local estão `implemented` (passo 1); faltam os passos 2 a 5 (fonte e assinatura embutidas pelo renderer, Browser Run, R2 e SHA-256); evidência em `docs/implementation/STATUS.md`
 
 **Objetivo.** Gerar o PDF A4 a partir de HTML/CSS controlado e guardá-lo como evidência imutável com hash.
 
