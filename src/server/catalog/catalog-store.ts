@@ -17,6 +17,7 @@ import {
   type StaffCourseDto,
   type StaffOfferDto,
 } from '../../features/catalog/catalog';
+import { validatePaidPublication } from '../../features/commerce/commerce';
 import type { RichText } from '../../features/content/rich-text';
 import { auditEvent } from '../auth/access-store';
 import { openAvailabilityCycleIfNeeded } from '../interest/store';
@@ -281,6 +282,12 @@ export async function updateOffer(
         maxInstallments: input.maxInstallments ?? current.maxInstallments,
       };
       const problems = validateOfferTerms({ kind: current.kind as OfferKind, ...next });
+      // Offer paga ATIVA segue as regras de publicação (M6-01): editar não contorna o piso de preço e de parcela.
+      if (current.kind === 'paid' && current.status === 'active') {
+        problems.push(
+          ...validatePaidPublication(next).filter((field) => !problems.includes(field)),
+        );
+      }
       if (problems.length > 0) throw new InvalidOfferTermsError(problems);
       await tx.update(offer).set(next).where(eq(offer.id, current.id));
       await auditEvent(tx, {
@@ -318,6 +325,11 @@ export async function setOfferStatus(
     const current = await lockOffer(tx, input.courseId, input.offerId);
     if (!canTransitionOffer(current.status as OfferStatus, input.status)) {
       throw new InvalidTransitionError();
+    }
+    // Publicar (ativar) Offer paga: preço mínimo de R$ 10,00 e parcelas até o que o preço permite (M6-01).
+    if (input.status === 'active' && current.kind === 'paid') {
+      const problems = validatePaidPublication(current);
+      if (problems.length > 0) throw new InvalidOfferTermsError(problems);
     }
     await tx.update(offer).set({ status: input.status }).where(eq(offer.id, current.id));
     await auditEvent(tx, {

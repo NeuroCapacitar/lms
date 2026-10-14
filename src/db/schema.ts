@@ -1574,3 +1574,168 @@ export const loginMedia = pgTable(
     check('login_media_position_check', sql`${table.position} >= 0`),
   ],
 );
+
+/**
+ * Pedido de compra (M6-01; "Order"). Guarda para SEMPRE as condições do momento da compra (snapshot: curso, Offer,
+ * preço em centavos BRL, prazo, parcelas, meios); alterar a Offer depois nunca muda o pedido (gatilho recusa a mudança
+ * do snapshot, da pessoa e da Offer, e a exclusão). `attempt_id` é a tentativa gerada pelo cliente: repetir com o
+ * mesmo `attempt_id` devolve o mesmo pedido. Sem PII além do `user_id`. Nome `purchase_order` (`order` é palavra
+ * reservada do SQL).
+ */
+export const purchaseOrder = pgTable(
+  'purchase_order',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    offerId: uuid().notNull(),
+    courseId: uuid().notNull(),
+    attemptId: uuid().notNull(),
+    status: text().notNull().default('pending'),
+    courseTitle: text().notNull(),
+    offerName: text().notNull(),
+    priceCents: integer().notNull(),
+    currency: text().notNull().default('BRL'),
+    accessMonths: integer().notNull(),
+    maxInstallments: integer().notNull(),
+    paymentMethods: text().array().notNull(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    ...stamps,
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.offerId, table.courseId],
+      foreignColumns: [offer.id, offer.courseId],
+      name: 'purchase_order_offer_course_fk',
+    }).onDelete('restrict'),
+    unique('purchase_order_user_attempt_unique').on(table.userId, table.attemptId),
+    index('purchase_order_user_status_idx').on(table.userId, table.status),
+    index('purchase_order_status_expires_idx').on(table.status, table.expiresAt),
+    check(
+      'purchase_order_status_check',
+      sql`${table.status} in ('pending', 'paid', 'expired', 'canceled', 'refund_requested', 'refunded', 'disputed', 'review')`,
+    ),
+    check('purchase_order_currency_check', sql`${table.currency} = 'BRL'`),
+    check('purchase_order_price_check', sql`${table.priceCents} >= 1000`),
+    check('purchase_order_access_months_check', sql`${table.accessMonths} between 1 and 600`),
+    check(
+      'purchase_order_installments_check',
+      sql`${table.maxInstallments} between 1 and 12 and ${table.maxInstallments} <= ${table.priceCents} / 1000`,
+    ),
+    check(
+      'purchase_order_methods_check',
+      sql`cardinality(${table.paymentMethods}) >= 1 and ${table.paymentMethods} <@ array['pix', 'card']::text[]`,
+    ),
+    check(
+      'purchase_order_snapshot_text_check',
+      sql`char_length(btrim(${table.courseTitle})) >= 1 and char_length(btrim(${table.offerName})) >= 1`,
+    ),
+  ],
+);
+
+/**
+ * Sessão de checkout do Asaas (M6-01): várias por pedido no modelo, no máximo UMA ativa (`creating`, `open` ou
+ * `unknown`) por pedido na v1 (índice único parcial). `unknown` = chamada ao Asaas com resultado ambíguo: não se recria
+ * até a janela expirar. A URL só é guardada `https` (a allowlist de hosts é do M6-02).
+ */
+export const checkoutSession = pgTable(
+  'checkout_session',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid()
+      .notNull()
+      .references(() => purchaseOrder.id, { onDelete: 'restrict' }),
+    state: text().notNull().default('creating'),
+    providerSessionId: text().unique(),
+    checkoutUrl: text(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    ...stamps,
+  },
+  (table) => [
+    uniqueIndex('checkout_session_active_idx')
+      .on(table.orderId)
+      .where(sql`${table.state} in ('creating', 'open', 'unknown')`),
+    index('checkout_session_state_expires_idx').on(table.state, table.expiresAt),
+    check(
+      'checkout_session_state_check',
+      sql`${table.state} in ('creating', 'open', 'unknown', 'failed', 'expired', 'completed')`,
+    ),
+    check(
+      'checkout_session_open_check',
+      sql`${table.state} <> 'open' or (${table.providerSessionId} is not null and ${table.checkoutUrl} is not null)`,
+    ),
+    check(
+      'checkout_session_url_check',
+      sql`${table.checkoutUrl} is null or (${table.checkoutUrl} like 'https://%' and char_length(${table.checkoutUrl}) <= 2048)`,
+    ),
+  ],
+);
+
+/**
+ * Pagamento (M6-01): estado local do pagamento no provider. `UNIQUE (provider, provider_payment_id)` impede dois
+ * registros do mesmo pagamento. Guarda o que a Staff e o contador veem (pagador, documento informado, valor, forma,
+ * data); nada de cartão. O estado do provider só vale depois de relido na API (M6-07).
+ */
+export const payment = pgTable(
+  'payment',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid()
+      .notNull()
+      .references(() => purchaseOrder.id, { onDelete: 'restrict' }),
+    checkoutSessionId: uuid().references(() => checkoutSession.id, { onDelete: 'restrict' }),
+    provider: text().notNull().default('asaas'),
+    providerPaymentId: text().notNull(),
+    installmentId: text(),
+    method: text().notNull(),
+    amountCents: integer().notNull(),
+    providerStatus: text().notNull(),
+    paidAt: timestamp({ withTimezone: true }),
+    payerName: text(),
+    payerDocument: text(),
+    ...stamps,
+  },
+  (table) => [
+    unique('payment_provider_payment_unique').on(table.provider, table.providerPaymentId),
+    index('payment_order_idx').on(table.orderId),
+    check('payment_provider_check', sql`${table.provider} = 'asaas'`),
+    check('payment_method_check', sql`${table.method} in ('pix', 'card')`),
+    check('payment_amount_check', sql`${table.amountCents} > 0`),
+    check(
+      'payment_provider_payment_id_check',
+      sql`char_length(${table.providerPaymentId}) between 1 and 100`,
+    ),
+  ],
+);
+
+/**
+ * Fato financeiro APPEND-ONLY (M6-01): proveniência (webhook, reconciliação, API, ação administrativa) de tudo que
+ * mexe no dinheiro ou no pedido. Gatilho recusa UPDATE e DELETE (o papel de runtime não tem TRUNCATE; um gatilho de TRUNCATE quebraria a limpeza em cascata dos testes de outros marcos). `(kind, provider_event_id)` único (quando
+ * há id do provider) faz cada evidência aplicar os efeitos uma só vez.
+ */
+export const financialEvent = pgTable(
+  'financial_event',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid().references(() => purchaseOrder.id, { onDelete: 'restrict' }),
+    paymentId: uuid().references(() => payment.id, { onDelete: 'restrict' }),
+    kind: text().notNull(),
+    source: text().notNull(),
+    providerEventId: text(),
+    details: jsonb().notNull().default({}),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('financial_event_evidence_idx')
+      .on(table.kind, table.providerEventId)
+      .where(sql`${table.providerEventId} is not null`),
+    index('financial_event_order_idx').on(table.orderId, table.createdAt),
+    index('financial_event_payment_idx').on(table.paymentId, table.createdAt),
+    check('financial_event_kind_check', sql`char_length(${table.kind}) between 1 and 80`),
+    check(
+      'financial_event_source_check',
+      sql`${table.source} in ('webhook', 'reconciliation', 'api', 'admin')`,
+    ),
+  ],
+);
