@@ -52,7 +52,7 @@ module.exports = {
         'O acesso e a inscrição gratuita (M3-01/M3-02) não dependem de pagamento: sem Order, Payment, checkout nem Asaas. A compra paga, no M6, é que chama o acesso, nunca o contrário.',
       severity: 'error',
       from: { path: '^src/(server|features)/access/' },
-      to: { path: '^src/(server|features)/(payments|finance|asaas|checkout)/' },
+      to: { path: '^src/(server|features)/(payments|finance|asaas|checkout|commerce)/' },
     },
     {
       name: 'sem-dependencia-circular',

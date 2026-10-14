@@ -214,10 +214,11 @@ describe('matrícula manual', () => {
       source: 'admin_grant',
       reason: 'Cortesia da turma piloto',
     });
-    const tables = await tools.db.execute(
-      sql`select table_name from information_schema.tables where table_schema = current_schema() and table_name ~* '(order|payment|checkout)'`,
+    // o acesso gratuito/manual não cria pedido, sessão de checkout, pagamento nem fato financeiro (M6-01 criou as tabelas)
+    const finance = await tools.db.execute(
+      sql`select (select count(*) from purchase_order) + (select count(*) from checkout_session) + (select count(*) from payment) + (select count(*) from financial_event) as total`,
     );
-    expect(tables.rows).toHaveLength(0);
+    expect(Number(finance.rows[0]!.total)).toBe(0);
   });
 
   it('duplo envio com o MESMO requestId: um só direito; 8 envios simultâneos também', async () => {

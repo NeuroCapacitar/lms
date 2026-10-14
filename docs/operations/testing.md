@@ -303,6 +303,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - O armazenamento em memória NÃO prova o R2: cabeçalhos assinados, CORS, limites e Images só se provam com o roteiro de `docs/operations/media.md`. Concorrência de transações em teste usa conexões separadas (`openDatabase`).
 - No e2e a CSP real vale: hosts de teste precisam caber nela (`*.r2.cloudflarestorage.com` no PUT; caminho local para as imagens públicas, já que o domínio da mídia ainda não está no `img-src`).
 
+## Comércio: pedido, sessão, pagamento e fatos financeiros (M6-01)
+
+- Unit: `src/features/commerce/commerce.test.ts` (parcelas pelo preço, regras de publicação da Offer paga, máquina de estados, snapshot, corpo do pedido só com `offerId` e `attemptId`). Servidor: `test/pg/commerce.pg.test.ts` (snapshot imutável por gatilho, idempotência por `attemptId` inclusive em paralelo com conexões separadas, transições concorrentes, uma sessão ativa por pedido, id do provider único, `financial_event` append-only com UPDATE, DELETE e TRUNCATE recusados). O teste NÃO limpa as tabelas financeiras (fatos append-only e pedidos não se apagam): cada caso cria a sua pessoa e a sua oferta.
+- Nenhum teste chama o Asaas: o provider só entra a partir do M6-02.
+
 ## Banners do painel e imagens do login (M5-15)
 
 - Unit: `src/features/banner/banner.test.ts` (link só interno ou https do domínio da marca, sem `javascript:`, `//`, credencial, porta, espaço e controle; alt obrigatório; janela início inclusivo e fim exclusivo). Servidor: `test/pg/banner.pg.test.ts` com o armazenamento EM MEMÓRIA (só Admin; proporção da imagem; rascunho invisível; publicar copia para o bucket público antes de mudar o estado; sem R2 = 503 e continua rascunho; janela pelo relógio injetado; ordem; trocar a imagem de banner publicado; excluir solta a referência; teto de 5 imagens de login, inclusive com 8 publicações simultâneas). A rota pública `/api/public/login-media` não está no `apiApp`: o teste a monta ao lado. Telas: `e2e/banners.spec.ts` (aluno, login e Staff; axe claro e escuro; 375 px).

@@ -12,7 +12,7 @@
 
 ### M6-01 — Offer paga, Order, CheckoutSession e Payment com snapshot
 
-**Dependências:** M2-01, M3-01, M4-01 · **Estado:** `not_started`
+**Dependências:** M2-01, M3-01, M4-01 · **Estado:** `implemented` (2026-10-14; evidência e limites em `docs/implementation/STATUS.md`)
 
 **Objetivo:** modelar a compra com Order, CheckoutSession e Payment distintos; o Order guarda para sempre as condições comerciais do momento da compra.
 **Passos:**

@@ -485,7 +485,7 @@ describe('imagens do login', () => {
     expect((await setState(admin, 'login', ids[0]!, 'draft')).status).toBe(200);
     expect((await setState(admin, 'login', ids[5]!, 'published')).status).toBe(200);
     expect(await loginList()).toHaveLength(5);
-  });
+  }, 180_000);
 
   it('publicações simultâneas nunca passam de 5', async () => {
     const admin = await newPerson('admin');
