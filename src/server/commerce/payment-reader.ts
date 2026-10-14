@@ -10,6 +10,8 @@ export interface PaymentReader {
   getPayment(paymentId: string): Promise<ProviderPayment | null>;
   /** Ids dos pagamentos de uma sessão de checkout (`GET /v3/payments?checkoutSession=`). */
   listPaymentIds(checkoutSessionId: string): Promise<string[]>;
+  /** O pagador (`GET /v3/customers/{id}`): nome e CPF/CNPJ informado. `null` = o Asaas não o conhece. */
+  getCustomer(customerId: string): Promise<{ name: string | null; document: string | null } | null>;
 }
 
 /** Falha de infraestrutura (429, 5xx, rede, timeout, resposta ilegível): tentar de novo é seguro. */
@@ -104,8 +106,15 @@ export function createAsaasPaymentReader(input: {
         checkoutSessionId: text(body.checkoutSession),
         installmentId,
         externalReference: text(body.externalReference),
+        customerId: text(body.customer) ?? text(body.customerId),
         paidAt: paidAt && !Number.isNaN(paidAt.getTime()) ? paidAt : null,
       };
+    },
+
+    async getCustomer(customerId) {
+      const { body } = await get(`/v3/customers/${encodeURIComponent(customerId)}`);
+      if (!body) return null;
+      return { name: text(body.name), document: text(body.cpfCnpj) };
     },
 
     async listPaymentIds(checkoutSessionId) {

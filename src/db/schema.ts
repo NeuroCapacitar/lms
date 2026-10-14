@@ -1698,8 +1698,15 @@ export const payment = pgTable(
     amountCents: integer().notNull(),
     providerStatus: text().notNull(),
     paidAt: timestamp({ withTimezone: true }),
+    /** Dados do pagador lidos do Asaas DEPOIS da confirmação (M6-08). O nome vai em claro; o CPF/CNPJ só CIFRADO. */
     payerName: text(),
-    payerDocument: text(),
+    /** CPF/CNPJ cifrado em repouso (AES-GCM, chave versionada do Worker); abrir grava auditoria. */
+    payerDocumentCiphertext: text(),
+    payerDocumentNonce: text(),
+    payerDocumentKeyVersion: integer(),
+    /** Máscara para exibir por padrão (`•••.•••.•••-09`), calculada na gravação. */
+    payerDocumentMasked: text(),
+    payerInfoReadAt: timestamp({ withTimezone: true }),
     ...stamps,
   },
   (table) => [
@@ -1708,6 +1715,10 @@ export const payment = pgTable(
     check('payment_provider_check', sql`${table.provider} = 'asaas'`),
     check('payment_method_check', sql`${table.method} in ('pix', 'card')`),
     check('payment_amount_check', sql`${table.amountCents} > 0`),
+    check(
+      'payment_payer_document_check',
+      sql`(${table.payerDocumentCiphertext} is null and ${table.payerDocumentNonce} is null and ${table.payerDocumentKeyVersion} is null and ${table.payerDocumentMasked} is null) or (${table.payerDocumentCiphertext} is not null and ${table.payerDocumentNonce} is not null and ${table.payerDocumentKeyVersion} is not null and ${table.payerDocumentMasked} is not null)`,
+    ),
     check(
       'payment_provider_payment_id_check',
       sql`char_length(${table.providerPaymentId}) between 1 and 100`,

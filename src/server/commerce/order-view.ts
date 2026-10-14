@@ -9,6 +9,7 @@ import {
 } from '../../features/commerce/commerce';
 import { recordFinancialEventIn } from './order-store';
 import { reconcileOrderSession } from './payment-evidence-store';
+import type { ProviderPayment } from '../../features/commerce/payment-evidence';
 import type { PaymentReader } from './payment-reader';
 
 /**
@@ -44,7 +45,11 @@ export async function getOrderForUser(
  */
 export async function checkOrderForUser(
   db: Database,
-  deps: { reader: PaymentReader; now?: () => Date },
+  deps: {
+    reader: PaymentReader;
+    now?: () => Date;
+    afterGrant?: (db: Database, read: ProviderPayment) => Promise<void>;
+  },
   input: { userId: string; orderId: string },
 ): Promise<{ order: OrderDto; limited: boolean } | null> {
   const current = await getOrderForUser(db, input.userId, input.orderId);

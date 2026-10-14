@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { formatBrl } from '../../features/catalog/money';
 import {
@@ -10,12 +10,17 @@ import {
 } from '../../features/commerce/review';
 import type { ActionOutcome } from '../api/action';
 import {
+  fetchFinanceOrders,
   fetchRefunds,
   fetchReviews,
+  revealDocument,
   requestRefundRequest,
   resolveReviewRequest,
 } from '../api/finance';
 import { REFUND_STATE_LABELS } from '../../features/commerce/refund';
+import { ORDER_STATUSES } from '../../features/commerce/commerce';
+import type { FinanceOrdersQuery } from '../../features/commerce/finance-view';
+import { fetchAccess } from '../api/staff';
 import { ReauthPanel } from '../components/reauth-panel';
 import { TextField } from '../components/ui/field';
 import { ForbiddenError } from '../api/staff';
@@ -67,6 +72,10 @@ function StaffFinance() {
     retry: false,
   });
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | undefined>();
+  const access = useQuery({ queryKey: ['access'], queryFn: fetchAccess, retry: false });
+  const canViewOrders = access.data?.capabilities.includes('finance.view') ?? false;
+  const canRefund = access.data?.capabilities.includes('refund.execute') ?? false;
+  const [prefill, setPrefill] = useState('');
 
   async function run(work: () => Promise<ActionOutcome<unknown>>, ok: string): Promise<boolean> {
     setMessage(undefined);
@@ -87,7 +96,16 @@ function StaffFinance() {
         Revisões de pagamentos que o sistema não pôde decidir sozinho. Nada é liberado por dúvida: o
         acesso só sai depois de uma evidência segura ou de uma decisão sua, com motivo.
       </p>
-      <RefundSection />
+      {canViewOrders ? (
+        <OrdersSection
+          canRefund={canRefund}
+          onRefund={(orderId) => {
+            setPrefill(orderId);
+            document.getElementById('reembolsos-titulo')?.scrollIntoView({ block: 'start' });
+          }}
+        />
+      ) : null}
+      <RefundSection prefill={prefill} />
       {reviews.error instanceof ForbiddenError ? (
         <p role="alert">Você não tem a permissão de ver as revisões financeiras.</p>
       ) : reviews.isPending ? (
@@ -246,10 +264,13 @@ function ReviewCard({
  * há a tela de pedidos (M6-08) o pedido é identificado pelo número. Dentro de 7 dias qualquer Suporte com o grant; depois,
  * só o Admin. Ao pedir, o acesso da pessoa é suspenso; se o Asaas recusar, é devolvido.
  */
-function RefundSection() {
+function RefundSection({ prefill }: { prefill: string }) {
   const queryClient = useQueryClient();
   const refunds = useQuery({ queryKey: ['finance-refunds'], queryFn: fetchRefunds, retry: false });
-  const [orderId, setOrderId] = useState('');
+  const [orderId, setOrderId] = useState(prefill);
+  useEffect(() => {
+    if (prefill) setOrderId(prefill);
+  }, [prefill]);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [needsReauth, setNeedsReauth] = useState(false);
@@ -358,6 +379,266 @@ function RefundSection() {
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  paid: 'Pago',
+  expired: 'Vencido',
+  canceled: 'Cancelado',
+  refund_requested: 'Reembolso pedido',
+  refunded: 'Reembolsado',
+  disputed: 'Em disputa',
+  review: 'Em revisão',
+};
+const METHOD_LABELS = { pix: 'Pix', card: 'Cartão' } as const;
+
+/**
+ * Pedidos e pagamentos (M6-08), só com o grant `finance.view`: filtros por período e estado, totais do mesmo filtro
+ * (o "recebido" NÃO inclui os pedidos pendentes) e o pagador com o CPF/CNPJ MASCARADO. Revelar o número completo pede
+ * reautenticação e grava auditoria no servidor; o número só fica na tela, nunca em cache. Sem exportação: só se o
+ * contador pedir.
+ */
+function OrdersSection({
+  canRefund,
+  onRefund,
+}: {
+  canRefund: boolean;
+  onRefund: (orderId: string) => void;
+}) {
+  const [filters, setFilters] = useState<FinanceOrdersQuery>({});
+  const [draft, setDraft] = useState<FinanceOrdersQuery>({});
+  const orders = useQuery({
+    queryKey: ['finance-orders', filters],
+    queryFn: () => fetchFinanceOrders(filters),
+    retry: false,
+    gcTime: 0,
+  });
+  const [revealed, setRevealed] = useState<Record<string, string>>({});
+  const [needsReauth, setNeedsReauth] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  async function reveal(paymentId: string) {
+    setError(undefined);
+    setNeedsReauth(false);
+    const outcome = await revealDocument(paymentId);
+    if (outcome.result === 'ok' && outcome.data) {
+      setRevealed((current) => ({ ...current, [paymentId]: outcome.data!.document }));
+      return;
+    }
+    if (outcome.result === 'reauth_required') {
+      setNeedsReauth(true);
+      return;
+    }
+    setError(
+      outcome.code === 'document_vault_unavailable'
+        ? 'O cofre de documentos não está disponível neste ambiente.'
+        : 'Não foi possível revelar o documento agora.',
+    );
+  }
+
+  return (
+    <section aria-labelledby="pedidos-titulo" className="mb-10 grid gap-4">
+      <h2 id="pedidos-titulo" className="text-xl font-semibold">
+        Pedidos e pagamentos
+      </h2>
+      {needsReauth ? <ReauthPanel action="revelar o CPF/CNPJ" /> : null}
+      <form
+        noValidate
+        aria-label="Filtrar pedidos"
+        className="grid max-w-3xl gap-3 sm:grid-cols-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setFilters({ ...draft });
+          setRevealed({});
+        }}
+      >
+        <label className="grid gap-1.5">
+          <span className="font-medium text-[var(--field-label)]">De</span>
+          <input
+            type="date"
+            value={draft.from ?? ''}
+            onChange={(event) => setDraft({ ...draft, from: event.target.value || undefined })}
+            className="min-h-11 rounded-lg border bg-[var(--input-bg)] px-2 text-[var(--input-fg)]"
+          />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="font-medium text-[var(--field-label)]">Até</span>
+          <input
+            type="date"
+            value={draft.to ?? ''}
+            onChange={(event) => setDraft({ ...draft, to: event.target.value || undefined })}
+            className="min-h-11 rounded-lg border bg-[var(--input-bg)] px-2 text-[var(--input-fg)]"
+          />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="font-medium text-[var(--field-label)]">Estado do pedido</span>
+          <select
+            value={draft.status ?? ''}
+            onChange={(event) =>
+              setDraft({
+                ...draft,
+                status: (event.target.value || undefined) as FinanceOrdersQuery['status'],
+              })
+            }
+            className="min-h-11 rounded-lg border bg-[var(--input-bg)] px-2 text-[var(--input-fg)]"
+          >
+            <option value="">Todos</option>
+            {ORDER_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {STATUS_LABELS[status]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="flex items-end">
+          <Button type="submit">Filtrar</Button>
+        </div>
+      </form>
+      {error ? (
+        <p role="alert" className="font-medium text-[var(--text-danger)]">
+          {error}
+        </p>
+      ) : null}
+      {orders.isPending ? (
+        <p role="status">Carregando…</p>
+      ) : orders.isError ? (
+        <p role="alert" className="font-medium text-[var(--text-danger)]">
+          Não foi possível carregar os pedidos agora.
+        </p>
+      ) : (
+        <>
+          <dl className="grid gap-3 sm:grid-cols-3" aria-label="Totais do filtro">
+            <div className="rounded-lg border p-3">
+              <dt className="text-sm text-[var(--text-muted)]">Recebido (pedidos pagos)</dt>
+              <dd className="text-lg font-semibold">
+                {formatBrl(orders.data.summary.paidCents)} · {orders.data.summary.paidCount}
+              </dd>
+            </div>
+            <div className="rounded-lg border p-3">
+              <dt className="text-sm text-[var(--text-muted)]">Reembolsado</dt>
+              <dd className="text-lg font-semibold">
+                {formatBrl(orders.data.summary.refundedCents)} · {orders.data.summary.refundedCount}
+              </dd>
+            </div>
+            <div className="rounded-lg border p-3">
+              <dt className="text-sm text-[var(--text-muted)]">Pendente (não entra no recebido)</dt>
+              <dd className="text-lg font-semibold">
+                {formatBrl(orders.data.summary.pendingCents)} · {orders.data.summary.pendingCount}
+              </dd>
+            </div>
+          </dl>
+          {orders.data.orders.length === 0 ? (
+            <p className="text-[var(--text-muted)]">Nenhum pedido neste filtro.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[56rem] border-collapse text-left text-sm">
+                <caption className="sr-only">Pedidos e pagamentos</caption>
+                <thead>
+                  <tr className="border-b">
+                    <th scope="col" className="p-2">
+                      Data
+                    </th>
+                    <th scope="col" className="p-2">
+                      Curso e comprador
+                    </th>
+                    <th scope="col" className="p-2">
+                      Valor
+                    </th>
+                    <th scope="col" className="p-2">
+                      Forma
+                    </th>
+                    <th scope="col" className="p-2">
+                      Estado
+                    </th>
+                    <th scope="col" className="p-2">
+                      Pagador
+                    </th>
+                    <th scope="col" className="p-2">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.data.orders.map((row) => (
+                    <tr key={row.orderId} className="border-b align-top">
+                      <td className="p-2">
+                        <time dateTime={row.createdAt}>
+                          {dateFormat.format(new Date(row.createdAt))}
+                        </time>
+                      </td>
+                      <td className="p-2">
+                        <p className="font-medium">{row.courseTitle}</p>
+                        <p className="text-[var(--text-muted)]">{row.buyerName}</p>
+                        <p className="break-all text-xs text-[var(--text-muted)]">{row.orderId}</p>
+                      </td>
+                      <td className="p-2">{formatBrl(row.priceCents)}</td>
+                      <td className="p-2">
+                        {row.method ? METHOD_LABELS[row.method] : '—'}
+                        {row.paymentCount > 1 ? ` (${row.paymentCount}x)` : ''}
+                      </td>
+                      <td className="p-2">{STATUS_LABELS[row.status] ?? row.status}</td>
+                      <td className="p-2">
+                        <p>{row.payerName ?? 'Não lido'}</p>
+                        {row.revealablePaymentId && revealed[row.revealablePaymentId] ? (
+                          <p className="font-mono">
+                            {revealed[row.revealablePaymentId]}{' '}
+                            <button
+                              type="button"
+                              className="underline"
+                              onClick={() =>
+                                setRevealed((current) => {
+                                  const { [row.revealablePaymentId!]: _hidden, ...rest } = current;
+                                  return rest;
+                                })
+                              }
+                            >
+                              Ocultar
+                            </button>
+                          </p>
+                        ) : (
+                          <p className="font-mono">
+                            {row.payerDocumentMasked ?? 'CPF/CNPJ não informado'}
+                          </p>
+                        )}
+                        {row.revealablePaymentId && !revealed[row.revealablePaymentId] ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => void reveal(row.revealablePaymentId!)}
+                            aria-label={`Revelar CPF/CNPJ do pedido ${row.orderId}`}
+                          >
+                            Revelar
+                          </Button>
+                        ) : null}
+                      </td>
+                      <td className="p-2">
+                        {canRefund && row.status === 'paid' ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => onRefund(row.orderId)}
+                            aria-label={`Reembolsar o pedido ${row.orderId}`}
+                          >
+                            Reembolsar
+                          </Button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {orders.data.truncated ? (
+            <p className="text-sm text-[var(--text-muted)]">
+              Mostrando os 200 mais recentes: use o período ou o estado para refinar.
+            </p>
+          ) : null}
+        </>
       )}
     </section>
   );

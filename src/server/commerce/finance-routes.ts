@@ -1,6 +1,7 @@
 import type { Context, MiddlewareHandler } from 'hono';
 import { Hono } from 'hono';
 
+import { financeOrdersQuerySchema } from '../../features/commerce/finance-view';
 import { requestRefundSchema } from '../../features/commerce/refund';
 import { resolveReviewSchema } from '../../features/commerce/review';
 import { requireCapability } from '../auth/authorization';
@@ -8,6 +9,8 @@ import { requireRecentAuth } from '../auth/reauth';
 import { publishAfterCommit } from '../async/publisher';
 import type { AuthVars } from '../auth/types';
 import { paymentReaderFor, refundProviderFor } from './factory';
+import { listFinanceOrders } from './finance-view-store';
+import { DocumentVaultUnavailableError, NoDocumentError, revealPayerDocument } from './payer-store';
 import {
   PaymentReadPermanentError,
   PaymentReadTransientError,
@@ -47,6 +50,10 @@ function failure(c: FinanceContext, error: unknown): Response {
   if (error instanceof ReviewStaleError) return conflict('stale');
   if (error instanceof OtherOpenReviewsError) return conflict('other_open_reviews');
   if (error instanceof ReviewStillDivergentError) return conflict('still_divergent');
+  if (error instanceof NoDocumentError) return c.json({ error: { code: 'not_found' } }, 404);
+  if (error instanceof DocumentVaultUnavailableError) {
+    return c.json({ error: { code: 'document_vault_unavailable' } }, 503);
+  }
   if (error instanceof RefundOrderNotFoundError)
     return c.json({ error: { code: 'not_found' } }, 404);
   if (error instanceof OrderNotRefundableError) return conflict('order_not_refundable');
@@ -152,6 +159,43 @@ export function financeStaffRoutes(deps: {
     },
   );
 
+  /**
+   * Pedidos e pagamentos (M6-08), grant `finance.view`: filtros por período, curso e estado, totais do mesmo filtro e o
+   * pagador com o CPF/CNPJ MASCARADO. Sem o grant, 403 direto pela API.
+   */
+  routes.get('/finance/orders', deps.withDatabase, requireCapability('finance.view'), async (c) => {
+    const parsed = financeOrdersQuerySchema.safeParse(c.req.query());
+    if (!parsed.success) return c.json({ error: { code: 'invalid_request' } }, 400);
+    c.header('Cache-Control', 'no-store');
+    return c.json(await listFinanceOrders(c.var.db, parsed.data));
+  });
+
+  /**
+   * Revela o CPF/CNPJ completo de UM pagamento: grant `finance.view` + reautenticação recente; a auditoria é gravada
+   * ANTES de devolver (quem, quando e qual pagamento, nunca o número). Resposta `no-store`.
+   */
+  routes.post(
+    '/finance/payments/:id/reveal-document',
+    deps.withDatabase,
+    requireCapability('finance.view'),
+    requireRecentAuth(),
+    async (c) => {
+      const id = c.req.param('id');
+      if (!UUID.test(id)) return c.json({ error: { code: 'not_found' } }, 404);
+      c.header('Cache-Control', 'no-store');
+      try {
+        const document = await revealPayerDocument(c.var.db, {
+          paymentId: id,
+          actorId: c.var.access!.userId,
+          masterKey: c.env.FINANCE_SECRETS_MASTER_KEY,
+        });
+        return c.json({ document });
+      } catch (error) {
+        return failure(c, error);
+      }
+    },
+  );
+
   routes.get(
     '/finance/refunds',
     deps.withDatabase,
@@ -168,6 +212,9 @@ export function financeStaffRoutes(deps: {
 /** Só alcançável em `dismiss` (que não lê o provider): qualquer leitura aqui é bug e falha alto. */
 const unavailableReader: PaymentReader = {
   async getPayment() {
+    throw new PaymentReadTransientError('reader_unavailable');
+  },
+  async getCustomer() {
     throw new PaymentReadTransientError('reader_unavailable');
   },
   async listPaymentIds() {

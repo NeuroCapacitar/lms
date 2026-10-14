@@ -232,6 +232,20 @@
       "when": 1791987140590,
       "tag": "0032_refund_request",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791990420962,
+      "tag": "0033_payer_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791990427591,
+      "tag": "0034_drop_plain_payer_document",
+      "breakpoints": true
     }
   ]
 }

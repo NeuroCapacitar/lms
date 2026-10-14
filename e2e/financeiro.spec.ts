@@ -35,6 +35,13 @@ async function stub(
     reviews?: Record<string, unknown>[];
     forbidden?: boolean;
     refunds?: Record<string, unknown>[];
+    orders?: {
+      orders: Record<string, unknown>[];
+      summary?: Record<string, number>;
+      truncated?: boolean;
+    };
+    ordersFail?: boolean;
+    revealAnswer?: (call: Call) => { status: number; json: unknown } | undefined;
     refundAnswer?: (call: Call) => { status: number; json: unknown } | undefined;
     answer?: (call: Call) => { status: number; json: unknown } | undefined;
   } = {},
@@ -57,6 +64,33 @@ async function stub(
       : route.fulfill({ json: { reviews: options.reviews ?? [] } }),
   );
   const refundCalls: Call[] = [];
+  const orderQueries: string[] = [];
+  const revealCalls: Call[] = [];
+  await page.route(/\/api\/staff\/finance\/orders(\?.*)?$/, (route) => {
+    orderQueries.push(new URL(route.request().url()).search);
+    return options.ordersFail
+      ? route.fulfill({ status: 500, json: { error: { code: 'internal' } } })
+      : route.fulfill({
+          json: {
+            orders: options.orders?.orders ?? [],
+            truncated: options.orders?.truncated ?? false,
+            summary: options.orders?.summary ?? {
+              paidCents: 0,
+              paidCount: 0,
+              refundedCents: 0,
+              refundedCount: 0,
+              pendingCents: 0,
+              pendingCount: 0,
+            },
+          },
+        });
+  });
+  await page.route('**/api/staff/finance/payments/*/reveal-document', (route) => {
+    const call = { path: new URL(route.request().url()).pathname, body: {} };
+    revealCalls.push(call);
+    const answer = options.revealAnswer?.(call);
+    return route.fulfill(answer ?? { json: { document: '123.456.789-09' } });
+  });
   await page.route('**/api/staff/finance/refunds', (route) =>
     route.fulfill({ json: { refunds: options.refunds ?? [] } }),
   );
@@ -79,7 +113,7 @@ async function stub(
     const answer = options.answer?.(call);
     return route.fulfill(answer ?? { status: 200, json: { resolved: true } });
   });
-  return Object.assign(calls, { refundCalls });
+  return Object.assign(calls, { refundCalls, orderQueries, revealCalls });
 }
 
 const refundItem = (n: number, overrides: Record<string, unknown> = {}) => ({
@@ -292,6 +326,198 @@ test.describe('Financeiro (Staff)', () => {
     await expect(list).toContainText('Aguardando aprovação no painel do Asaas');
     await expect(list).toContainText('Reembolsado');
     await expect(list).not.toContainText('@');
+  });
+
+  const orderRow = (n: number, overrides: Record<string, unknown> = {}) => ({
+    orderId: ID(80 + n),
+    createdAt: '2026-10-14T12:00:00.000Z',
+    status: 'paid',
+    courseTitle: 'Curso pago',
+    offerName: 'Oferta anual',
+    priceCents: 19_700,
+    buyerName: 'Maria Souza',
+    method: 'pix',
+    paidAt: '2026-10-14T12:05:00.000Z',
+    paymentCount: 1,
+    payerName: 'Maria da Silva',
+    payerDocumentMasked: '•••.•••.•••-09',
+    revealablePaymentId: ID(70 + n),
+    ...overrides,
+  });
+  const FINANCE_VIEW = ['staff.read', 'finance.view'];
+
+  test('só com finance.view: o item de menu aparece e a lista mostra pagador MASCARADO e os totais separados', async ({
+    page,
+  }) => {
+    await stub(page, {
+      capabilities: FINANCE_VIEW,
+      orders: {
+        orders: [
+          orderRow(1),
+          orderRow(2, {
+            status: 'pending',
+            method: null,
+            paidAt: null,
+            paymentCount: 0,
+            payerName: null,
+            payerDocumentMasked: null,
+            revealablePaymentId: null,
+          }),
+          orderRow(3, {
+            payerDocumentMasked: null,
+            revealablePaymentId: null,
+            paymentCount: 3,
+            method: 'card',
+          }),
+        ],
+        summary: {
+          paidCents: 39_400,
+          paidCount: 2,
+          refundedCents: 0,
+          refundedCount: 0,
+          pendingCents: 19_700,
+          pendingCount: 1,
+        },
+      },
+    });
+    await page.goto('/staff');
+    await page
+      .getByRole('navigation', { name: 'Área da equipe' })
+      .getByRole('link', { name: 'Financeiro' })
+      .click();
+    const table = page.getByRole('table', { name: 'Pedidos e pagamentos' });
+    await expect(table.getByRole('row')).toHaveCount(4);
+    await expect(table).toContainText('•••.•••.•••-09');
+    await expect(table).toContainText('CPF/CNPJ não informado');
+    await expect(table).toContainText('Cartão (3x)');
+    await expect(table).not.toContainText('123.456.789-09');
+    const totals = page.getByLabel('Totais do filtro');
+    await expect(totals).toContainText('Recebido (pedidos pagos)');
+    await expect(totals).toContainText('R$ 394,00 · 2');
+    await expect(totals).toContainText('Pendente (não entra no recebido)');
+    await expect(totals).toContainText('R$ 197,00 · 1');
+    // sem refund.execute não há botão de reembolso
+    await expect(page.getByRole('button', { name: /^Reembolsar o pedido/ })).toHaveCount(0);
+  });
+
+  test('o filtro envia período e estado; lista vazia e erro têm mensagem própria', async ({
+    page,
+  }) => {
+    const calls = await stub(page, { capabilities: FINANCE_VIEW, orders: { orders: [] } });
+    await page.goto('/staff/financeiro');
+    await expect(page.getByText('Nenhum pedido neste filtro.')).toBeVisible();
+    await page.getByLabel('De', { exact: true }).fill('2026-10-01');
+    await page.getByLabel('Até', { exact: true }).fill('2026-10-31');
+    await page.getByLabel('Estado do pedido').selectOption('paid');
+    await page.getByRole('button', { name: 'Filtrar' }).click();
+    await expect
+      .poll(() => calls.orderQueries.at(-1))
+      .toBe('?from=2026-10-01&to=2026-10-31&status=paid');
+
+    const broken = await page.context().newPage();
+    await stub(broken, { capabilities: FINANCE_VIEW, ordersFail: true });
+    await broken.goto('/staff/financeiro');
+    await expect(broken.getByRole('alert')).toContainText(
+      'Não foi possível carregar os pedidos agora.',
+    );
+  });
+
+  test('revelar o CPF/CNPJ: pede ao servidor, mostra o número só na tela e permite ocultar; nada vai para o armazenamento do navegador', async ({
+    page,
+  }) => {
+    const calls = await stub(page, {
+      capabilities: FINANCE_VIEW,
+      orders: { orders: [orderRow(1)] },
+    });
+    await page.goto('/staff/financeiro');
+    await page.getByRole('button', { name: /^Revelar CPF\/CNPJ do pedido/ }).click();
+    await expect(page.getByText('123.456.789-09')).toBeVisible();
+    expect(calls.revealCalls).toEqual([
+      { path: `/api/staff/finance/payments/${ID(71)}/reveal-document`, body: {} },
+    ]);
+    const stored = await page.evaluate(
+      () => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }),
+    );
+    expect(stored).not.toContain('123.456.789-09');
+    await page.getByRole('button', { name: 'Ocultar' }).click();
+    await expect(page.getByText('123.456.789-09')).toHaveCount(0);
+    await expect(page.getByText('•••.•••.•••-09')).toBeVisible();
+  });
+
+  test('revelar sem reautenticação recente pede a confirmação da identidade; cofre ausente mostra o aviso', async ({
+    page,
+  }) => {
+    await stub(page, {
+      capabilities: FINANCE_VIEW,
+      orders: { orders: [orderRow(1)] },
+      revealAnswer: () => ({ status: 403, json: { error: { code: 'reauth_required' } } }),
+    });
+    await page.goto('/staff/financeiro');
+    await page.getByRole('button', { name: /^Revelar CPF\/CNPJ do pedido/ }).click();
+    await expect(
+      page.getByText('Para revelar o CPF/CNPJ, confirme primeiro a sua identidade.'),
+    ).toBeVisible();
+
+    const vault = await page.context().newPage();
+    await stub(vault, {
+      capabilities: FINANCE_VIEW,
+      orders: { orders: [orderRow(1)] },
+      revealAnswer: () => ({
+        status: 503,
+        json: { error: { code: 'document_vault_unavailable' } },
+      }),
+    });
+    await vault.goto('/staff/financeiro');
+    await vault.getByRole('button', { name: /^Revelar CPF\/CNPJ do pedido/ }).click();
+    await expect(vault.getByRole('alert')).toContainText(
+      'O cofre de documentos não está disponível',
+    );
+  });
+
+  test('o botão Reembolsar (só com refund.execute, só em pedido pago) leva o número do pedido ao formulário', async ({
+    page,
+  }) => {
+    await stub(page, {
+      capabilities: ['staff.read', 'finance.view', 'refund.execute'],
+      orders: {
+        orders: [orderRow(1), orderRow(2, { status: 'pending', revealablePaymentId: null })],
+      },
+    });
+    await page.goto('/staff/financeiro');
+    await expect(page.getByRole('button', { name: /^Reembolsar o pedido/ })).toHaveCount(1);
+    await page.getByRole('button', { name: `Reembolsar o pedido ${ID(81)}` }).click();
+    await expect(page.getByLabel('Número do pedido')).toHaveValue(ID(81));
+  });
+
+  test('sem finance.view a seção de pedidos não existe (e nenhuma chamada é feita)', async ({
+    page,
+  }) => {
+    const calls = await stub(page, { capabilities: ['staff.read', 'finance.review'] });
+    await page.goto('/staff/financeiro');
+    await expect(page.getByRole('heading', { name: 'Reembolsos' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pedidos e pagamentos' })).toHaveCount(0);
+    expect(calls.orderQueries).toEqual([]);
+  });
+
+  test('tabela de pedidos: sem violações de acessibilidade e sem rolagem horizontal da PÁGINA no celular', async ({
+    page,
+  }) => {
+    await stub(page, {
+      capabilities: ['staff.read', 'finance.view', 'refund.execute'],
+      orders: { orders: [orderRow(1), orderRow(2)] },
+    });
+    await page.goto('/staff/financeiro');
+    await expect(page.getByRole('table', { name: 'Pedidos e pagamentos' })).toBeVisible();
+    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+    expect(
+      results.violations.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`,
+      ),
+    ).toEqual([]);
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
   });
 
   for (const scheme of ['light', 'dark'] as const) {

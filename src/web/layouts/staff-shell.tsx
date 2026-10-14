@@ -23,7 +23,7 @@ interface NavItem {
     | '/staff/equipe';
   label: string;
   /** Capability que mostra o item. É só conveniência: o servidor protege cada rota. */
-  needs: Capability;
+  needs: Capability | readonly Capability[];
 }
 
 const NAV: NavItem[] = [
@@ -33,7 +33,11 @@ const NAV: NavItem[] = [
   { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
   { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },
   { to: '/staff/banners', label: 'Banners', needs: 'staff.manage' },
-  { to: '/staff/financeiro', label: 'Financeiro', needs: 'finance.review' },
+  {
+    to: '/staff/financeiro',
+    label: 'Financeiro',
+    needs: ['finance.view', 'finance.review', 'refund.execute'],
+  },
   { to: '/staff/videos', label: 'Vídeo', needs: 'integration.credentials' },
   { to: '/staff/equipe', label: 'Equipe', needs: 'staff.manage' },
 ];
@@ -115,7 +119,11 @@ function ShellContent({ children }: { children: ReactNode }) {
     );
   }
 
-  const items = NAV.filter((item) => access.data.capabilities.includes(item.needs));
+  const items = NAV.filter((item) =>
+    (Array.isArray(item.needs) ? item.needs : [item.needs]).some((needed) =>
+      access.data.capabilities.includes(needed),
+    ),
+  );
   return (
     <>
       <a

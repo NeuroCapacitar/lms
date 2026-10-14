@@ -36,6 +36,7 @@ const PIX = {
   checkoutSession: 'chk-1',
   confirmedDate: '2026-10-14',
   externalReference: null,
+  customer: 'cus_123',
 };
 
 describe('leitura do pagamento no Asaas', () => {
@@ -51,6 +52,7 @@ describe('leitura do pagamento no Asaas', () => {
       checkoutSessionId: 'chk-1',
       installmentId: null,
       externalReference: null,
+      customerId: 'cus_123',
       paidAt: new Date('2026-10-14'),
     });
     expect(calls).toHaveLength(1);
@@ -153,5 +155,30 @@ describe('leitura do pagamento no Asaas', () => {
     expect(await empty.reader.listPaymentIds('x')).toEqual([]);
     const missing = reader(() => new Response('{}', { status: 404 }));
     expect(await missing.reader.listPaymentIds('x')).toEqual([]);
+  });
+
+  it('lê o pagador: nome e CPF/CNPJ, 404 = desconhecido, e falhas classificadas', async () => {
+    const { reader: r, calls } = reader(() =>
+      ok({ id: 'cus_123', name: 'Maria da Silva', cpfCnpj: '12345678909' }),
+    );
+    expect(await r.getCustomer('cus_123')).toEqual({
+      name: 'Maria da Silva',
+      document: '12345678909',
+    });
+    expect(calls[0]!.url).toBe('https://api-sandbox.example.test/v3/customers/cus_123');
+    expect((calls[0]!.init.headers as Record<string, string>).access_token).toBe(KEY);
+    expect(await reader(() => ok({ id: 'cus_1' })).reader.getCustomer('cus_1')).toEqual({
+      name: null,
+      document: null,
+    });
+    expect(
+      await reader(() => new Response('{}', { status: 404 })).reader.getCustomer('x'),
+    ).toBeNull();
+    await expect(
+      reader(() => new Response('{}', { status: 503 })).reader.getCustomer('x'),
+    ).rejects.toBeInstanceOf(PaymentReadTransientError);
+    await expect(
+      reader(() => new Response('{}', { status: 401 })).reader.getCustomer('x'),
+    ).rejects.toBeInstanceOf(PaymentReadPermanentError);
   });
 });
