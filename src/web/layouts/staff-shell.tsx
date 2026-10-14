@@ -17,6 +17,7 @@ interface NavItem {
     | '/staff/operacao'
     | '/staff/discussoes'
     | '/staff/ajuda'
+    | '/staff/banners'
     | '/staff/videos'
     | '/staff/equipe';
   label: string;
@@ -30,6 +31,7 @@ const NAV: NavItem[] = [
   { to: '/staff/operacao', label: 'Operação', needs: 'staff.read' },
   { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
   { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },
+  { to: '/staff/banners', label: 'Banners', needs: 'staff.manage' },
   { to: '/staff/videos', label: 'Vídeo', needs: 'integration.credentials' },
   { to: '/staff/equipe', label: 'Equipe', needs: 'staff.manage' },
 ];
@@ -151,7 +153,7 @@ function ShellContent({ children }: { children: ReactNode }) {
           <ThemeToggle />
         </div>
       </header>
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[14rem_1fr]">
+      <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 px-4 py-8 md:grid-cols-[14rem_minmax(0,1fr)]">
         <aside className="hidden md:block">
           <Nav items={items} />
         </aside>

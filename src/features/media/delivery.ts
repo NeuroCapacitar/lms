@@ -11,6 +11,7 @@ export const IMAGE_VARIANTS = {
   cover_hero: { width: 1280 },
   banner_narrow: { width: 840 },
   banner_wide: { width: 1680 },
+  login_side: { width: 600 },
 } as const;
 
 export type ImageVariantName = keyof typeof IMAGE_VARIANTS;

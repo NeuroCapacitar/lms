@@ -38,6 +38,7 @@ export function MediaField({
   value,
   onChange,
   readOnly,
+  uploadedHint = 'Imagem enviada. Salve o rascunho e publique o currículo para ela aparecer.',
 }: {
   purpose: CroppablePurpose;
   label: string;
@@ -45,6 +46,8 @@ export function MediaField({
   value: string | null | undefined;
   onChange: (mediaId: string | null) => void;
   readOnly: boolean;
+  /** O que acontece depois do envio (muda conforme quem usa o campo). */
+  uploadedHint?: string;
 }) {
   const inputId = useId();
   const [busy, setBusy] = useState(false);
@@ -91,7 +94,7 @@ export function MediaField({
     onChange(outcome.media.id);
     setMessage({
       kind: 'ok',
-      text: 'Imagem enviada. Salve o rascunho e publique o currículo para ela aparecer.',
+      text: uploadedHint,
     });
   }
 

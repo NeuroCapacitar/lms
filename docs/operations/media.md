@@ -20,6 +20,8 @@ Tudo no perfil `neurocapacitar` (`--profile neurocapacitar`, com a identidade co
 5. **Domínio público da mídia** (custom domain na zona; `r2.dev` só em desenvolvimento): definir a variável `MEDIA_PUBLIC_BASE_URL`, acrescentar o host a `img-src` em `public/_headers` e habilitar o **Cloudflare Images Transformations** na zona (Free: 5.000 transformações únicas por mês; acima disso o erro 9422 faz o `<img>` cair no master). O CSP atual já aceita `blob:` (prévia) e `https://*.r2.cloudflarestorage.com` (PUT); estreite o `connect-src` para o host exato da conta no momento da ativação.
 6. **Verificação real (registrar no STATUS):** subir capa e banner reais, confirmar, publicar o curso e ver a imagem na página pública (variante e fallback com a transformação forçada a falhar); baixar um PDF de aula como aluno autorizado e conferir os 403/404 dos não autorizados; rodar o `media.cleanup` com um órfão de teste; conferir que os cabeçalhos assinados no PUT (Content-Type) são mesmo aplicados pelo R2 (spike M0 #7) e o comportamento de limite do Images (spike M0-16).
 
+Nota (M5-15): banners do painel e imagens do login usam o MESMO bucket público e as mesmas variantes (`banner_wide`, `login_side`): a ativação acima basta; nada novo para criar. A página de banners só mostra o que está publicado E já copiado para o bucket público.
+
 ## Limites e decisões em aberto
 
 - Banner 4:1 (1680×420) até 5 MiB e capa 16:9 até 3 MiB: valores de partida (legado); confirmar com o cliente.

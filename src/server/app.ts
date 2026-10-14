@@ -5,6 +5,7 @@ import { withDatabase } from '../db/client';
 import { authRoutes, type AuthRouteOverrides } from './auth/routes';
 import { injectMeta, serveCoursePage } from './catalog/course-page';
 import { loadPublicCoursePage } from './catalog/public-page';
+import { publicLoginMediaRoutes } from './banner/routes';
 import { publicHelpRoutes } from './help/routes';
 import { publicCourseRoutes } from './catalog/public-routes';
 import { loggingMiddleware, type LogVariables } from './logging';
@@ -46,6 +47,8 @@ export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
   app.route('/api/public', publicCourseRoutes());
   // Endereço de suporte para quem não consegue entrar (M5-14).
   app.route('/api/public', publicHelpRoutes());
+  // Imagens decorativas da tela de login (M5-15).
+  app.route('/api/public', publicLoginMediaRoutes());
   app.get('/cursos/*', (c) =>
     serveCoursePage(c.req.raw, c.env, {
       loadCourse: (env, slug) =>

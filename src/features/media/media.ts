@@ -58,6 +58,28 @@ export const MEDIA_PURPOSES = {
     minHeight: 210,
     aspect: 4,
   },
+  /** Banner do painel do aluno (M5-15): os mesmos limites do banner do curso. */
+  panel_banner: {
+    visibility: 'public',
+    kinds: ['jpeg', 'png', 'webp'],
+    maxBytes: 5 * MiB,
+    maxWidth: 3360,
+    maxHeight: 840,
+    minWidth: 840,
+    minHeight: 210,
+    aspect: 4,
+  },
+  /** Imagem decorativa da tela de login (M5-15): retrato 3:4. */
+  login_media: {
+    visibility: 'public',
+    kinds: ['jpeg', 'png', 'webp'],
+    maxBytes: 3 * MiB,
+    maxWidth: 1800,
+    maxHeight: 2400,
+    minWidth: 450,
+    minHeight: 600,
+    aspect: 3 / 4,
+  },
   lesson_material: {
     visibility: 'private',
     kinds: ['pdf', 'jpeg', 'png', 'webp'],

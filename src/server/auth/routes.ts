@@ -36,6 +36,7 @@ import { courseAccessRoutes } from '../access/routes';
 import { enrollmentStaffRoutes } from '../access/staff-routes';
 import { discussionRoutes, discussionStaffRoutes } from '../discussion/routes';
 import { interestRoutes, interestStaffRoutes } from '../interest/routes';
+import { bannerRoutes, bannerStaffRoutes } from '../banner/routes';
 import { helpRoutes, helpStaffRoutes } from '../help/routes';
 import { createR2Storage } from '../media/r2-storage';
 import { mediaRoutes } from '../media/routes';
@@ -417,6 +418,15 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   // Ajuda da Staff (M5-14): /api/staff/help (FAQ com help.edit; pedidos com staff.read).
   routes.route('/staff', helpStaffRoutes({ withDatabase }));
 
+  // Banners do painel e imagens do login (M5-15): /api/staff/banners (só Admin; R2 do ambiente para publicar).
+  routes.route(
+    '/staff',
+    bannerStaffRoutes({
+      withDatabase,
+      storage: (c) => overrides.mediaStorage ?? createR2Storage(c.env),
+    }),
+  );
+
   // Moderação e resposta da equipe nas discussões (M5-05): /api/staff/discussions (grant discussion.moderate).
   routes.route('/staff', discussionStaffRoutes({ withDatabase }));
 
@@ -428,6 +438,12 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
       storage: (c) => overrides.mediaStorage ?? createR2Storage(c.env),
       ...(overrides.clock ? { clock: overrides.clock } : {}),
     }),
+  );
+
+  // Banners do painel do aluno (M5-15): /api/me/banners (sessão e termos).
+  routes.route(
+    '/',
+    bannerRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
   );
 
   // Ajuda do aluno (M5-14): /api/me/help/faq e /api/me/help/requests (sessão e termos).

@@ -25,6 +25,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UPLOAD_CAPABILITY: Record<MediaPurpose, Capability> = {
   course_cover: 'course.edit',
   course_banner: 'course.edit',
+  // M5-15: banners do painel e imagens do login são do Admin (a delegação do grant está PENDENTE com o M1).
+  panel_banner: 'staff.manage',
+  login_media: 'staff.manage',
   lesson_material: 'course.edit',
   certificate_asset: 'staff.manage',
 };

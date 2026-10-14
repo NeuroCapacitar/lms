@@ -303,6 +303,11 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 - O armazenamento em memória NÃO prova o R2: cabeçalhos assinados, CORS, limites e Images só se provam com o roteiro de `docs/operations/media.md`. Concorrência de transações em teste usa conexões separadas (`openDatabase`).
 - No e2e a CSP real vale: hosts de teste precisam caber nela (`*.r2.cloudflarestorage.com` no PUT; caminho local para as imagens públicas, já que o domínio da mídia ainda não está no `img-src`).
 
+## Banners do painel e imagens do login (M5-15)
+
+- Unit: `src/features/banner/banner.test.ts` (link só interno ou https do domínio da marca, sem `javascript:`, `//`, credencial, porta, espaço e controle; alt obrigatório; janela início inclusivo e fim exclusivo). Servidor: `test/pg/banner.pg.test.ts` com o armazenamento EM MEMÓRIA (só Admin; proporção da imagem; rascunho invisível; publicar copia para o bucket público antes de mudar o estado; sem R2 = 503 e continua rascunho; janela pelo relógio injetado; ordem; trocar a imagem de banner publicado; excluir solta a referência; teto de 5 imagens de login, inclusive com 8 publicações simultâneas). A rota pública `/api/public/login-media` não está no `apiApp`: o teste a monta ao lado. Telas: `e2e/banners.spec.ts` (aluno, login e Staff; axe claro e escuro; 375 px).
+- O e2e de login prova que a lista NÃO é pedida abaixo de 768 px. Rotação automática não existe, então não há teste de pausa: o que se prova é que nada muda sozinho depois de 1,5 s.
+
 ## Ajuda e suporte (M5-14)
 
 - Unit: `src/features/help/help.test.ts` (schemas, categorias, `Reply-To` seguro). Servidor: `test/pg/help.pg.test.ts` (FAQ só com `help.edit`, rascunho invisível, ordem e criações simultâneas, pedido com limite e paralelismo, e-mail só com id e categoria, `Reply-To` da conta e recusa de injeção de cabeçalho chamando o handler real com um mailer roteirizado, falha do Resend sem perder o pedido, constraints). Telas: `e2e/ajuda.spec.ts` (aluno e Staff).

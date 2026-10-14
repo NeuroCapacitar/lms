@@ -14,6 +14,7 @@ import { ForbiddenError } from '../api/staff';
 import { UnauthenticatedError } from '../api/profile';
 import { AccessStatus, EnrollControl } from '../components/enroll-control';
 import { InterestControl } from '../components/interest-control';
+import { PanelBanners } from '../components/panel-banners';
 import { RequireTerms } from '../components/require-terms';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
@@ -65,6 +66,7 @@ function Catalog() {
 
   return (
     <>
+      <PanelBanners />
       <h1 className="mb-2 text-3xl font-semibold">Cursos</h1>
       <p className="mb-8 max-w-prose text-[var(--text-muted)]">
         Veja os cursos disponíveis e como funciona o acesso a cada um.
