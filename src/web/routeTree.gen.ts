@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as BaseVisualRouteImport } from './routes/base-visual'
 import { Route as ConviteRouteImport } from './routes/convite'
+import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as TextoRicoRouteImport } from './routes/texto-rico'
@@ -60,6 +61,11 @@ const BaseVisualRoute = BaseVisualRouteImport.update({
 const ConviteRoute = ConviteRouteImport.update({
   id: '/convite',
   path: '/convite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnosticoRoute = DiagnosticoRouteImport.update({
+  id: '/diagnostico',
+  path: '/diagnostico',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SobreRoute = SobreRouteImport.update({
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/sobre': typeof SobreRoute
   '/staff': typeof StaffRouteWithChildren
   '/texto-rico': typeof TextoRicoRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/sobre': typeof SobreRoute
   '/texto-rico': typeof TextoRicoRoute
   '/certificados/$code': typeof CertificadosCodeRoute
@@ -281,6 +289,7 @@ export interface FileRoutesById {
   '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/sobre': typeof SobreRoute
   '/staff': typeof StaffRouteWithChildren
   '/texto-rico': typeof TextoRicoRoute
@@ -317,6 +326,7 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/base-visual'
     | '/convite'
+    | '/diagnostico'
     | '/sobre'
     | '/staff'
     | '/texto-rico'
@@ -351,6 +361,7 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/base-visual'
     | '/convite'
+    | '/diagnostico'
     | '/sobre'
     | '/texto-rico'
     | '/certificados/$code'
@@ -384,6 +395,7 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/base-visual'
     | '/convite'
+    | '/diagnostico'
     | '/sobre'
     | '/staff'
     | '/texto-rico'
@@ -419,6 +431,7 @@ export interface RootRouteChildren {
   AjudaRoute: typeof AjudaRoute
   BaseVisualRoute: typeof BaseVisualRoute
   ConviteRoute: typeof ConviteRoute
+  DiagnosticoRoute: typeof DiagnosticoRoute
   SobreRoute: typeof SobreRoute
   StaffRoute: typeof StaffRouteWithChildren
   TextoRicoRoute: typeof TextoRicoRoute
@@ -462,6 +475,13 @@ declare module '@tanstack/react-router' {
       path: '/convite'
       fullPath: '/convite'
       preLoaderRoute: typeof ConviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnostico': {
+      id: '/diagnostico'
+      path: '/diagnostico'
+      fullPath: '/diagnostico'
+      preLoaderRoute: typeof DiagnosticoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sobre': {
@@ -706,6 +726,7 @@ const rootRouteChildren: RootRouteChildren = {
   AjudaRoute: AjudaRoute,
   BaseVisualRoute: BaseVisualRoute,
   ConviteRoute: ConviteRoute,
+  DiagnosticoRoute: DiagnosticoRoute,
   SobreRoute: SobreRoute,
   StaffRoute: StaffRouteWithChildren,
   TextoRicoRoute: TextoRicoRoute,

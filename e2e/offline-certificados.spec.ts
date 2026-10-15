@@ -34,11 +34,14 @@ async function storedPdfs(page: Page) {
     for (const info of await indexedDB.databases()) {
       const name = info.name ?? '';
       if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const db = await new Promise<IDBDatabase | null>((resolve) => {
         const request = indexedDB.open(name);
+        // Se o banco sumiu entre a listagem e a abertura, NÃO deixa o teste criar um banco vazio no lugar.
+        request.onupgradeneeded = () => request.transaction?.abort();
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => resolve(null);
       });
+      if (!db) continue;
       const rows = await new Promise<any[]>((resolve) => {
         const request = db.transaction('certificatePdfs').objectStore('certificatePdfs').getAll();
         request.onsuccess = () => resolve(request.result);
@@ -58,11 +61,14 @@ async function listSaved(page: Page) {
     for (const info of await indexedDB.databases()) {
       const name = info.name ?? '';
       if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const db = await new Promise<IDBDatabase | null>((resolve) => {
         const request = indexedDB.open(name);
+        // Se o banco sumiu entre a listagem e a abertura, NÃO deixa o teste criar um banco vazio no lugar.
+        request.onupgradeneeded = () => request.transaction?.abort();
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => resolve(null);
       });
+      if (!db) continue;
       total += await new Promise<number>((resolve) => {
         const request = db.transaction('certificates').objectStore('certificates').count();
         request.onsuccess = () => resolve(request.result);
@@ -187,11 +193,14 @@ test.describe('o PDF guardado de propósito', () => {
       for (const info of await indexedDB.databases()) {
         const name = info.name ?? '';
         if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
-        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const db = await new Promise<IDBDatabase | null>((resolve) => {
           const request = indexedDB.open(name);
+          // Se o banco sumiu entre a listagem e a abertura, NÃO deixa o teste criar um banco vazio no lugar.
+          request.onupgradeneeded = () => request.transaction?.abort();
           request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
+          request.onerror = () => resolve(null);
         });
+        if (!db) continue;
         const store = db.transaction('certificatePdfs', 'readwrite').objectStore('certificatePdfs');
         const row = await new Promise<any>((resolve) => {
           const request = store.getAll();
