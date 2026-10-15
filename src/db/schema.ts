@@ -818,10 +818,23 @@ export const certificate = pgTable(
     renderAttempts: integer().notNull().default(0),
     failureCode: text(),
     readyAt: timestamp({ withTimezone: true }),
+    /** Revogação (M7-04, só Admin): quando, por quem, categoria padronizada e nota INTERNA (nunca vai ao aluno). */
+    revokedAt: timestamp({ withTimezone: true }),
+    revokedBy: text().references(() => user.id, { onDelete: 'set null' }),
+    revocationCategory: text(),
+    revocationNote: text(),
     ...stamps,
   },
   (table) => [
     uniqueIndex('certificate_code_idx').on(table.code),
+    /** Um certificado tem no máximo UM sucessor: a reemissão concorrente perde pelo índice, não por código. */
+    uniqueIndex('certificate_successor_idx')
+      .on(table.predecessorId)
+      .where(sql`${table.predecessorId} is not null`),
+    check(
+      'certificate_revoked_check',
+      sql`(${table.status} = 'revoked') = (${table.revokedAt} is not null)`,
+    ),
     uniqueIndex('certificate_original_idx')
       .on(table.userId, table.courseId)
       .where(sql`${table.predecessorId} is null`),
