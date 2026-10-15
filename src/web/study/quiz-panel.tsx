@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import type { LessonQuizDto } from '../../features/access/outline';
 import type { StudentQuiz } from '../../features/quiz/quiz';
 import { submitQuizAttempt, type QuizAttemptResponse } from '../api/learning';
+import { useBusy } from '../pwa/safe-boundary';
 import { Button } from '../components/ui/button';
 
 interface QuizPanelProps {
@@ -172,6 +173,8 @@ function AttemptForm({
   onSubmit: (answers: { questionId: string; optionIds: string[] }[]) => Promise<void>;
 }) {
   const [selected, setSelected] = useState<Record<string, string[]>>({});
+  // M8-01: quiz com resposta marcada (ou enviando) não pode ser interrompido por uma atualização do app.
+  useBusy('quiz em andamento', busy || Object.values(selected).some((ids) => ids.length > 0));
 
   function toggle(questionId: string, optionId: string, single: boolean, checked: boolean) {
     setSelected((current) => {

@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { withDatabase } from '../db/client';
+import { CLIENT_EPOCH_HEADER, isClientOutdated } from '../features/pwa/pwa';
 import { authRoutes, type AuthRouteOverrides } from './auth/routes';
 import { injectMeta, serveCoursePage } from './catalog/course-page';
 import { loadPublicCoursePage } from './catalog/public-page';
@@ -31,6 +32,13 @@ export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
   app.use(sentryMiddleware(app));
   app.use(loggingMiddleware());
   app.use('/api/*', securityHeaders());
+  // PWA (M8-01): cliente com época antiga recebe 409 e a tela pede recarga. Sem o cabeçalho (webhooks, curl): passa.
+  app.use('/api/*', async (c, next) => {
+    if (isClientOutdated(c.req.header(CLIENT_EPOCH_HEADER))) {
+      return c.json({ error: { code: 'client_outdated' } }, 409);
+    }
+    await next();
+  });
   app.use('/api/*', csrfProtection());
 
   app.get('/api/health/live', (c) => c.json({ status: 'ok', releaseId: RELEASE_ID }));

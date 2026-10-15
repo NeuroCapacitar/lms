@@ -20,7 +20,11 @@ export default defineConfig({
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report-journey' }]]
     : 'list',
-  use: { baseURL: `http://localhost:${port}`, trace: 'retain-on-failure' },
+  use: {
+    baseURL: `http://localhost:${port}`,
+    trace: 'retain-on-failure',
+    serviceWorkers: 'block',
+  },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'bun run build && bun e2e-journey/server.ts',

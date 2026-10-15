@@ -23,3 +23,15 @@
   ! Referrer-Policy
   Referrer-Policy: no-referrer
   Cache-Control: no-store
+
+/sw.js
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/offline.html
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache

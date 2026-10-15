@@ -16,7 +16,7 @@ Ordem sugerida: M8-01 → M8-02 → M8-05 → M8-03 → M8-06 → M8-04.
 
 ### M8-01 — Manifest, Service Worker (injectManifest) e atualização segura
 
-**Dependências:** M3-05 (jornada gratuita E2E), M0-07 · **Estado:** `not_started`
+**Dependências:** M3-05 (jornada gratuita E2E), M0-07 · **Estado:** `implemented` (2026-10-15; só Chromium; WebKit, iPhone real e Staging NÃO exercitados; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** App instalável, shell estático em cache, Staff fora do cache e update sem interromper ação crítica.
 

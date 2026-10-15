@@ -18,6 +18,7 @@ import { MyCertificates } from '../components/my-certificates';
 import { Button } from '../components/ui/button';
 import { RequireTerms } from '../components/require-terms';
 import { TextField } from '../components/ui/field';
+import { useBusy } from '../pwa/safe-boundary';
 import { setThemePreference } from '../theme';
 
 export const Route = createFileRoute('/conta/')({
@@ -56,6 +57,9 @@ function Account() {
     resolver: zodResolver(profileFormSchema),
     defaultValues: { displayName: '', certificateName: '', theme: 'system', autoAdvance: false },
   });
+
+  // M8-01: formulário com alteração não salva impede a atualização do app.
+  useBusy('formulário não salvo', form.formState.isDirty);
 
   // Quando o perfil chega, o formulário passa a refleti-lo e o tema salvo vale neste aparelho.
   useEffect(() => {
