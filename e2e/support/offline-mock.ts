@@ -259,11 +259,14 @@ export async function storedLessons(page: Page): Promise<Record<string, string[]
     for (const info of await indexedDB.databases()) {
       const name = info.name ?? '';
       if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const db = await new Promise<IDBDatabase | null>((resolve) => {
         const request = indexedDB.open(name);
+        // Se o banco sumiu entre a listagem e a abertura, NÃO deixa o teste criar um banco vazio no lugar.
+        request.onupgradeneeded = () => request.transaction?.abort();
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => resolve(null);
       });
+      if (!db) continue;
       const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
         const request = db.transaction('lessons').objectStore('lessons').getAllKeys();
         request.onsuccess = () => resolve(request.result);
@@ -296,11 +299,14 @@ export async function outboxItems(
     const out: { lessonId: string; state: string; reason?: string; attempts: number }[] = [];
     for (const info of await indexedDB.databases()) {
       if (!info.name?.startsWith('hub-outbox-')) continue;
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const db = await new Promise<IDBDatabase | null>((resolve) => {
         const request = indexedDB.open(info.name!);
+        // Se o banco sumiu entre a listagem e a abertura, NÃO deixa o teste criar um banco vazio no lugar.
+        request.onupgradeneeded = () => request.transaction?.abort();
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => resolve(null);
       });
+      if (!db) continue;
       const rows = await new Promise<any[]>((resolve) => {
         const request = db.transaction('ops').objectStore('ops').getAll();
         request.onsuccess = () => resolve(request.result);
@@ -326,11 +332,14 @@ export async function savedOutlineCount(page: Page): Promise<number> {
     for (const info of await indexedDB.databases()) {
       const name = info.name ?? '';
       if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const db = await new Promise<IDBDatabase | null>((resolve) => {
         const request = indexedDB.open(name);
+        // Se o banco sumiu entre a listagem e a abertura, NÃO deixa o teste criar um banco vazio no lugar.
+        request.onupgradeneeded = () => request.transaction?.abort();
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => resolve(null);
       });
+      if (!db) continue;
       total += await new Promise<number>((resolve) => {
         const request = db.transaction('outlines').objectStore('outlines').count();
         request.onsuccess = () => resolve(request.result);

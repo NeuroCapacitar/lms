@@ -19,7 +19,7 @@
 ## Execução e operação
 
 - [STATUS](implementation/STATUS.md) · [M0-01](implementation/M0-01.md) · [Modelo de tarefa](implementation/TEMPLATE-TAREFA.md) · [Prompt inicial](implementation/PROMPT-INICIAL.md)
-- [Testes](operations/testing.md) · [Verificação de provider de vídeo](operations/video-provider-checklist.md) · [Mídia no R2](operations/media.md) · [Banco e migrações](operations/database-and-migrations.md) · [Onboarding](operations/onboarding.md) · [CLIs Cloudflare e Neon: só o perfil `neurocapacitar`](operations/cli-profiles.md) · [Ambientes e release](operations/environment-and-release-safety.md) · [Topologia de instruções](operations/agent-instructions.md)
+- [Testes](operations/testing.md) · [Gate M8-04: roteiro do offline no iPhone](operations/gate-m8-04-roteiro.md) · [Verificação de provider de vídeo](operations/video-provider-checklist.md) · [Mídia no R2](operations/media.md) · [Banco e migrações](operations/database-and-migrations.md) · [Onboarding](operations/onboarding.md) · [CLIs Cloudflare e Neon: só o perfil `neurocapacitar`](operations/cli-profiles.md) · [Ambientes e release](operations/environment-and-release-safety.md) · [Topologia de instruções](operations/agent-instructions.md)
 - [Template de Pull Request](../.github/PULL_REQUEST_TEMPLATE.md)
 
 ## Histórico e evidências

@@ -79,7 +79,7 @@ Ordem sugerida: M8-01 → M8-02 → M8-05 → M8-03 → M8-06 → M8-04.
 
 ### M8-04 — Gate: Chromium, WebKit e iPhone/Safari real
 
-**Dependências:** M8-03, M8-05, M8-06 · **Estado:** `not_started`
+**Dependências:** M8-03, M8-05, M8-06 · **Estado:** `in_progress` (2026-10-15; roteiro em `docs/operations/gate-m8-04-roteiro.md` e tela `/diagnostico` prontos; o gate NÃO foi executado: falta o iPhone físico e autorização para instalar o WebKit do Playwright)
 
 **Objetivo.** Decidir, com evidência, se o offline entra no release.
 
