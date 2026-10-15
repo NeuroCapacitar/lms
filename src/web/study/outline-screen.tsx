@@ -5,6 +5,7 @@ import type { OutlineLessonDto } from '../../features/access/outline';
 import { fetchPreviewOutline } from '../api/learning';
 import { OfflineNotice } from '../offline/offline-notice';
 import { loadOutline } from '../offline/study';
+import { useOutboxSummary } from '../offline/use-outbox';
 import { StudyNotice, lockMessage } from '../components/study-notice';
 import { Button } from '../components/ui/button';
 import { LessonLink, PreviewBanner, type StudyMode } from './study-links';
@@ -13,13 +14,20 @@ function LessonRow({
   mode,
   lesson,
   offlineSaved,
+  completionPending,
 }: {
   mode: StudyMode;
   lesson: OutlineLessonDto;
+  /** A conclusão foi feita sem rede e ainda não foi enviada ao servidor. */
+  completionPending?: boolean;
   /** Só sem rede: as aulas que existem guardadas no aparelho. */
   offlineSaved?: ReadonlySet<string>;
 }) {
-  const badges = [lesson.isOptional ? 'opcional' : null, lesson.completed ? 'concluída' : null]
+  const badges = [
+    lesson.isOptional ? 'opcional' : null,
+    lesson.completed ? 'concluída' : null,
+    completionPending && !lesson.completed ? 'conclusão aguardando envio' : null,
+  ]
     .filter(Boolean)
     .join(', ');
   const label = (
@@ -64,6 +72,8 @@ function LessonRow({
  */
 export function OutlineScreen({ mode }: { mode: StudyMode }) {
   const { courseId, preview } = mode;
+  const { pending } = useOutboxSummary();
+  const pendingLessons = new Set(pending.map((item) => item.lessonId));
   const outline = useQuery({
     queryKey: [preview ? 'preview-outline' : 'outline', courseId],
     // Sem rede o navegador marca `navigator.onLine = false`: o padrão do React Query PAUSARIA a consulta e a tela ficaria
@@ -163,6 +173,7 @@ export function OutlineScreen({ mode }: { mode: StudyMode }) {
                     <LessonRow
                       mode={mode}
                       lesson={lesson}
+                      completionPending={!preview && pendingLessons.has(lesson.id)}
                       {...(offlineSaved ? { offlineSaved } : {})}
                     />
                   </li>

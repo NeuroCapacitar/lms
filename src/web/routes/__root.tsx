@@ -1,6 +1,7 @@
 import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router';
 
 import { PublicLayout } from '../layouts/public-layout';
+import { OutboxStatus } from '../offline/outbox-status';
 import { UpdateBanner } from '../pwa/update-banner';
 
 export const Route = createRootRoute({ component: RootLayout });
@@ -19,6 +20,7 @@ function RootLayout() {
   return (
     <>
       <UpdateBanner />
+      <OutboxStatus />
       <PublicLayout>
         <Outlet />
       </PublicLayout>

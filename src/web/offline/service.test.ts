@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outline';
 import { advanceClock } from '../../features/pwa/offline-lease';
+import type { OfflineOperation, SyncResultItem } from '../../features/pwa/offline-sync';
+import type { OutboxItem, OutboxStore } from './outbox';
 import {
   createOfflineService,
   type Identity,
   type LeaseFetch,
   type OfflineDeps,
   type SignOutOutcome,
+  type SyncCall,
 } from './service';
 import type {
   OfflineIndex,
@@ -69,6 +72,37 @@ class MemoryStore implements OfflineStore {
   close() {}
 }
 
+/** Um outbox de mentira com o MESMO contrato do real (o real é provado no navegador: e2e/offline-outbox.spec.ts). */
+class MemoryOutbox implements OutboxStore {
+  items = new Map<string, OutboxItem>();
+  async enqueue(item: Parameters<OutboxStore['enqueue']>[0]) {
+    const existing = [...this.items.values()].find(
+      (row) => row.lessonId === item.lessonId && row.state === 'pending',
+    );
+    if (existing) return { item: existing, created: false };
+    const created: OutboxItem = { ...item, attempts: 0, state: 'pending' };
+    this.items.set(created.clientOperationId, created);
+    return { item: created, created: true };
+  }
+  async list() {
+    return [...this.items.values()].sort((a, b) => a.createdAt - b.createdAt);
+  }
+  async remove(ids: string[]) {
+    for (const id of ids) this.items.delete(id);
+  }
+  async markRejected(id: string, reason: OutboxItem['reason']) {
+    const row = this.items.get(id);
+    if (row) this.items.set(id, { ...row, state: 'rejected', reason });
+  }
+  async bumpAttempts(ids: string[]) {
+    for (const id of ids) {
+      const row = this.items.get(id);
+      if (row) this.items.set(id, { ...row, attempts: row.attempts + 1 });
+    }
+  }
+  close() {}
+}
+
 const COURSE = '11111111-1111-4111-8111-111111111111';
 const OTHER_COURSE = '22222222-2222-4222-8222-222222222222';
 const HOUR = 3_600_000;
@@ -108,6 +142,12 @@ let purges: string[];
 let signOutOutcome: SignOutOutcome;
 let signOutCalls: number;
 let pendingFlag: boolean;
+let outboxes: Map<string, MemoryOutbox>;
+let sent: OfflineOperation[][];
+let syncAnswer: (operations: OfflineOperation[]) => SyncCall;
+let idSeq: number;
+let changed: number;
+let appliedSignals: number;
 
 const index: OfflineIndex = {
   get: async () => pointer,
@@ -134,9 +174,48 @@ const storeOf = (userId: string) => {
   return store;
 };
 
+const outboxOf = (userId: string) => {
+  let box = outboxes.get(userId);
+  if (!box) {
+    box = new MemoryOutbox();
+    outboxes.set(userId, box);
+  }
+  return box;
+};
+const OPID = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+/** Resposta padrão: aplica tudo, na ordem. */
+const applyAll = (operations: OfflineOperation[]): SyncCall => ({
+  kind: 'ok',
+  results: operations.map((operation, index): SyncResultItem => ({
+    index,
+    clientOperationId: operation.clientOperationId,
+    status: 'applied',
+    effect: 'completed',
+    courseJustCompleted: false,
+  })),
+});
+
 function baseDeps(): OfflineDeps {
   return {
     now: () => clock,
+    newId: () => OPID((idSeq += 1)),
+    openOutbox: async (userId) => outboxOf(userId),
+    outboxExists: async (userId) => outboxes.has(userId),
+    anyOutbox: async () => outboxes.size > 0,
+    deleteOutbox: async (userId) => {
+      outboxes.delete(userId);
+    },
+    postSync: async ({ operations }) => {
+      if (networkDown) throw new TypeError('Failed to fetch');
+      sent.push(operations);
+      return syncAnswer(operations);
+    },
+    notifyOutboxChanged: () => {
+      changed += 1;
+    },
+    notifyApplied: () => {
+      appliedSignals += 1;
+    },
     fetchIdentity: async () => identity,
     fetchLease: async () => leaseFetch,
     index,
@@ -191,6 +270,12 @@ beforeEach(() => {
   signOutOutcome = 'done';
   signOutCalls = 0;
   pendingFlag = false;
+  outboxes = new Map();
+  sent = [];
+  syncAnswer = applyAll;
+  idSeq = 0;
+  changed = 0;
+  appliedSignals = 0;
 });
 
 describe('offline: guardar e ler', () => {
@@ -511,5 +596,217 @@ describe('M8-05: sair da conta, troca de conta e sessão encerrada', () => {
     const offline = service();
     expect(await offline.verify()).toEqual({ kind: 'anonymous' });
     expect(purges).toEqual([]);
+  });
+});
+
+describe('M8-03: outbox offline e sincronização', () => {
+  const task = { lessonId: 'aula-1', courseId: COURSE, lessonTitle: 'Boas-vindas' };
+
+  async function studied() {
+    const offline = service();
+    await offline.rememberLesson(lessonView('l1'));
+    return offline;
+  }
+
+  it('concluir sem rede guarda UM comando por aula (clicar de novo não duplica) com id novo', async () => {
+    const offline = await studied();
+    expect(await offline.enqueueCompletion(task)).toBe('queued');
+    expect(await offline.enqueueCompletion(task)).toBe('already_pending');
+    const items = await outboxOf('user-a').list();
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      command: 'lesson.complete',
+      lessonId: 'aula-1',
+      state: 'pending',
+      attempts: 0,
+      clientOperationId: OPID(1),
+    });
+    expect((await offline.outboxSummary()).pending).toHaveLength(1);
+    expect(changed).toBeGreaterThan(0);
+  });
+
+  it('ninguém conhecido neste aparelho: não guarda nada (no_user)', async () => {
+    expect(await service().enqueueCompletion(task)).toBe('no_user');
+    expect(outboxes.size).toBe(0);
+  });
+
+  it('a rede volta: envia o outbox na ordem, o servidor aplica e o item SAI; a tela é avisada', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion({ ...task, lessonId: 'aula-1' });
+    clock += 1000;
+    await offline.enqueueCompletion({ ...task, lessonId: 'aula-2', lessonTitle: 'Segunda' });
+    const outcome = await offline.syncOutbox();
+    expect(outcome).toEqual({ kind: 'synced', applied: 2, rejected: 0 });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.map((op) => op.lessonId)).toEqual(['aula-1', 'aula-2']);
+    expect(sent[0]![0]).toMatchObject({ command: 'lesson.complete', clientOperationId: OPID(1) });
+    expect(await outboxOf('user-a').list()).toEqual([]);
+    expect(appliedSignals).toBe(1);
+  });
+
+  it('o servidor RECUSA: o item fica VISÍVEL com o motivo até a pessoa dispensar (nunca descarta em silêncio)', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    syncAnswer = (operations) => ({
+      kind: 'ok',
+      results: operations.map((operation, index) => ({
+        index,
+        clientOperationId: operation.clientOperationId,
+        status: 'rejected' as const,
+        reason: 'lesson_not_found' as const,
+      })),
+    });
+    expect(await offline.syncOutbox()).toEqual({ kind: 'synced', applied: 0, rejected: 1 });
+    const summary = await offline.outboxSummary();
+    expect(summary.pending).toEqual([]);
+    expect(summary.rejected).toMatchObject([
+      { lessonTitle: 'Boas-vindas', reason: 'lesson_not_found' },
+    ]);
+    sent = [];
+    await offline.syncOutbox();
+    expect(sent).toEqual([]); // recusado não é reenviado
+    await offline.dismissRejected(summary.rejected[0]!.clientOperationId);
+    expect((await offline.outboxSummary()).rejected).toEqual([]);
+  });
+
+  it('"duplicate" do servidor: o resultado ORIGINAL vale (aplicado sai; recusado fica com o motivo)', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    await offline.enqueueCompletion({ ...task, lessonId: 'aula-2', lessonTitle: 'Segunda' });
+    syncAnswer = (operations) => ({
+      kind: 'ok',
+      results: [
+        {
+          index: 0,
+          clientOperationId: operations[0]!.clientOperationId,
+          status: 'duplicate',
+          original: 'applied',
+        },
+        {
+          index: 1,
+          clientOperationId: operations[1]!.clientOperationId,
+          status: 'duplicate',
+          original: 'rejected',
+          reason: 'lesson_locked',
+        },
+      ],
+    });
+    expect(await offline.syncOutbox()).toEqual({ kind: 'synced', applied: 1, rejected: 1 });
+    const summary = await offline.outboxSummary();
+    expect(summary.pending).toEqual([]);
+    expect(summary.rejected).toMatchObject([{ lessonId: 'aula-2', reason: 'lesson_locked' }]);
+  });
+
+  it('sem rede, 5xx ou 401: o outbox é MANTIDO; com a rede, a mesma operação é reenviada com o MESMO id', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    networkDown = true;
+    expect((await offline.syncOutbox()).kind).toBe('offline');
+    networkDown = false;
+    syncAnswer = () => ({ kind: 'error' });
+    expect((await offline.syncOutbox()).kind).toBe('failed');
+    syncAnswer = () => ({ kind: 'unauthenticated' });
+    expect((await offline.syncOutbox()).kind).toBe('no_session');
+    const [item] = await outboxOf('user-a').list();
+    expect(item).toMatchObject({ state: 'pending' });
+    syncAnswer = applyAll;
+    sent = [];
+    expect((await offline.syncOutbox()).kind).toBe('synced');
+    expect(sent[0]![0]!.clientOperationId).toBe(OPID(1));
+    expect(await outboxOf('user-a').list()).toEqual([]);
+  });
+
+  it('só envia se a sessão for da DONA do outbox: outra pessoa logada não envia o outbox de A', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    identity = { kind: 'user', userId: 'user-b' };
+    expect(await offline.syncOutbox()).toEqual({ kind: 'nothing' }); // B não tem outbox
+    expect(sent).toEqual([]);
+    expect(outboxOf('user-a').items.size).toBe(1);
+    // O servidor também trava: se a sessão mudar no meio, responde wrong_account e nada sai.
+    identity = { kind: 'user', userId: 'user-a' };
+    syncAnswer = () => ({ kind: 'wrong_account' });
+    expect((await offline.syncOutbox()).kind).toBe('wrong_account');
+    expect(outboxOf('user-a').items.size).toBe(1);
+  });
+
+  it('sessão acabou (sem login): o estudo é apagado, mas o OUTBOX fica; ao entrar de novo como a MESMA pessoa, é enviado', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    identity = { kind: 'anonymous' };
+    expect((await offline.verify()).kind).toBe('anonymous');
+    expect(purges).toEqual(['session_ended']);
+    expect(outboxOf('user-a').items.size).toBe(1);
+    identity = { kind: 'user', userId: 'user-a' };
+    await offline.refreshInBackground(); // sem ponteiro, mas COM outbox: ainda verifica
+    expect(sent).toHaveLength(1);
+    expect(outboxOf('user-a').items.size).toBe(0);
+  });
+
+  it('A→B: o estudo de A é apagado, o outbox de A fica guardado e B NUNCA o envia; B tem o próprio', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    identity = { kind: 'user', userId: 'user-b' };
+    await offline.verify();
+    expect(purges).toEqual(['account_changed']);
+    expect(sent).toEqual([]);
+    expect(outboxOf('user-a').items.size).toBe(1);
+    expect(await offline.enqueueCompletion({ ...task, lessonId: 'aula-b' })).toBe('queued');
+    expect(outboxOf('user-b').items.size).toBe(1);
+  });
+
+  it('toda verificação online bem-sucedida descarrega o outbox (ex.: a rede voltou)', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    await offline.refreshInBackground();
+    expect(sent).toHaveLength(1);
+    expect(await outboxOf('user-a').list()).toEqual([]);
+  });
+
+  it('lote grande: 120 pendentes viram lotes de no máximo 50, em ordem', async () => {
+    const offline = await studied();
+    for (let n = 0; n < 120; n += 1) {
+      clock += 1;
+      await offline.enqueueCompletion({ ...task, lessonId: `aula-${n}` });
+    }
+    await offline.syncOutbox();
+    expect(sent.map((batch) => batch.length)).toEqual([50, 50, 20]);
+    expect(sent.flat().map((op) => op.lessonId)[0]).toBe('aula-0');
+    expect(outboxOf('user-a').items.size).toBe(0);
+  });
+
+  it('sair com conclusão NÃO enviada: prepareSignOut conta; só "sair e descartar" apaga o outbox', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    networkDown = true;
+    expect(await offline.prepareSignOut(50)).toEqual({ pending: 1 });
+    expect(await offline.signOut()).toBe('pending'); // sem confirmar o descarte, o outbox continua
+    expect(outboxOf('user-a').items.size).toBe(1);
+    pointer = 'user-a';
+    expect(await offline.signOut({ discardOutbox: true })).toBe('pending');
+    expect(outboxes.has('user-a')).toBe(false);
+  });
+
+  it('sair com o outbox já enviado: nada pendente (sem confirmação)', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    expect(await offline.prepareSignOut()).toEqual({ pending: 0 });
+    expect(sent).toHaveLength(1);
+  });
+
+  it('"sair" pendente (sem rede): NADA é enviado até a sessão ser revogada', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    pendingFlag = true;
+    expect(await offline.syncOutbox()).toEqual({ kind: 'skipped' });
+    expect(sent).toEqual([]);
+  });
+
+  it('uma sincronização por vez na mesma aba', async () => {
+    const offline = await studied();
+    await offline.enqueueCompletion(task);
+    const [first, second] = await Promise.all([offline.syncOutbox(), offline.syncOutbox()]);
+    expect([first.kind, second.kind].sort()).toEqual(['busy', 'synced']);
+    expect(sent).toHaveLength(1);
   });
 });

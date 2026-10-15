@@ -101,10 +101,10 @@ describe('lease do acesso offline', () => {
         { courseId: '11111111-1111-4111-8111-111111111111', leaseUntil: NOW.toISOString() },
       ],
     };
-    expect(offlineLeaseSchema.safeParse(ok).success).toBe(true);
-    expect(offlineLeaseSchema.safeParse({ ...ok, serverNow: 'ontem' }).success).toBe(false);
+    expect(offlineLeaseSchema().safeParse(ok).success).toBe(true);
+    expect(offlineLeaseSchema().safeParse({ ...ok, serverNow: 'ontem' }).success).toBe(false);
     expect(
-      offlineLeaseSchema.safeParse({
+      offlineLeaseSchema().safeParse({
         ...ok,
         courses: [{ courseId: 'x', leaseUntil: NOW.toISOString() }],
       }).success,

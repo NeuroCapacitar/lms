@@ -7,6 +7,8 @@ import { fetchProfile } from '../api/profile';
 import { RichTextView } from '../components/rich-text/rich-text-view';
 import { StudyNotice, lockMessage } from '../components/study-notice';
 import { Button } from '../components/ui/button';
+import { OfflineComplete } from '../offline/offline-complete';
+import { offline } from '../offline/runtime';
 import { OfflineNotice } from '../offline/offline-notice';
 import { loadLesson } from '../offline/study';
 import { VideoPlayer } from '../video/video-player';
@@ -117,6 +119,17 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
         queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] }),
         queryClient.invalidateQueries({ queryKey: ['outline', courseId] }),
       ]);
+    } else if (
+      outcome.result === 'unavailable' &&
+      ['queued', 'already_pending'].includes(
+        await offline.enqueueCompletion({ lessonId, courseId, lessonTitle: current.title }),
+      )
+    ) {
+      // A rede caiu (ou o servidor não respondeu) com a aula já aberta: a conclusão fica guardada e é enviada depois (M8-03).
+      setMessage({
+        kind: 'ok',
+        text: 'Não foi possível enviar agora: a conclusão foi guardada neste aparelho e será enviada assim que for possível.',
+      });
     } else {
       setMessage({
         kind: 'error',
@@ -228,16 +241,7 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
               Aula concluída.
             </p>
           ) : offlineInfo ? (
-            <>
-              <div>
-                <Button type="button" disabled aria-describedby="offline-concluir">
-                  Concluir aula
-                </Button>
-              </div>
-              <p id="offline-concluir" className="text-sm text-[var(--text-muted)]">
-                Sem conexão não dá para concluir a aula: conecte-se à internet para concluir.
-              </p>
-            </>
+            <OfflineComplete lessonId={lessonId} courseId={courseId} lessonTitle={current.title} />
           ) : (
             <div>
               <Button type="button" disabled={busy} onClick={() => void conclude()}>

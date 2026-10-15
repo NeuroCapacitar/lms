@@ -249,6 +249,48 @@ test('5. com o relógio em D+15 abrem os módulos 2 e 3; concluir a última obri
   expect(totals.lessonCompletion).toBe(5);
 });
 
+test('5b. conclui a aula opcional SEM rede e, ao reconectar, o servidor conta UMA conclusão a mais (idempotente)', async () => {
+  // Online: o mapa e a aula ficam guardados no aparelho (a API é a REAL).
+  await student.goto(`/estudar/${ids.demoCourseId}`);
+  await student.getByRole('link', { name: /Leitura complementar/ }).click();
+  await expect(
+    student.getByRole('heading', { level: 1, name: /Leitura complementar/ }),
+  ).toBeVisible();
+  await expect
+    .poll(async () =>
+      student.evaluate(async () => {
+        const dbs = (await indexedDB.databases()).filter(
+          (info) => info.name?.startsWith('hub-offline-') && info.name !== 'hub-offline-index',
+        );
+        return dbs.length;
+      }),
+    )
+    .toBe(1);
+  const before = await counts();
+
+  // A rede cai com a aula aberta: concluir não chega ao servidor, mas a conclusão fica no outbox do aparelho.
+  await studentContext.setOffline(true);
+  await student.getByRole('button', { name: 'Concluir aula' }).click();
+  await expect(student.getByText(/a conclusão foi guardada neste aparelho/)).toBeVisible();
+  await expect(student.getByText('1 conclusão de aula aguardando envio.')).toBeVisible();
+  expect((await counts()).lessonCompletion).toBe(before.lessonCompletion); // nada chegou ao servidor
+
+  // A rede volta: o app envia sozinho, o servidor aplica UMA vez e a pendência some.
+  await studentContext.setOffline(false);
+  await student.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect
+    .poll(async () => (await counts()).lessonCompletion)
+    .toBe(before.lessonCompletion + 1);
+  await expect(student.getByText(/aguardando envio/)).toHaveCount(0);
+
+  // Reenviar não muda nada (nenhum item sobrou e, se sobrasse, o servidor deduplica pelo id).
+  await student.evaluate(() => window.dispatchEvent(new Event('online')));
+  await student.waitForTimeout(800);
+  const after = await counts();
+  expect(after.lessonCompletion).toBe(before.lessonCompletion + 1);
+  expect(after.courseCompletion).toBe(before.courseCompletion);
+});
+
 test('6. a aluna sai, perde o acesso à área logada e, ao reentrar, o progresso continua', async () => {
   await student.goto('/conta');
   await student.getByRole('button', { name: 'Sair da conta' }).click();

@@ -64,6 +64,14 @@ export interface Backend {
   signOutCalls: number;
   /** Resposta do `sign-out` (200 encerra a sessão). */
   signOutStatus: number;
+  /** Como o servidor responde ao `/api/offline/sync`: aplica, recusa por item, erro 5xx ou aplica e PERDE a resposta. */
+  syncMode: 'ok' | 'reject' | 'error' | 'lose_response';
+  syncReason: string;
+  /** Cada chamada ao sync, com os ids e o `expectedUserId` recebidos. */
+  syncCalls: { expectedUserId: string | undefined; ids: string[] }[];
+  /** O que o servidor JÁ processou (idempotência por id) e as aulas concluídas de fato. */
+  processed: Map<string, 'applied' | 'rejected'>;
+  completedLessons: string[];
 }
 
 export function newBackend(overrides: Partial<Backend> = {}): Backend {
@@ -77,6 +85,11 @@ export function newBackend(overrides: Partial<Backend> = {}): Backend {
     session: true,
     signOutCalls: 0,
     signOutStatus: 200,
+    syncMode: 'ok',
+    syncReason: 'lesson_not_found',
+    syncCalls: [],
+    processed: new Map(),
+    completedLessons: [],
     ...overrides,
   };
 }
@@ -114,6 +127,56 @@ export async function mockApi(context: BrowserContext, backend: Backend) {
     backend.signOutCalls += 1;
     if (backend.signOutStatus === 200) backend.session = false;
     return route.fulfill({ status: backend.signOutStatus, json: { success: true } });
+  });
+  await context.route('**/api/offline/sync', async (route) => {
+    const body = route.request().postDataJSON() as {
+      expectedUserId?: string;
+      operations: { clientOperationId: string; lessonId: string }[];
+    };
+    backend.syncCalls.push({
+      expectedUserId: body.expectedUserId,
+      ids: body.operations.map((op) => op.clientOperationId),
+    });
+    if (!backend.session) {
+      return route.fulfill({ status: 401, json: { error: { code: 'unauthenticated' } } });
+    }
+    if (body.expectedUserId !== undefined && body.expectedUserId !== backend.userId) {
+      return route.fulfill({ status: 409, json: { error: { code: 'wrong_account' } } });
+    }
+    if (backend.syncMode === 'error') return route.fulfill({ status: 500, json: {} });
+    const results = body.operations.map((op, index) => {
+      const seen = backend.processed.get(op.clientOperationId);
+      if (seen) {
+        return {
+          index,
+          clientOperationId: op.clientOperationId,
+          status: 'duplicate' as const,
+          original: seen,
+          ...(seen === 'rejected' ? { reason: backend.syncReason } : {}),
+        };
+      }
+      if (backend.syncMode === 'reject') {
+        backend.processed.set(op.clientOperationId, 'rejected');
+        return {
+          index,
+          clientOperationId: op.clientOperationId,
+          status: 'rejected' as const,
+          reason: backend.syncReason,
+        };
+      }
+      backend.processed.set(op.clientOperationId, 'applied');
+      if (!backend.completedLessons.includes(op.lessonId))
+        backend.completedLessons.push(op.lessonId);
+      return {
+        index,
+        clientOperationId: op.clientOperationId,
+        status: 'applied' as const,
+        effect: 'completed' as const,
+        courseJustCompleted: false,
+      };
+    });
+    if (backend.syncMode === 'lose_response') return route.abort('connectionreset');
+    return route.fulfill({ json: { results } });
   });
   await context.route('**/api/offline/lease', (route) => {
     backend.leaseCalls += 1;
@@ -183,3 +246,56 @@ export async function openLesson(page: Page, n: number) {
 export const goOffline = (backend: Backend) => {
   backend.online = false;
 };
+
+/** O outbox guardado no aparelho (todas as contas): itens com estado e motivo. */
+export async function outboxItems(
+  page: Page,
+): Promise<{ lessonId: string; state: string; reason?: string; attempts: number }[]> {
+  return page.evaluate(async () => {
+    const out: { lessonId: string; state: string; reason?: string; attempts: number }[] = [];
+    for (const info of await indexedDB.databases()) {
+      if (!info.name?.startsWith('hub-outbox-')) continue;
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(info.name!);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const rows = await new Promise<any[]>((resolve) => {
+        const request = db.transaction('ops').objectStore('ops').getAll();
+        request.onsuccess = () => resolve(request.result);
+      });
+      db.close();
+      for (const row of rows) {
+        out.push({
+          lessonId: row.lessonId,
+          state: row.state,
+          attempts: row.attempts,
+          ...(row.reason ? { reason: row.reason } : {}),
+        });
+      }
+    }
+    return out;
+  });
+}
+
+/** Quantos mapas de curso estão guardados no aparelho (todas as contas). */
+export async function savedOutlineCount(page: Page): Promise<number> {
+  return page.evaluate(async () => {
+    let total = 0;
+    for (const info of await indexedDB.databases()) {
+      const name = info.name ?? '';
+      if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(name);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      total += await new Promise<number>((resolve) => {
+        const request = db.transaction('outlines').objectStore('outlines').count();
+        request.onsuccess = () => resolve(request.result);
+      });
+      db.close();
+    }
+    return total;
+  });
+}
