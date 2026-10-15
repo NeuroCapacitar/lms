@@ -10,7 +10,7 @@ import {
   reinstateEnrollment,
   suspendEnrollment,
 } from '../api/enrollments';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
 import { useAccess } from '../hooks/use-access';

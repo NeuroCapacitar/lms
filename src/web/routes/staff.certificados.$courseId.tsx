@@ -25,7 +25,7 @@ import {
   saveTemplateDraft,
 } from '../api/certificate';
 import { uploadMedia } from '../api/media';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { Button } from '../components/ui/button';
 import { CertificateCanvas } from '../certificate/canvas';
 import { useMediaQuery } from '../hooks/use-media-query';

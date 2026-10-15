@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { formatAccessDate } from '../../features/access/format';
 import type { LessonLockReason } from '../../features/access/lesson-access';
 import type { DeniedReason, StudyResult } from '../api/learning';
+import type { BlockedReason } from '../offline/service';
 
 /** Por que uma aula não abre, em português. */
 export function lockMessage(reason: LessonLockReason, releasesAt: string | null): string {
@@ -21,6 +22,18 @@ export function lockMessage(reason: LessonLockReason, releasesAt: string | null)
       return 'Esta aula não está mais disponível.';
   }
 }
+
+const OFFLINE_BLOCKED: Record<BlockedReason, string> = {
+  no_user: 'Sem conexão. Entre online ao menos uma vez neste aparelho para estudar offline.',
+  no_lease:
+    'Sem conexão. Este curso ainda não foi liberado para estudo offline neste aparelho: abra-o com internet primeiro.',
+  lease_expired:
+    'Sem conexão e o prazo do estudo offline deste curso terminou. Conecte-se à internet para continuar.',
+  clock_suspect:
+    'O relógio deste aparelho está atrás do horário já visto. Conecte-se à internet para verificar seu acesso.',
+  not_saved:
+    'Sem conexão. Esta aula não foi guardada para estudo offline: ela precisa de internet.',
+};
 
 const DENIED: Record<DeniedReason, string> = {
   no_access: 'Você não está inscrito neste curso.',
@@ -51,6 +64,13 @@ export function StudyNotice<T>({ result, returnTo }: { result: StudyResult<T>; r
           Minha conta
         </Link>{' '}
         para continuar.
+      </p>
+    );
+  }
+  if (result.kind === 'offline_blocked') {
+    return (
+      <p role="alert" className="max-w-prose">
+        {OFFLINE_BLOCKED[result.reason]}
       </p>
     );
   }

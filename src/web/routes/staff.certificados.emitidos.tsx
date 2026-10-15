@@ -15,7 +15,7 @@ import {
   retryCertificate,
   revokeCertificate,
 } from '../api/certificate-lifecycle';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { Button } from '../components/ui/button';
 
 export const Route = createFileRoute('/staff/certificados/emitidos')({

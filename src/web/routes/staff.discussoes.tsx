@@ -11,7 +11,7 @@ import {
   staffReplyToPost,
   type StaffDiscussionView,
 } from '../api/discussion';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
 import { TextArea } from '../components/ui/text-area';

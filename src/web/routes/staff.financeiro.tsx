@@ -20,10 +20,10 @@ import {
 import { REFUND_STATE_LABELS } from '../../features/commerce/refund';
 import { ORDER_STATUSES } from '../../features/commerce/commerce';
 import type { FinanceOrdersQuery } from '../../features/commerce/finance-view';
-import { fetchAccess } from '../api/staff';
+import { fetchAccess } from '../api/http';
 import { ReauthPanel } from '../components/reauth-panel';
 import { TextField } from '../components/ui/field';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { Button } from '../components/ui/button';
 import { TextArea } from '../components/ui/text-area';
 

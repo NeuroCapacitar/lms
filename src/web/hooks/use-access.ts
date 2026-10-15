@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import type { Capability } from '../../features/identity/capabilities';
-import { fetchAccess } from '../api/staff';
+import { fetchAccess } from '../api/http';
 
 /**
  * O que a pessoa pode FAZER, para a interface decidir o que MOSTRAR. Nunca autoriza nada: cada rota

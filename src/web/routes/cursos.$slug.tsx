@@ -7,7 +7,7 @@ import type { PublicCoursePageDto } from '../../features/catalog/public-course';
 import { fetchPublicCourse } from '../api/courses';
 import { fetchCourseAccess } from '../api/enroll';
 import { UnauthenticatedError } from '../api/profile';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { BuyControl } from '../components/buy-control';
 import { AccessStatus, EnrollControl } from '../components/enroll-control';
 import { RichTextView } from '../components/rich-text/rich-text-view';

@@ -2,11 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import { completeLesson, fetchLesson, fetchPreviewLesson } from '../api/learning';
+import { completeLesson, fetchPreviewLesson } from '../api/learning';
 import { fetchProfile } from '../api/profile';
 import { RichTextView } from '../components/rich-text/rich-text-view';
 import { StudyNotice, lockMessage } from '../components/study-notice';
 import { Button } from '../components/ui/button';
+import { OfflineNotice } from '../offline/offline-notice';
+import { loadLesson } from '../offline/study';
 import { VideoPlayer } from '../video/video-player';
 import { DiscussionPanel } from './discussion-panel';
 import { QuizPanel } from './quiz-panel';
@@ -34,7 +36,11 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | undefined>();
   const lesson = useQuery({
     queryKey: [preview ? 'preview-lesson' : 'lesson', lessonId],
-    queryFn: () => (preview ? fetchPreviewLesson(courseId, lessonId) : fetchLesson(lessonId)),
+    // Sem rede o navegador marca `navigator.onLine = false`: o padrão do React Query PAUSARIA a consulta e a tela ficaria
+    // em "Carregando…". Aqui a consulta roda sempre: a falha de rede vira a leitura da cópia guardada (M8-02).
+    networkMode: 'always',
+    queryFn: () =>
+      preview ? fetchPreviewLesson(courseId, lessonId) : loadLesson(courseId, lessonId),
     retry: false,
     staleTime: 10_000,
   });
@@ -93,6 +99,8 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
   }
 
   const { course, lesson: current, previous, next, completed } = result.data;
+  // Cópia guardada no aparelho (sem rede): somente leitura; concluir e discussão voltam com a conexão.
+  const offlineInfo = result.offline;
 
   async function conclude() {
     setBusy(true);
@@ -128,6 +136,7 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
   return (
     <>
       {banner}
+      {offlineInfo ? <OfflineNotice info={offlineInfo} /> : null}
       {back}
       <p className="mb-1 text-sm text-[var(--text-muted)]">{course.title}</p>
       <h1 className="mb-6 text-3xl font-semibold">
@@ -218,6 +227,17 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
             <p role="status" className="font-medium text-[var(--text-success)]">
               Aula concluída.
             </p>
+          ) : offlineInfo ? (
+            <>
+              <div>
+                <Button type="button" disabled aria-describedby="offline-concluir">
+                  Concluir aula
+                </Button>
+              </div>
+              <p id="offline-concluir" className="text-sm text-[var(--text-muted)]">
+                Sem conexão não dá para concluir a aula: conecte-se à internet para concluir.
+              </p>
+            </>
           ) : (
             <div>
               <Button type="button" disabled={busy} onClick={() => void conclude()}>
@@ -239,7 +259,7 @@ export function LessonScreen({ mode, lessonId }: { mode: StudyMode; lessonId: st
           ) : null}
         </div>
       )}
-      {preview ? null : <DiscussionPanel key={lessonId} lessonId={lessonId} />}
+      {preview || offlineInfo ? null : <DiscussionPanel key={lessonId} lessonId={lessonId} />}
       <nav aria-label="Navegação entre aulas" className="flex flex-wrap justify-between gap-4">
         {previous ? (
           <LessonLink mode={mode} lessonId={previous.id}>

@@ -9,7 +9,7 @@ import {
   type EditableDraft,
 } from '../../features/catalog/draft-edit';
 import { fetchCourse, fetchDraft, saveDraft } from '../api/catalog';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { Button } from '../components/ui/button';
 import { useAccess } from '../hooks/use-access';
 import { CurriculumTab } from './curriculum-tab';

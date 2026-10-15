@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 
-import { fetchAccess } from '../api/staff';
+import { fetchAccess } from '../api/http';
 
 export const Route = createFileRoute('/staff/')({ component: StaffHome });
 

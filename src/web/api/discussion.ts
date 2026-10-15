@@ -5,7 +5,7 @@ import type {
   StaffDiscussionItemDto,
 } from '../../features/discussion/discussion';
 import { postAction, sendAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Clientes da discussão (M5-05). A interface só mostra e envia: quem decide acesso, autoria, limite e

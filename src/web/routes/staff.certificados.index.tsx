@@ -13,7 +13,7 @@ import {
 } from '../api/certificate';
 import { fetchCourses } from '../api/catalog';
 import { uploadMedia } from '../api/media';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
 

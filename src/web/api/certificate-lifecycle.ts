@@ -4,7 +4,7 @@ import type {
   StaffCertificateDto,
 } from '../../features/certificate/lifecycle';
 import { postAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Clientes do ciclo de vida do certificado (M7-04). A interface só mostra e envia; quem decide dono, estado, grant,

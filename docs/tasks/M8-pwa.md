@@ -37,7 +37,7 @@ Ordem sugerida: M8-01 → M8-02 → M8-05 → M8-03 → M8-06 → M8-04.
 
 ### M8-02 — Armazenamento offline por usuário e lease
 
-**Dependências:** M8-01, M3-01 · **Estado:** `not_started`
+**Dependências:** M8-01, M3-01 · **Estado:** `implemented` (2026-10-15; só Chromium; WebKit/iPhone, Staging e purga no logout NÃO; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** Dados offline isolados por conta e com validade limitada.
 

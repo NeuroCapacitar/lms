@@ -22,7 +22,7 @@ import {
   updatePanelBanner,
   type PanelBannerInput,
 } from '../api/banner';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { ConfirmButton } from '../components/confirm-button';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';

@@ -6,7 +6,7 @@ import { useState, type ReactNode } from 'react';
 
 import type { Capability } from '../../features/identity/capabilities';
 import { UnauthenticatedError } from '../api/profile';
-import { fetchAccess } from '../api/staff';
+import { fetchAccess } from '../api/http';
 import { RequireTerms } from '../components/require-terms';
 import { ThemeToggle } from '../components/theme-toggle';
 

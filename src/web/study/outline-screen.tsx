@@ -2,12 +2,23 @@ import { useQuery } from '@tanstack/react-query';
 
 import { formatAccessDate } from '../../features/access/format';
 import type { OutlineLessonDto } from '../../features/access/outline';
-import { fetchOutline, fetchPreviewOutline } from '../api/learning';
+import { fetchPreviewOutline } from '../api/learning';
+import { OfflineNotice } from '../offline/offline-notice';
+import { loadOutline } from '../offline/study';
 import { StudyNotice, lockMessage } from '../components/study-notice';
 import { Button } from '../components/ui/button';
 import { LessonLink, PreviewBanner, type StudyMode } from './study-links';
 
-function LessonRow({ mode, lesson }: { mode: StudyMode; lesson: OutlineLessonDto }) {
+function LessonRow({
+  mode,
+  lesson,
+  offlineSaved,
+}: {
+  mode: StudyMode;
+  lesson: OutlineLessonDto;
+  /** Só sem rede: as aulas que existem guardadas no aparelho. */
+  offlineSaved?: ReadonlySet<string>;
+}) {
   const badges = [lesson.isOptional ? 'opcional' : null, lesson.completed ? 'concluída' : null]
     .filter(Boolean)
     .join(', ');
@@ -22,6 +33,13 @@ function LessonRow({ mode, lesson }: { mode: StudyMode; lesson: OutlineLessonDto
       ) : null}
     </>
   );
+  if (lesson.locked === null && offlineSaved && !offlineSaved.has(lesson.id)) {
+    return (
+      <span>
+        {label} <span className="text-sm text-[var(--text-muted)]">— precisa de internet</span>
+      </span>
+    );
+  }
   if (lesson.locked === null) {
     return (
       <LessonLink mode={mode} lessonId={lesson.id}>
@@ -48,7 +66,10 @@ export function OutlineScreen({ mode }: { mode: StudyMode }) {
   const { courseId, preview } = mode;
   const outline = useQuery({
     queryKey: [preview ? 'preview-outline' : 'outline', courseId],
-    queryFn: () => (preview ? fetchPreviewOutline(courseId) : fetchOutline(courseId)),
+    // Sem rede o navegador marca `navigator.onLine = false`: o padrão do React Query PAUSARIA a consulta e a tela ficaria
+    // em "Carregando…". Aqui a consulta roda sempre: a falha de rede vira a leitura da cópia guardada (M8-02).
+    networkMode: 'always',
+    queryFn: () => (preview ? fetchPreviewOutline(courseId) : loadOutline(courseId)),
     retry: false,
     staleTime: 10_000,
   });
@@ -81,9 +102,12 @@ export function OutlineScreen({ mode }: { mode: StudyMode }) {
   }
 
   const { course, access, modules, progress, completedAt } = result.data;
+  const offlineInfo = result.offline;
+  const offlineSaved = offlineInfo ? new Set(offlineInfo.savedLessonIds ?? []) : undefined;
   return (
     <>
       {preview ? <PreviewBanner /> : null}
+      {offlineInfo ? <OfflineNotice info={offlineInfo} /> : null}
       <h1 className="mb-2 text-3xl font-semibold">{course.title}</h1>
       <p className="mb-8 text-sm text-[var(--text-muted)]">
         {course.sequenceMode === 'guided'
@@ -136,7 +160,11 @@ export function OutlineScreen({ mode }: { mode: StudyMode }) {
               <ol className="grid list-decimal gap-2 pl-6">
                 {module.lessons.map((lesson) => (
                   <li key={lesson.id}>
-                    <LessonRow mode={mode} lesson={lesson} />
+                    <LessonRow
+                      mode={mode}
+                      lesson={lesson}
+                      {...(offlineSaved ? { offlineSaved } : {})}
+                    />
                   </li>
                 ))}
               </ol>
