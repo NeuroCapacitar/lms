@@ -38,6 +38,10 @@ interface Env {
    * entram no `wrangler.jsonc` depois que os buckets existirem (ver docs/operations/media.md).
    */
   MEDIA_PRIVATE?: R2Bucket;
+  /** Browser Run (M7-02): gera o PDF do certificado. Ausente = o certificado vai a `failed` com `renderer_not_configured`. */
+  BROWSER?: {
+    quickAction(action: string, options: Record<string, unknown>): Promise<Response>;
+  };
   MEDIA_PUBLIC?: R2Bucket;
   R2_ACCOUNT_ID?: string;
   R2_ACCESS_KEY_ID?: string;

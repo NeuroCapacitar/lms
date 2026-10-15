@@ -1,5 +1,5 @@
 import { presignUrl, uriEncode } from '../../features/media/sigv4';
-import type { Bucket, ObjectStorage } from './storage';
+import { MediaNotConfiguredError, type Bucket, type ObjectStorage } from './storage';
 
 /**
  * O R2 de verdade (M5-07): leitura, cópia e exclusão pelos BINDINGS do Worker (sem credenciais, sem rede
@@ -26,16 +26,10 @@ export function createR2Storage(env: R2Env): ObjectStorage | undefined {
     R2_SECRET_ACCESS_KEY: secretAccessKey,
     R2_PRIVATE_BUCKET_NAME: privateName,
   } = env;
-  if (
-    !privateBucket ||
-    !publicBucket ||
-    !accountId ||
-    !accessKeyId ||
-    !secretAccessKey ||
-    !privateName
-  ) {
-    return undefined;
-  }
+  // Os BINDINGS bastam para ler, gravar e apagar (certificado, download, limpeza). O PUT pré-assinado do navegador
+  // exige também as credenciais do token S3: sem elas só o UPLOAD fica desligado (503), o resto continua.
+  if (!privateBucket || !publicBucket) return undefined;
+  const canPresign = Boolean(accountId && accessKeyId && secretAccessKey && privateName);
   const bucketOf = (bucket: Bucket) => (bucket === 'private' ? privateBucket : publicBucket);
 
   return {
@@ -58,6 +52,9 @@ export function createR2Storage(env: R2Env): ObjectStorage | undefined {
       await bucketOf(bucket).delete(key);
     },
     presignPut(key, contentType, expiresSeconds) {
+      if (!canPresign || !accessKeyId || !secretAccessKey || !accountId || !privateName) {
+        throw new MediaNotConfiguredError();
+      }
       return presignUrl({
         method: 'PUT',
         accessKeyId,
