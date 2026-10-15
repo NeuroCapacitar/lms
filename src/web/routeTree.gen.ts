@@ -16,6 +16,7 @@ import { Route as ConviteRouteImport } from './routes/convite'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as TextoRicoRouteImport } from './routes/texto-rico'
+import { Route as CertificadosCodeRouteImport } from './routes/certificados.$code'
 import { Route as CompraRetornoRouteImport } from './routes/compra.retorno'
 import { Route as ContaIndexRouteImport } from './routes/conta.index'
 import { Route as ContaSegurancaRouteImport } from './routes/conta.seguranca'
@@ -74,6 +75,11 @@ const StaffRoute = StaffRouteImport.update({
 const TextoRicoRoute = TextoRicoRouteImport.update({
   id: '/texto-rico',
   path: '/texto-rico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CertificadosCodeRoute = CertificadosCodeRouteImport.update({
+  id: '/certificados/$code',
+  path: '/certificados/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompraRetornoRoute = CompraRetornoRouteImport.update({
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/sobre': typeof SobreRoute
   '/staff': typeof StaffRouteWithChildren
   '/texto-rico': typeof TextoRicoRoute
+  '/certificados/$code': typeof CertificadosCodeRoute
   '/compra/retorno': typeof CompraRetornoRoute
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/cursos/$slug': typeof CursosSlugRoute
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/convite': typeof ConviteRoute
   '/sobre': typeof SobreRoute
   '/texto-rico': typeof TextoRicoRoute
+  '/certificados/$code': typeof CertificadosCodeRoute
   '/compra/retorno': typeof CompraRetornoRoute
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/cursos/$slug': typeof CursosSlugRoute
@@ -276,6 +284,7 @@ export interface FileRoutesById {
   '/sobre': typeof SobreRoute
   '/staff': typeof StaffRouteWithChildren
   '/texto-rico': typeof TextoRicoRoute
+  '/certificados/$code': typeof CertificadosCodeRoute
   '/compra/retorno': typeof CompraRetornoRoute
   '/conta/seguranca': typeof ContaSegurancaRoute
   '/cursos/$slug': typeof CursosSlugRoute
@@ -311,6 +320,7 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/staff'
     | '/texto-rico'
+    | '/certificados/$code'
     | '/compra/retorno'
     | '/conta/seguranca'
     | '/cursos/$slug'
@@ -343,6 +353,7 @@ export interface FileRouteTypes {
     | '/convite'
     | '/sobre'
     | '/texto-rico'
+    | '/certificados/$code'
     | '/compra/retorno'
     | '/conta/seguranca'
     | '/cursos/$slug'
@@ -376,6 +387,7 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/staff'
     | '/texto-rico'
+    | '/certificados/$code'
     | '/compra/retorno'
     | '/conta/seguranca'
     | '/cursos/$slug'
@@ -410,6 +422,7 @@ export interface RootRouteChildren {
   SobreRoute: typeof SobreRoute
   StaffRoute: typeof StaffRouteWithChildren
   TextoRicoRoute: typeof TextoRicoRoute
+  CertificadosCodeRoute: typeof CertificadosCodeRoute
   CompraRetornoRoute: typeof CompraRetornoRoute
   ContaSegurancaRoute: typeof ContaSegurancaRoute
   CursosSlugRoute: typeof CursosSlugRoute
@@ -470,6 +483,13 @@ declare module '@tanstack/react-router' {
       path: '/texto-rico'
       fullPath: '/texto-rico'
       preLoaderRoute: typeof TextoRicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/certificados/$code': {
+      id: '/certificados/$code'
+      path: '/certificados/$code'
+      fullPath: '/certificados/$code'
+      preLoaderRoute: typeof CertificadosCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compra/retorno': {
@@ -689,6 +709,7 @@ const rootRouteChildren: RootRouteChildren = {
   SobreRoute: SobreRoute,
   StaffRoute: StaffRouteWithChildren,
   TextoRicoRoute: TextoRicoRoute,
+  CertificadosCodeRoute: CertificadosCodeRoute,
   CompraRetornoRoute: CompraRetornoRoute,
   ContaSegurancaRoute: ContaSegurancaRoute,
   CursosSlugRoute: CursosSlugRoute,

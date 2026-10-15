@@ -8,6 +8,11 @@ import { loadPublicCoursePage } from './catalog/public-page';
 import { publicLoginMediaRoutes } from './banner/routes';
 import { publicHelpRoutes } from './help/routes';
 import { publicCourseRoutes } from './catalog/public-routes';
+import {
+  lookupPublicCertificate,
+  publicCertificateRoutes,
+  serveCertificatePage,
+} from './certificate/public-routes';
 import { loggingMiddleware, type LogVariables } from './logging';
 import { RELEASE_ID } from './release';
 import { csrfProtection } from './security/csrf';
@@ -50,6 +55,17 @@ export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
   app.route('/api/public', publicHelpRoutes());
   // Imagens decorativas da tela de login (M5-15).
   app.route('/api/public', publicLoginMediaRoutes());
+  // Validação pública do certificado (M7-08): a API sem sessão e a página `/certificados/:code` com meta tags.
+  app.route('/api/public', publicCertificateRoutes());
+  app.get('/certificados/*', (c) =>
+    serveCertificatePage(c.req.raw, c.env, {
+      shell: (env, requestUrl) => env.ASSETS.fetch(new Request(new URL('/', requestUrl))),
+      lookup: (code, ip) =>
+        withDatabase(c.env.HYPERDRIVE, (db) => lookupPublicCertificate(db, { code, ip })),
+      onError: (error) =>
+        c.get('log')?.error(error instanceof Error ? error : new Error('certificate_page_failed')),
+    }),
+  );
   app.get('/cursos/*', (c) =>
     serveCoursePage(c.req.raw, c.env, {
       loadCourse: (env, slug) =>

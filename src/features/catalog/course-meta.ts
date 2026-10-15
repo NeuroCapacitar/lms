@@ -54,6 +54,8 @@ export interface PageMeta {
   description: string;
   canonical: string;
   image: string;
+  /** Página que não deve ser indexada (validação de certificado): ganha `<meta name="robots">`. */
+  noindex?: boolean;
 }
 
 /** Metadados de um curso publicado. `summary` é o texto simples do resumo (já sem HTML). */
@@ -93,6 +95,7 @@ export function renderMetaTags(meta: PageMeta): string {
   const canonical = escapeHtml(meta.canonical);
   const image = escapeHtml(meta.image);
   return [
+    ...(meta.noindex ? ['<meta name="robots" content="noindex">'] : []),
     `<meta name="description" content="${description}">`,
     `<link rel="canonical" href="${canonical}">`,
     `<meta property="og:type" content="website">`,
