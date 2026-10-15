@@ -10,6 +10,7 @@ import {
   newBackend,
   openLesson,
   savedCount,
+  savedOutlineCount,
   storedLessons,
   type Backend,
 } from './support/offline-mock';
@@ -58,6 +59,7 @@ test.describe('guardar e ler sem rede', () => {
     ).toBeVisible();
     await openLesson(page, 2);
     await expect.poll(() => savedCount(page)).toBe(1);
+    await expect.poll(() => savedOutlineCount(page)).toBe(1); // o mapa também é gravado de forma assíncrona
 
     goOffline(backend);
     await page.goto(`/estudar/${COURSE_ID}`);

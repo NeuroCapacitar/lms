@@ -9,6 +9,7 @@ import {
   openLesson,
   outboxItems,
   savedCount,
+  savedOutlineCount,
   type Backend,
 } from './support/offline-mock';
 
@@ -47,6 +48,7 @@ test.describe('concluir aula sem rede', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Curso Demonstrativo' }),
     ).toBeVisible();
+    await expect.poll(() => savedOutlineCount(page)).toBe(1); // a gravação do mapa é assíncrona: espera antes de ficar sem rede
     await completeOffline(page, backend, 1);
     expect(await outboxItems(page)).toMatchObject([{ lessonId: L(1), state: 'pending' }]);
     // A pendência fica à vista também fora da aula, e o botão não se repete.

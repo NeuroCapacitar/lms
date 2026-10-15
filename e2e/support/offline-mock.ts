@@ -277,3 +277,25 @@ export async function outboxItems(
     return out;
   });
 }
+
+/** Quantos mapas de curso estão guardados no aparelho (todas as contas). */
+export async function savedOutlineCount(page: Page): Promise<number> {
+  return page.evaluate(async () => {
+    let total = 0;
+    for (const info of await indexedDB.databases()) {
+      const name = info.name ?? '';
+      if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(name);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      total += await new Promise<number>((resolve) => {
+        const request = db.transaction('outlines').objectStore('outlines').count();
+        request.onsuccess = () => resolve(request.result);
+      });
+      db.close();
+    }
+    return total;
+  });
+}
