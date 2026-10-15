@@ -120,12 +120,22 @@ async function openDatabase(name: string, version: number, defs: StoreDef[]): Pr
   }
 }
 
+/**
+ * Apaga um banco e ESPERA terminar (conexões abertas em outras abas se fecham sozinhas: `onversionchange`). Se algo segurar a
+ * conexão por mais de 3 s, segue em frente: o apagamento fica pendente no navegador e conclui quando a conexão cair.
+ */
 function deleteDatabase(name: string): Promise<void> {
   return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, 3000);
     const request = indexedDB.deleteDatabase(name);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error ?? new Error('idb_delete_failed'));
-    request.onblocked = () => resolve();
+    request.onsuccess = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    request.onerror = () => {
+      clearTimeout(timer);
+      reject(request.error ?? new Error('idb_delete_failed'));
+    };
   });
 }
 
@@ -225,10 +235,21 @@ export interface OfflineIndex {
   set(userId: string | null): Promise<void>;
 }
 
+/** O banco já existe? (perguntar NÃO pode criá-lo: depois de sair, o aparelho precisa ficar sem nenhum banco). */
+async function databaseExists(name: string): Promise<boolean> {
+  try {
+    const known = await indexedDB.databases?.();
+    return known ? known.some((info) => info.name === name) : true;
+  } catch {
+    return true;
+  }
+}
+
 export function createOfflineIndex(): OfflineIndex {
   const open = () => openDatabase(INDEX_DB, 1, [INDEX_STORE]);
   return {
     async get() {
+      if (!(await databaseExists(INDEX_DB))) return null;
       const db = await open();
       try {
         const tx = db.transaction('current', 'readonly');
@@ -239,6 +260,7 @@ export function createOfflineIndex(): OfflineIndex {
       }
     },
     async set(userId) {
+      if (userId === null && !(await databaseExists(INDEX_DB))) return;
       const db = await open();
       try {
         const tx = db.transaction('current', 'readwrite');
@@ -249,5 +271,59 @@ export function createOfflineIndex(): OfflineIndex {
         db.close();
       }
     },
+  };
+}
+
+const DB_PREFIX = 'hub-offline-';
+
+/** Apaga TODOS os bancos offline deste navegador (de qualquer conta e o ponteiro). Nunca lança: o que falhar fica para a próxima. */
+export async function deleteAllOfflineDatabases(): Promise<void> {
+  const names = new Set<string>([INDEX_DB]);
+  try {
+    for (const info of (await indexedDB.databases?.()) ?? []) {
+      if (info.name?.startsWith(DB_PREFIX)) names.add(info.name);
+    }
+  } catch {
+    // Navegador sem `indexedDB.databases()`: ao menos o ponteiro é apagado (os bancos ficam órfãos, sem ponteiro que os alcance).
+  }
+  await Promise.all(Array.from(names, (name) => deleteDatabase(name).catch(() => undefined)));
+}
+
+/**
+ * Marca "sair da conta" feita SEM rede (M8-05): a purga local é imediata, mas a sessão só pode ser revogada no servidor
+ * quando a rede volta. Fica num banco PRÓPRIO, fora do prefixo `hub-offline-`, para a purga não apagá-lo. Não guarda dado da pessoa.
+ */
+const PENDING_DB = 'hub-pending-signout';
+const PENDING_STORE: StoreDef = { name: 'flag' };
+
+export interface PendingSignOut {
+  mark(): Promise<void>;
+  isPending(): Promise<boolean>;
+  clear(): Promise<void>;
+}
+
+export function createPendingSignOut(): PendingSignOut {
+  return {
+    async mark() {
+      const db = await openDatabase(PENDING_DB, 1, [PENDING_STORE]);
+      try {
+        const tx = db.transaction('flag', 'readwrite');
+        tx.objectStore('flag').put(true, 'pending');
+        await finished(tx);
+      } finally {
+        db.close();
+      }
+    },
+    async isPending() {
+      if (!(await databaseExists(PENDING_DB))) return false;
+      const db = await openDatabase(PENDING_DB, 1, [PENDING_STORE]);
+      try {
+        const tx = db.transaction('flag', 'readonly');
+        return (await wrap(tx.objectStore('flag').get('pending'))) === true;
+      } finally {
+        db.close();
+      }
+    },
+    clear: () => deleteDatabase(PENDING_DB),
   };
 }

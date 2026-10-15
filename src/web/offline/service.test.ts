@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outline';
 import { advanceClock } from '../../features/pwa/offline-lease';
-import { createOfflineService, type Identity, type LeaseFetch, type OfflineDeps } from './service';
+import {
+  createOfflineService,
+  type Identity,
+  type LeaseFetch,
+  type OfflineDeps,
+  type SignOutOutcome,
+} from './service';
 import type {
   OfflineIndex,
   OfflineMeta,
@@ -98,6 +104,10 @@ let stores: Map<string, MemoryStore>;
 let pointer: string | null;
 let estimate: { usage?: number; quota?: number } | undefined;
 let networkDown: boolean;
+let purges: string[];
+let signOutOutcome: SignOutOutcome;
+let signOutCalls: number;
+let pendingFlag: boolean;
 
 const index: OfflineIndex = {
   get: async () => pointer,
@@ -124,8 +134,37 @@ const storeOf = (userId: string) => {
   return store;
 };
 
+function baseDeps(): OfflineDeps {
+  return {
+    now: () => clock,
+    fetchIdentity: async () => identity,
+    fetchLease: async () => leaseFetch,
+    index,
+    openStore: async (userId) => storeOf(userId),
+    purgeLocal: async (reason) => {
+      purges.push(reason);
+      stores.clear();
+      pointer = null;
+    },
+    requestSignOut: async () => {
+      signOutCalls += 1;
+      return networkDown ? 'network' : signOutOutcome;
+    },
+    pendingSignOut: {
+      mark: async () => {
+        pendingFlag = true;
+      },
+      isPending: async () => pendingFlag,
+      clear: async () => {
+        pendingFlag = false;
+      },
+    },
+  };
+}
+
 function service() {
   const deps: OfflineDeps = {
+    ...baseDeps(),
     now: () => clock,
     fetchIdentity: async () => {
       if (networkDown) throw new TypeError('Failed to fetch');
@@ -135,8 +174,6 @@ function service() {
       if (networkDown) throw new TypeError('Failed to fetch');
       return leaseFetch;
     },
-    index,
-    openStore: async (userId) => storeOf(userId),
     storageEstimate: async () => estimate,
   };
   return createOfflineService(deps);
@@ -150,6 +187,10 @@ beforeEach(() => {
   pointer = null;
   estimate = undefined;
   networkDown = false;
+  purges = [];
+  signOutOutcome = 'done';
+  signOutCalls = 0;
+  pendingFlag = false;
 });
 
 describe('offline: guardar e ler', () => {
@@ -291,7 +332,7 @@ describe('offline: lease e relógio', () => {
 });
 
 describe('offline: isolamento entre contas', () => {
-  it('A guarda; B entra no mesmo navegador e NÃO vê nada de A, nem com o ponteiro trocado', async () => {
+  it('A guarda; B entra no mesmo navegador: o que era de A é apagado e B não vê nada dele', async () => {
     const offline = service();
     await offline.rememberLesson(lessonView('segredo-de-a'));
     identity = { kind: 'user', userId: 'user-b' };
@@ -303,7 +344,7 @@ describe('offline: isolamento entre contas', () => {
       reason: 'not_saved',
     });
     expect(storeOf('user-b').lessons.size).toBe(0);
-    expect(storeOf('user-a').lessons.size).toBe(1); // a purga é do M8-05
+    expect(purges).toEqual(['account_changed']); // M8-05: o que era de A sai do aparelho
   });
 
   it('conta de Staff: o servidor recusa o lease, nada é guardado e o que houver é apagado', async () => {
@@ -337,10 +378,7 @@ describe('offline: cota, falhas e verificação de fundo', () => {
   it('banco indisponível: ler vira bloqueio, nunca exceção', async () => {
     pointer = 'user-a';
     const deps: OfflineDeps = {
-      now: () => clock,
-      fetchIdentity: async () => identity,
-      fetchLease: async () => leaseFetch,
-      index,
+      ...baseDeps(),
       openStore: async () => {
         throw new Error('banco apagado');
       },
@@ -354,14 +392,11 @@ describe('offline: cota, falhas e verificação de fundo', () => {
   it('verificação recente dispensa nova chamada ao servidor', async () => {
     let calls = 0;
     const offline = createOfflineService({
-      now: () => clock,
+      ...baseDeps(),
       fetchIdentity: async () => {
         calls += 1;
         return identity;
       },
-      fetchLease: async () => leaseFetch,
-      index,
-      openStore: async (userId) => storeOf(userId),
     });
     await offline.rememberLesson(lessonView('l1'));
     await offline.rememberLesson(lessonView('l2'));
@@ -378,5 +413,103 @@ describe('offline: cota, falhas e verificação de fundo', () => {
     pointer = 'user-a';
     await expect(offline.refreshInBackground()).resolves.toBeUndefined(); // rede caída: engole
     expect(await offline.hasKnownUser()).toBe(true);
+  });
+});
+
+describe('M8-05: sair da conta, troca de conta e sessão encerrada', () => {
+  it('sair online: o servidor confirma, o aparelho é limpo e não fica nada pendente', async () => {
+    const offline = service();
+    await offline.rememberLesson(lessonView('l1'));
+    expect(await offline.signOut()).toBe('done');
+    expect(purges).toEqual(['sign_out']);
+    expect(pointer).toBeNull();
+    expect(stores.size).toBe(0);
+    expect(pendingFlag).toBe(false);
+  });
+
+  it('sair SEM rede: o aparelho é limpo na hora e a revogação da sessão fica pendente', async () => {
+    const offline = service();
+    await offline.rememberLesson(lessonView('l1'));
+    networkDown = true;
+    expect(await offline.signOut()).toBe('pending');
+    expect(purges).toEqual(['sign_out']);
+    expect(stores.size).toBe(0);
+    expect(pendingFlag).toBe(true);
+    // sem rede, ler já não mostra nada da pessoa
+    expect(await offline.readLesson(COURSE, 'l1')).toEqual({ kind: 'blocked', reason: 'no_user' });
+  });
+
+  it('o servidor falhou online: NADA é apagado e dá para tentar de novo', async () => {
+    const offline = service();
+    await offline.rememberLesson(lessonView('l1'));
+    signOutOutcome = 'error';
+    expect(await offline.signOut()).toBe('failed');
+    expect(purges).toEqual([]);
+    expect(storeOf('user-a').lessons.size).toBe(1);
+    expect(pendingFlag).toBe(false);
+  });
+
+  it('a rede volta: o "sair" pendente é revogado e só então a verificação segue; com falha, nada é verificado nem guardado', async () => {
+    const offline = service();
+    pendingFlag = true;
+    networkDown = true;
+    expect(await offline.flushPendingSignOut()).toBe(false);
+    expect(await offline.rememberLesson(lessonView('l1'))).toBe('skipped'); // pendente: não guarda nada
+    expect(stores.size).toBe(0);
+    await offline.refreshInBackground();
+    expect(pointer).toBeNull();
+    networkDown = false;
+    expect(await offline.flushPendingSignOut()).toBe(true);
+    expect(pendingFlag).toBe(false);
+    expect(signOutCalls).toBe(3);
+  });
+
+  it('com "sair" pendente, a verificação (ex.: aba que voltou) revoga primeiro e não volta a criar dados da pessoa', async () => {
+    const offline = service();
+    pendingFlag = true;
+    identity = { kind: 'anonymous' }; // o servidor já não tem a sessão depois do sign-out
+    expect(await offline.verify()).toEqual({ kind: 'anonymous' });
+    expect(pendingFlag).toBe(false);
+    expect(pointer).toBeNull();
+  });
+
+  it('outra pessoa entrou (A→B): o que era de A é apagado ANTES de qualquer leitura ou gravação de B', async () => {
+    const offline = service();
+    await offline.rememberLesson(lessonView('segredo-de-a'));
+    identity = { kind: 'user', userId: 'user-b' };
+    expect((await offline.verify()).kind).toBe('verified');
+    expect(purges).toEqual(['account_changed']);
+    expect(stores.has('user-a')).toBe(false); // purga zera tudo; só o banco de B existe agora
+    networkDown = true;
+    expect(await offline.readLesson(COURSE, 'segredo-de-a')).toEqual({
+      kind: 'blocked',
+      reason: 'not_saved',
+    });
+  });
+
+  it('a mesma pessoa verificando de novo NÃO é troca de conta', async () => {
+    const offline = service();
+    await offline.rememberLesson(lessonView('l1'));
+    await offline.verify();
+    expect(purges).toEqual([]);
+    expect(storeOf('user-a').lessons.size).toBe(1);
+  });
+
+  it('sessão encerrada (expirou, revogada ou conta suspensa): ao contato online o aparelho é limpo', async () => {
+    const offline = service();
+    await offline.rememberLesson(lessonView('l1'));
+    identity = { kind: 'anonymous' };
+    expect(await offline.verify()).toEqual({ kind: 'anonymous' });
+    expect(purges).toEqual(['session_ended']);
+    expect(pointer).toBeNull();
+    networkDown = true;
+    expect(await offline.readLesson(COURSE, 'l1')).toEqual({ kind: 'blocked', reason: 'no_user' });
+  });
+
+  it('visitante sem ninguém conhecido neste aparelho: nada a limpar, nada pedido ao servidor', async () => {
+    identity = { kind: 'anonymous' };
+    const offline = service();
+    expect(await offline.verify()).toEqual({ kind: 'anonymous' });
+    expect(purges).toEqual([]);
   });
 });

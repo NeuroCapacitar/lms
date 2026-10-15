@@ -555,7 +555,19 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   // por senha, login social, troca de senha, ligação de conta, `get-session`...) pulariam o Turnstile,
   // os limites e a reautenticação, ou devolveriam o token da sessão no corpo: tudo passa pelas rotas
   // acima. Lista de permitidos de UM caminho; o resto é 404.
-  routes.post('/auth/sign-out', withDatabase, (c) => c.var.auth.handler(c.req.raw));
+  // M8-05: ao encerrar a sessão o navegador também é mandado limpar cache e armazenamento do site (IndexedDB, Cache API,
+  // localStorage e Service Workers). É defesa ADICIONAL: o app já apaga tudo por JavaScript e não depende só deste cabeçalho.
+  routes.post('/auth/sign-out', withDatabase, async (c) => {
+    const response = await c.var.auth.handler(c.req.raw);
+    if (!response.ok) return response;
+    const headers = new Headers(response.headers);
+    headers.set('Clear-Site-Data', '"cache", "storage"');
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  });
   routes.all('/auth/*', notFound);
 
   routes.get('/me', async (c) => {

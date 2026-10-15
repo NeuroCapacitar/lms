@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useCallback, useState, type FormEvent } from 'react';
 
 import { signInWithPassword, type PasswordSignInResult } from '../api/auth';
+import { afterSignIn } from '../offline/runtime';
 import { Turnstile } from './turnstile';
 import { Button } from './ui/button';
 import { TextField } from './ui/field';
@@ -35,6 +36,8 @@ export function PasswordSignIn() {
     const result = await signInWithPassword(email, password, captcha);
     setSending(false);
     if (result === 'ok') {
+      // M8-05: se entrou OUTRA pessoa, o que era da anterior sai do aparelho antes de qualquer tela ler dado local.
+      await afterSignIn();
       await navigate({ to: '/' });
       return;
     }

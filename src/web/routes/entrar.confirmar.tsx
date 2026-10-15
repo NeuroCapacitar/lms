@@ -3,6 +3,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { confirmLink, confirmReauth, type ConfirmReauthResult } from '../api/auth';
+import { afterSignIn } from '../offline/runtime';
 import { takeReturnTo } from '../return-to';
 import { Button } from '../components/ui/button';
 
@@ -69,6 +70,8 @@ function ConfirmSignIn() {
       queryClient.clear();
       // Volta à página de onde a pessoa veio (caminho interno validado) ou à página inicial.
       const back = takeReturnTo();
+      // M8-05: se entrou OUTRA pessoa, o que era da anterior sai do aparelho antes de qualquer tela ler dado local.
+      await afterSignIn();
       if (back) {
         window.location.assign(back);
         return;

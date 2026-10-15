@@ -4,7 +4,7 @@ import {
   leaseUntilOnDeviceClock,
   type OfflineLeaseDto,
 } from '../../features/pwa/offline-lease';
-import type { OfflineIndex, OfflineStore, StoredLease } from './store';
+import type { OfflineIndex, OfflineStore, PendingSignOut, StoredLease } from './store';
 
 /** Quanto tempo uma verificação online recente dispensa outra (cada aula aberta não chama o servidor de novo). */
 const FRESH_MS = 30 * 60 * 1000;
@@ -17,6 +17,12 @@ export type LeaseFetch =
   /** O servidor recusou (conta com papel de Staff): nada é guardado e o que houver é apagado. */
   | { kind: 'unavailable' };
 
+/** Por que o aparelho foi limpo: saída da conta, outra pessoa entrou ou a sessão acabou (expirou, foi revogada, suspensa). */
+export type PurgeReason = 'sign_out' | 'account_changed' | 'session_ended';
+
+/** `done`: sessão encerrada (ou já não existia). `network`: sem rede. `error`: o servidor recusou ou falhou. */
+export type SignOutOutcome = 'done' | 'network' | 'error';
+
 export interface OfflineDeps {
   now(): number;
   /** Lança em falha de REDE. */
@@ -25,6 +31,10 @@ export interface OfflineDeps {
   fetchLease(): Promise<LeaseFetch>;
   index: OfflineIndex;
   openStore(userId: string): Promise<OfflineStore>;
+  /** Apaga TUDO que é de uma pessoa neste aparelho e avisa as outras abas. Nunca lança. */
+  purgeLocal(reason: PurgeReason): Promise<void>;
+  requestSignOut(): Promise<SignOutOutcome>;
+  pendingSignOut: PendingSignOut;
   /** Cota do navegador, se ele a informa. */
   storageEstimate?(): Promise<{ usage?: number; quota?: number } | undefined>;
   requestPersistence?(): Promise<unknown>;
@@ -46,6 +56,7 @@ export type OfflineRead<T> =
 
 export type VerifyOutcome =
   | { kind: 'verified'; userId: string; courses: number }
+  /** Sem sessão agora. Se havia dados de alguém neste aparelho, foram apagados (`session_ended`). */
   | { kind: 'anonymous' }
   | { kind: 'unavailable' };
 
@@ -69,8 +80,17 @@ export function createOfflineService(deps: OfflineDeps) {
 
   /** Verificação online: quem é a pessoa agora e quais cursos têm lease. Falha de rede propaga (o chamador decide). */
   async function verify(): Promise<VerifyOutcome> {
+    // "Sair" feito sem rede ainda não revogou a sessão: primeiro isso; sem conseguir, nada é verificado nem guardado.
+    if (!(await flushPendingSignOut())) return { kind: 'anonymous' };
     const identity = await deps.fetchIdentity();
-    if (identity.kind === 'anonymous') return { kind: 'anonymous' };
+    const previous = await deps.index.get();
+    if (identity.kind === 'anonymous') {
+      // A sessão acabou (expirou, foi revogada, a conta foi suspensa ou saiu em outra aba): nada fica no aparelho.
+      if (previous !== null) await deps.purgeLocal('session_ended');
+      return { kind: 'anonymous' };
+    }
+    // Outra pessoa entrou neste aparelho: o que era da anterior sai ANTES de qualquer leitura ou gravação.
+    if (previous !== null && previous !== identity.userId) await deps.purgeLocal('account_changed');
     const leaseResult = await deps.fetchLease();
     const store = await deps.openStore(identity.userId);
     try {
@@ -97,9 +117,22 @@ export function createOfflineService(deps: OfflineDeps) {
     }
   }
 
+  /** Revoga no servidor um "sair" feito sem rede. `true` = não há mais nada pendente. */
+  async function flushPendingSignOut(): Promise<boolean> {
+    try {
+      if (!(await deps.pendingSignOut.isPending())) return true;
+      if ((await deps.requestSignOut()) !== 'done') return false;
+      await deps.pendingSignOut.clear();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Verifica só se faz falta (sem lease do curso ou verificação velha). Nunca lança. */
   async function ensureFresh(courseId: string): Promise<boolean> {
     try {
+      if (await deps.pendingSignOut.isPending()) return false;
       const current = await storeForCurrentUser();
       if (current) {
         try {
@@ -205,12 +238,31 @@ export function createOfflineService(deps: OfflineDeps) {
     /** Verificação de fundo (abertura, volta da rede, aba visível): só quando já há uma pessoa conhecida. Nunca lança. */
     async refreshInBackground(): Promise<void> {
       try {
+        if (!(await flushPendingSignOut())) return;
         if ((await deps.index.get()) === null) return;
         await verify();
       } catch {
         // Sem rede: tenta de novo na próxima oportunidade.
       }
     },
+
+    /**
+     * Sair da conta (M8-05). Com o servidor confirmando (ou sem sessão), purga e pronto (`done`). SEM rede, purga o aparelho NA
+     * HORA e deixa a revogação da sessão para quando a rede voltar (`pending`). Se o servidor falhar online (`failed`), NADA é
+     * apagado: a pessoa continua logada e pode tentar de novo.
+     */
+    async signOut(): Promise<'done' | 'pending' | 'failed'> {
+      const outcome = await deps.requestSignOut();
+      if (outcome === 'error') return 'failed';
+      await deps.purgeLocal('sign_out');
+      if (outcome === 'network') {
+        await deps.pendingSignOut.mark().catch(() => undefined);
+        return 'pending';
+      }
+      return 'done';
+    },
+
+    flushPendingSignOut,
 
     rememberLesson(view: LessonViewDto) {
       if (!isStorable(view)) return Promise.resolve('skipped' as const);

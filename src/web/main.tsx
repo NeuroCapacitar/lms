@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 
 import './styles/app.css';
 import { installClientEpoch } from './pwa/client-epoch';
-import { startOfflineRefresh } from './offline/runtime';
+import { onLocalPurge, startOfflineRefresh } from './offline/runtime';
 import { registerPwa } from './pwa/register';
 import { routeTree } from './routeTree.gen';
 import { applyTheme, readThemePreference } from './theme';
@@ -17,10 +17,21 @@ applyTheme(readThemePreference());
 // PWA (M8-01): a época do cliente em todo /api e o Service Worker (só em produção).
 installClientEpoch();
 registerPwa();
-// Offline do aluno (M8-02): renova o lease em segundo plano, só para quem já usou o app online neste aparelho.
-startOfflineRefresh();
 
 const queryClient = new QueryClient();
+// M8-05: quando os dados da pessoa saem do aparelho (sair, trocar de conta, sessão encerrada) o cache de consultas vai junto; se foi
+// OUTRA aba que limpou, esta volta à página inicial em vez de seguir mostrando a tela da pessoa anterior.
+onLocalPurge((reason, remote) => {
+  // Sair da conta: a tela vai embora, tudo é descartado. Troca de conta ou sessão encerrada em segundo plano: `resetQueries` joga fora
+  // os dados da pessoa anterior e REBUSCA o que a tela aberta usa agora (com `clear`, uma consulta em andamento ficaria presa em
+  // "Carregando…").
+  if (reason === 'sign_out') queryClient.clear();
+  else void queryClient.resetQueries();
+  if (remote) window.location.replace('/');
+});
+// Offline do aluno (M8-02/M8-05): renova o lease e confere a sessão em segundo plano, só para quem já usou o app neste aparelho.
+// Depois de registrar o ouvinte acima, para nenhuma limpeza passar sem o cache de consultas saber.
+startOfflineRefresh();
 const router = createRouter({ routeTree });
 
 declare module '@tanstack/react-router' {

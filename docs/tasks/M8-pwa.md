@@ -100,7 +100,7 @@ Ordem sugerida: M8-01 → M8-02 → M8-05 → M8-03 → M8-06 → M8-04.
 
 ### M8-05 — Logout, troca de conta e `Clear-Site-Data`
 
-**Dependências:** M8-02, M8-03, M1-01, M1-06 (magic link) · **Estado:** `not_started`
+**Dependências:** M8-02, M8-03, M1-01, M1-06 (magic link) · **Estado:** `implemented` SEM o passo 1 (outbox, do M8-03) (2026-10-15; só Chromium; WebKit/iPhone e Staging NÃO; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** Sair da conta deixa o aparelho limpo, mesmo offline.
 
