@@ -33,6 +33,10 @@ import {
 import { catalogRoutes } from '../catalog/routes';
 import { studentCatalogRoutes } from '../catalog/student-routes';
 import { courseAccessRoutes } from '../access/routes';
+import {
+  certificateLifecycleStaffRoutes,
+  myCertificateRoutes,
+} from '../certificate/lifecycle-routes';
 import { certificateStaffRoutes } from '../certificate/routes';
 import { enrollmentStaffRoutes } from '../access/staff-routes';
 import { discussionRoutes, discussionStaffRoutes } from '../discussion/routes';
@@ -452,6 +456,15 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
 
   // Emitente e signatário do certificado (M7-06): /api/staff/certificate e /api/staff/courses/:id/certificate (só Admin).
   routes.route('/staff', certificateStaffRoutes({ withDatabase }));
+  // Ciclo de vida do certificado (M7-04): /api/staff/certificates (lista, revogar, reemitir, tentar de novo) e o download do dono.
+  routes.route('/staff', certificateLifecycleStaffRoutes({ withDatabase }));
+  routes.route(
+    '/',
+    myCertificateRoutes({
+      withDatabase,
+      storage: (c) => overrides.mediaStorage ?? createR2Storage(c.env),
+    }),
+  );
 
   // Moderação e resposta da equipe nas discussões (M5-05): /api/staff/discussions (grant discussion.moderate).
   routes.route('/staff', discussionStaffRoutes({ withDatabase }));

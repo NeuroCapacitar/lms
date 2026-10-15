@@ -76,6 +76,11 @@ function StaffCertificates() {
       ) : (
         <div className="grid gap-10">
           <IssuerForm initial={issuer.data ?? null} />
+          <p>
+            <Link to="/staff/certificados/emitidos" className="underline">
+              Ver os certificados emitidos
+            </Link>
+          </p>
           <SignatorySection />
         </div>
       )}

@@ -18,6 +18,7 @@ import {
   type CertificateSnapshot,
 } from '../../features/certificate/certificate';
 import { auditEvent } from '../auth/access-store';
+import { queueEmail } from '../email/email-store';
 import { PermanentError, TransientError, type HandlerRegistry } from '../async/handler-types';
 import { enqueueIntent, type DomainTx } from '../async/outbox-store';
 import { getIssuer, getSignatory } from './signer-store';
@@ -60,17 +61,20 @@ async function holderIn(tx: DomainTx, userId: string) {
 }
 
 /**
- * Cria o certificado `queued` e a intenção de renderização, na transação do chamador. Devolve o id, ou `null` se a
- * política está desligada ou se a conclusão já tem certificado (repetir nunca duplica: índice único parcial).
+ * Monta o snapshot de um certificado NOVO com o que vale AGORA: nome do perfil, emitente, signatário do curso e o
+ * template PUBLICADO. Compartilhado pela emissão (conclusão) e pela reemissão (M7-04). `no_template`: sem template
+ * publicado não há o que imprimir; `invalid`: algum dado não cabe no certificado (nome gigante...).
  */
-export async function issueCertificateIn(
+export async function buildSnapshotIn(
   tx: DomainTx,
   source: CertificateSource,
-): Promise<string | null> {
-  if (!(await policyEnabledIn(tx, source.courseId))) return null;
-  // Sem template PUBLICADO do curso (M7-03) não há o que imprimir: a conclusão existe e nada nasce.
+): Promise<
+  | { status: 'ok'; snapshot: CertificateSnapshot }
+  | { status: 'no_template' }
+  | { status: 'invalid' }
+> {
   const template = await readPublishedTemplateIn(tx, source.courseId);
-  if (!template) return null;
+  if (!template) return { status: 'no_template' };
   const holder = await holderIn(tx, source.userId);
   const issuerRow = await getIssuer(tx);
   const signatoryRow = await getSignatory(tx, source.courseId);
@@ -82,22 +86,41 @@ export async function issueCertificateIn(
         signatureMediaId: signatoryRow.signatureMediaId,
       }
     : null;
-  let snapshot: CertificateSnapshot;
   try {
-    snapshot = buildCertificateSnapshot({
-      certificateName: holder.certificateName,
-      displayName: holder.displayName,
-      courseTitle: source.courseTitle,
-      workloadHours: source.workloadHours,
-      completedAt: source.completedAt,
-      requiredTotal: source.requiredTotal,
-      issuer,
-      signatory,
-      layout: template.layout,
-      backgroundMediaId: template.backgroundMediaId,
-    });
+    return {
+      status: 'ok',
+      snapshot: buildCertificateSnapshot({
+        certificateName: holder.certificateName,
+        displayName: holder.displayName,
+        courseTitle: source.courseTitle,
+        workloadHours: source.workloadHours,
+        completedAt: source.completedAt,
+        requiredTotal: source.requiredTotal,
+        issuer,
+        signatory,
+        layout: template.layout,
+        backgroundMediaId: template.backgroundMediaId,
+      }),
+    };
   } catch (error) {
     if (!(error instanceof SnapshotInvalidError)) throw error;
+    return { status: 'invalid' };
+  }
+}
+
+/**
+ * Cria o certificado `queued` e a intenção de renderização, na transação do chamador. Devolve o id, ou `null` se a
+ * política está desligada ou se a conclusão já tem certificado (repetir nunca duplica: índice único parcial).
+ */
+export async function issueCertificateIn(
+  tx: DomainTx,
+  source: CertificateSource,
+): Promise<string | null> {
+  if (!(await policyEnabledIn(tx, source.courseId))) return null;
+  // Sem template PUBLICADO do curso (M7-03) não há o que imprimir: a conclusão existe e nada nasce.
+  const built = await buildSnapshotIn(tx, source);
+  if (built.status === 'no_template') return null;
+  if (built.status === 'invalid') {
     // Dado que não cabe no certificado (nome gigante...): a CONCLUSÃO do curso fica intacta, o certificado não nasce e
     // a Staff vê a falha na auditoria. Nunca derruba a transação da conclusão.
     await auditEvent(tx, {
@@ -109,6 +132,7 @@ export async function issueCertificateIn(
     });
     return null;
   }
+  const snapshot = built.snapshot;
 
   const inserted = await tx
     .insert(certificate)
@@ -367,16 +391,29 @@ export function createCertificateRenderHandler(
       throw new TransientError('renderer_unknown_error');
     }
 
-    // Commit depois do PUT no R2 (fencing: só vale se ainda está `rendering`).
-    await db
-      .update(certificate)
-      .set({
-        status: 'ready',
-        pdfKey: rendered.pdfKey,
-        pdfSha256: rendered.pdfSha256,
-        readyAt: sql`now()`,
-        failureCode: null,
-      })
-      .where(and(eq(certificate.id, row.id), eq(certificate.status, 'rendering')));
+    // Commit depois do PUT no R2 (fencing: só vale se ainda está `rendering`). O e-mail "certificado emitido" nasce na
+    // MESMA transação (outbox, com dedupe por certificado: reprocessar nunca reenvia); falha do e-mail depois NUNCA
+    // muda o certificado.
+    await db.transaction(async (tx) => {
+      const committed = await tx
+        .update(certificate)
+        .set({
+          status: 'ready',
+          pdfKey: rendered.pdfKey,
+          pdfSha256: rendered.pdfSha256,
+          readyAt: sql`now()`,
+          failureCode: null,
+        })
+        .where(and(eq(certificate.id, row.id), eq(certificate.status, 'rendering')))
+        .returning({ id: certificate.id });
+      if (committed.length === 0) return;
+      await queueEmail(tx, {
+        template: 'certificate-issued',
+        recipientUserId: row.userId,
+        variables: { COURSE_TITLE: snapshot.data.courseTitle, CERTIFICATE_ID: row.id },
+        dedupeKey: `certificate-issued:${row.id}`,
+        correlationId: `certificate:${row.id}`,
+      });
+    });
   };
 }

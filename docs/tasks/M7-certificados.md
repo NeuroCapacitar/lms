@@ -78,7 +78,7 @@ Ordem sugerida: M7-01 → M7-06 → M7-02 → M7-07 → M7-03 → M7-09 → M7-0
 
 ### M7-04 — Emissão, entrega ao aluno, revogação (Admin) e reemissão (grant)
 
-**Dependências:** M7-02, M7-07, M4-04 (e-mail), M1-05 (reautenticação recente), M6-05 (reembolso) · **Estado:** `not_started`
+**Dependências:** M7-02, M7-07, M4-04 (e-mail), M1-05 (reautenticação recente), M6-05 (reembolso) · **Estado:** `implemented` (2026-10-14; sem PDF real: o objeto do download é de teste; a dependência do M7-07 foi contornada usando o nome do perfil, o nome confirmado ficou para o M7-07; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** Ciclo de vida completo do certificado com autorização no servidor e cópia antiga nunca alterada.
 

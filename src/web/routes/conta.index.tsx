@@ -14,6 +14,7 @@ import {
 import { signOut } from '../api/auth';
 import { fetchMyInterests, withdrawCourseInterest } from '../api/interest';
 import { fetchProfile, saveProfile, UnauthenticatedError } from '../api/profile';
+import { MyCertificates } from '../components/my-certificates';
 import { Button } from '../components/ui/button';
 import { RequireTerms } from '../components/require-terms';
 import { TextField } from '../components/ui/field';
@@ -194,6 +195,7 @@ function Account() {
         </div>
       </form>
 
+      <MyCertificates />
       <CourseNotices />
 
       <section aria-labelledby="sessao-titulo" className="mt-12 grid max-w-md gap-3">

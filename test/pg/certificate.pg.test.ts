@@ -470,7 +470,7 @@ describe('renderização (handler do certificate.render)', () => {
   it('certificado revogado ou substituído nunca é renderizado de novo; id inexistente é falha permanente', async () => {
     const { certificateId } = await queued();
     await main.db.execute(
-      sql`update certificate set status = 'revoked' where id = ${certificateId}`,
+      sql`update certificate set status = 'revoked', revoked_at = now() where id = ${certificateId}`,
     );
     const calls: string[] = [];
     await createCertificateRenderHandler({ renderer: okRenderer(calls) })(context(certificateId));
@@ -568,7 +568,9 @@ describe('restrições do banco', () => {
     await expect(
       attempt(sql`update certificate set pdf_sha256 = ${'b'.repeat(64)} where id = ${row.id}`),
     ).rejects.toThrow();
-    await attempt(sql`update certificate set status = 'revoked' where id = ${row.id}`);
+    await attempt(
+      sql`update certificate set status = 'revoked', revoked_at = now() where id = ${row.id}`,
+    );
     await expect(
       attempt(sql`update certificate set status = 'ready' where id = ${row.id}`),
     ).rejects.toThrow();

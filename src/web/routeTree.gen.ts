@@ -34,6 +34,7 @@ import { Route as StaffVideosRouteImport } from './routes/staff.videos'
 import { Route as EstudarCourseIdIndexRouteImport } from './routes/estudar.$courseId.index'
 import { Route as StaffCertificadosIndexRouteImport } from './routes/staff.certificados.index'
 import { Route as StaffCertificadosCourseIdRouteImport } from './routes/staff.certificados.$courseId'
+import { Route as StaffCertificadosEmitidosRouteImport } from './routes/staff.certificados.emitidos'
 import { Route as StaffCursosIndexRouteImport } from './routes/staff.cursos.index'
 import { Route as StaffCursosCourseIdRouteImport } from './routes/staff.cursos.$courseId'
 import { Route as EstudarCourseIdAulasLessonIdRouteImport } from './routes/estudar.$courseId.aulas.$lessonId'
@@ -166,6 +167,12 @@ const StaffCertificadosCourseIdRoute =
     path: '/certificados/$courseId',
     getParentRoute: () => StaffRoute,
   } as any)
+const StaffCertificadosEmitidosRoute =
+  StaffCertificadosEmitidosRouteImport.update({
+    id: '/certificados/emitidos',
+    path: '/certificados/emitidos',
+    getParentRoute: () => StaffRoute,
+  } as any)
 const StaffCursosIndexRoute = StaffCursosIndexRouteImport.update({
   id: '/cursos/',
   path: '/cursos/',
@@ -219,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/entrar/': typeof EntrarIndexRoute
   '/staff/': typeof StaffIndexRoute
   '/staff/certificados/$courseId': typeof StaffCertificadosCourseIdRoute
+  '/staff/certificados/emitidos': typeof StaffCertificadosEmitidosRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
   '/estudar/$courseId/': typeof EstudarCourseIdIndexRoute
   '/staff/certificados/': typeof StaffCertificadosIndexRoute
@@ -250,6 +258,7 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarIndexRoute
   '/staff': typeof StaffIndexRoute
   '/staff/certificados/$courseId': typeof StaffCertificadosCourseIdRoute
+  '/staff/certificados/emitidos': typeof StaffCertificadosEmitidosRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
   '/estudar/$courseId': typeof EstudarCourseIdIndexRoute
   '/staff/certificados': typeof StaffCertificadosIndexRoute
@@ -283,6 +292,7 @@ export interface FileRoutesById {
   '/entrar/': typeof EntrarIndexRoute
   '/staff/': typeof StaffIndexRoute
   '/staff/certificados/$courseId': typeof StaffCertificadosCourseIdRoute
+  '/staff/certificados/emitidos': typeof StaffCertificadosEmitidosRoute
   '/staff/cursos/$courseId': typeof StaffCursosCourseIdRoute
   '/estudar/$courseId/': typeof EstudarCourseIdIndexRoute
   '/staff/certificados/': typeof StaffCertificadosIndexRoute
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/entrar/'
     | '/staff/'
     | '/staff/certificados/$courseId'
+    | '/staff/certificados/emitidos'
     | '/staff/cursos/$courseId'
     | '/estudar/$courseId/'
     | '/staff/certificados/'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/staff'
     | '/staff/certificados/$courseId'
+    | '/staff/certificados/emitidos'
     | '/staff/cursos/$courseId'
     | '/estudar/$courseId'
     | '/staff/certificados'
@@ -380,6 +392,7 @@ export interface FileRouteTypes {
     | '/entrar/'
     | '/staff/'
     | '/staff/certificados/$courseId'
+    | '/staff/certificados/emitidos'
     | '/staff/cursos/$courseId'
     | '/estudar/$courseId/'
     | '/staff/certificados/'
@@ -585,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffCertificadosCourseIdRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/certificados/emitidos': {
+      id: '/staff/certificados/emitidos'
+      path: '/certificados/emitidos'
+      fullPath: '/staff/certificados/emitidos'
+      preLoaderRoute: typeof StaffCertificadosEmitidosRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/cursos/': {
       id: '/staff/cursos/'
       path: '/cursos'
@@ -633,6 +653,7 @@ interface StaffRouteChildren {
   StaffVideosRoute: typeof StaffVideosRoute
   StaffIndexRoute: typeof StaffIndexRoute
   StaffCertificadosCourseIdRoute: typeof StaffCertificadosCourseIdRoute
+  StaffCertificadosEmitidosRoute: typeof StaffCertificadosEmitidosRoute
   StaffCursosCourseIdRoute: typeof StaffCursosCourseIdRoute
   StaffCertificadosIndexRoute: typeof StaffCertificadosIndexRoute
   StaffCursosIndexRoute: typeof StaffCursosIndexRoute
@@ -650,6 +671,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffVideosRoute: StaffVideosRoute,
   StaffIndexRoute: StaffIndexRoute,
   StaffCertificadosCourseIdRoute: StaffCertificadosCourseIdRoute,
+  StaffCertificadosEmitidosRoute: StaffCertificadosEmitidosRoute,
   StaffCursosCourseIdRoute: StaffCursosCourseIdRoute,
   StaffCertificadosIndexRoute: StaffCertificadosIndexRoute,
   StaffCursosIndexRoute: StaffCursosIndexRoute,
