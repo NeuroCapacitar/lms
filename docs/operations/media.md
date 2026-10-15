@@ -9,7 +9,11 @@ Como a mídia funciona e o que falta para ATIVÁ-LA em cada ambiente. O código 
 - **Privado (material de aula, ativos do certificado):** entregue por `GET /api/media/:id/content` DEPOIS de autorizar (Staff com `staff.read`, ou quem pode abrir uma aula que referencia a mídia: acesso, expiração, drip e sequência). O Worker lê do R2 e entrega com `Cache-Control: no-store` (imposto pelo middleware de segurança do `/api`), `nosniff`, CSP `sandbox` e `attachment` para PDF. **Desvio do texto da tarefa:** não há "GET assinado" reutilizável; cada requisição reautoriza, e nenhuma URL vazada serve depois (a banda de ~20 alunos passa pelo Worker sem custo relevante).
 - **Referências e limpeza:** `media_reference` (um objeto por espaço do dono). O job `media.cleanup` (Cron, só acorda se houver trabalho e houver R2 configurado) expira uploads pendentes >24 h, tomba objetos `ready` sem referência há >24 h relendo a contagem sob trava do asset, e depois apaga os objetos do R2 fora de transação (se o R2 falhar, repete no ciclo seguinte).
 
-## Para ativar (nada disto foi feito; precisa de autorização contextual)
+## Staging (2026-10-15): o que JÁ existe
+
+Os buckets `hub-staging-media-private` e `hub-staging-media-public` (R2, free tier) e os bindings `MEDIA_PRIVATE`, `MEDIA_PUBLIC` e `BROWSER` no `wrangler.jsonc` (o `BROWSER` é do PDF do certificado, M7-02). Com só os bindings, o **certificado** (gravar, baixar, limpar) funciona; o **upload pelo navegador** (assinatura, fundo, capa, banner, material) continua desligado (503) até o token S3 e o CORS dos itens 3 e 4 abaixo. Capa e banner públicos exigem ainda o domínio público (item 5).
+
+## Para ativar (o restante; precisa de autorização contextual)
 
 Tudo no perfil `neurocapacitar` (`--profile neurocapacitar`, com a identidade conferida antes), por ambiente (Staging primeiro):
 
