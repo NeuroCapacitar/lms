@@ -161,7 +161,7 @@ Ordem sugerida: M7-01 → M7-06 → M7-02 → M7-07 → M7-03 → M7-09 → M7-0
 
 ### M7-08 — Página pública mínima de validação
 
-**Dependências:** M7-04, M2-06 (meta tags por HTMLRewriter), M0-17 (spike com validadores LinkedIn/Meta) · **Estado:** `not_started` — **PENDENTE de modelagem:** se a página mostra o nome da pessoa.
+**Dependências:** M7-04, M2-06 (meta tags por HTMLRewriter), M0-17 (spike com validadores LinkedIn/Meta) · **Estado:** `implemented` (2026-10-15; sem nome do titular por padrão — decisão PENDENTE; nada exercitado em Staging; validadores do LinkedIn e Meta não rodaram; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** Quem tem o código confirma estado, curso, carga horária e data, sem expor dados pessoais além do decidido.
 

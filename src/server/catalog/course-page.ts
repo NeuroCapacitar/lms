@@ -37,7 +37,7 @@ export function injectMeta(shell: Response, meta: PageMeta, status: number): Res
   headers.delete('etag');
   // O conteúdo depende do banco: sempre revalida.
   headers.set('cache-control', 'no-cache');
-  if (status === 404) headers.set('x-robots-tag', 'noindex');
+  if (status === 404 || meta.noindex) headers.set('x-robots-tag', 'noindex');
   return new Response(rewritten.body, { status, headers });
 }
 
