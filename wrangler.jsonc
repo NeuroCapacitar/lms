@@ -69,6 +69,13 @@
         "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea4be9d4370457b93f1feb7469d2ceb" }],
+      // Mídia e certificados (M5-07, M7-02): os buckets do Staging e o Browser Run (PDF do certificado). Só os BINDINGS:
+      // sem o token S3 o upload pré-assinado fica desligado (503); certificado, download e limpeza funcionam.
+      "r2_buckets": [
+        { "binding": "MEDIA_PRIVATE", "bucket_name": "hub-staging-media-private" },
+        { "binding": "MEDIA_PUBLIC", "bucket_name": "hub-staging-media-public" },
+      ],
+      "browser": { "binding": "BROWSER" },
       // Reconciliação do assíncrono (M4-03). Cada execução acorda o Neon Free: NÃO aumentar a frequência.
       "triggers": { "crons": ["*/30 * * * *"] },
       "queues": {
