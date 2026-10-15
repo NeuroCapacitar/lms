@@ -11,7 +11,7 @@ export const PAGE = { width: 297, height: 210 } as const;
 /** Moldura decorativa fixa do modelo (3 mm); os campos ficam dentro dela. */
 export const FRAME_MM = 3;
 
-const TEXT_FIELD_IDS = [
+export const TEXT_FIELD_IDS = [
   'title',
   'intro',
   'holderName',
