@@ -58,7 +58,7 @@ Ordem sugerida: M8-01 → M8-02 → M8-05 → M8-03 → M8-06 → M8-04.
 
 ### M8-03 — Outbox offline e sincronização
 
-**Dependências:** M8-02, M3-04 · **Estado:** `not_started`
+**Dependências:** M8-02, M3-04 · **Estado:** `implemented` (2026-10-15; só Chromium; migration 0039 e Staging NÃO; WebKit/iPhone NÃO; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** Ações permitidas feitas offline convergem ao reconectar, sem criar progresso indevido.
 

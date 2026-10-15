@@ -22,7 +22,7 @@ import {
  */
 
 test.describe('guardar e ler sem rede', () => {
-  test('a aula de texto visitada abre sem rede, com a faixa "sem conexão" e somente leitura', async ({
+  test('a aula de texto visitada abre sem rede, com a faixa "sem conexão" e conclusão guardada para enviar depois', async ({
     page,
     context,
   }) => {
@@ -39,8 +39,9 @@ test.describe('guardar e ler sem rede', () => {
     await expect(
       page.getByText(/Você está sem conexão\. Esta é a cópia guardada em/),
     ).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Concluir aula' })).toBeDisabled();
-    await expect(page.getByText(/conecte-se à internet para concluir/)).toBeVisible();
+    // M8-03: sem rede dá para concluir (fica guardado no aparelho e é enviado depois); a leitura segue sem escrita no servidor.
+    await expect(page.getByRole('button', { name: 'Concluir aula' })).toBeEnabled();
+    await expect(page.getByText(/a conclusão fica guardada neste aparelho/)).toBeVisible();
     // Sem rede não há discussão (ela é online).
     await expect(page.getByRole('heading', { name: /Discussão/i })).toHaveCount(0);
   });

@@ -8,16 +8,26 @@ import { Button } from './ui/button';
 
 /**
  * "Sessão: sair da conta" (M8-05). Sai do servidor e APAGA tudo o que era da pessoa neste aparelho (IndexedDB, caches,
- * armazenamento, cache de consultas). Sem rede, o aparelho é limpo NA HORA e o servidor encerra a sessão quando a rede voltar.
+ * armazenamento, cache de consultas). Antes (M8-03), tenta ENVIAR as conclusões feitas sem rede; se alguma não puder ser enviada,
+ * pede confirmação antes de descartá-la. Sem rede, o aparelho é limpo NA HORA e o servidor encerra a sessão quando a rede voltar.
  * Se o servidor falhar online, nada é apagado e dá para tentar de novo. Disponível mesmo quando o perfil não carrega.
  */
 export function SignOutSection() {
   const queryClient = useQueryClient();
-  const [state, setState] = useState<'idle' | 'leaving' | 'failed'>('idle');
+  const [state, setState] = useState<'idle' | 'leaving' | 'failed' | 'confirm'>('idle');
+  const [unsent, setUnsent] = useState(0);
 
-  async function leave() {
+  async function leave(options: { confirmed: boolean }) {
     setState('leaving');
-    const outcome = await offline.signOut();
+    if (!options.confirmed) {
+      const { pending } = await offline.prepareSignOut();
+      if (pending > 0) {
+        setUnsent(pending);
+        setState('confirm');
+        return;
+      }
+    }
+    const outcome = await offline.signOut({ discardOutbox: true });
     if (outcome === 'failed') {
       setState('failed');
       return;
@@ -45,16 +55,36 @@ export function SignOutSection() {
           Não foi possível sair agora. Tente novamente.
         </p>
       ) : null}
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={state === 'leaving'}
-          onClick={() => void leave()}
-        >
-          {state === 'leaving' ? 'Saindo…' : 'Sair da conta'}
-        </Button>
-      </div>
+      {state === 'confirm' ? (
+        <div role="alert" className="grid gap-3 rounded-lg border p-3">
+          <p className="font-medium">
+            {unsent === 1
+              ? 'Há 1 conclusão de aula que ainda não foi enviada.'
+              : `Há ${unsent} conclusões de aula que ainda não foram enviadas.`}{' '}
+            Se você sair agora, {unsent === 1 ? 'ela será perdida' : 'elas serão perdidas'}.
+            Conecte-se à internet para enviar antes de sair.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button type="button" variant="secondary" onClick={() => setState('idle')}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={() => void leave({ confirmed: true })}>
+              Sair e descartar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={state === 'leaving'}
+            onClick={() => void leave({ confirmed: false })}
+          >
+            {state === 'leaving' ? 'Saindo…' : 'Sair da conta'}
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

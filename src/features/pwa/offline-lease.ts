@@ -23,10 +23,15 @@ export interface OfflineLeaseDto {
   courses: { courseId: string; leaseUntil: string }[];
 }
 
-export const offlineLeaseSchema = z.object({
-  serverNow: z.iso.datetime(),
-  courses: z.array(z.object({ courseId: z.uuid(), leaseUntil: z.iso.datetime() })).max(200),
-});
+/** Sob demanda (ver `offline-sync.ts`): criar o esquema no carregamento do módulo viola a CSP no navegador. */
+let leaseSchema: ReturnType<typeof buildLeaseSchema> | undefined;
+function buildLeaseSchema() {
+  return z.object({
+    serverNow: z.iso.datetime(),
+    courses: z.array(z.object({ courseId: z.uuid(), leaseUntil: z.iso.datetime() })).max(200),
+  });
+}
+export const offlineLeaseSchema = () => (leaseSchema ??= buildLeaseSchema());
 
 export type LeaseStatus =
   | { status: 'valid'; remainingMs: number }

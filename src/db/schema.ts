@@ -759,6 +759,37 @@ export const lessonCompletion = pgTable(
 );
 
 /**
+ * Comando recebido do outbox offline do aluno (M8-03). A chave (pessoa, `clientOperationId`) torna a sincronização IDEMPOTENTE: o
+ * primeiro resultado é definitivo (`applied` nasce na MESMA transação do efeito; `rejected` guarda o motivo) e repetir o mesmo
+ * id devolve esse resultado sem refazer nada. A pessoa vem sempre da sessão. `client_created_at` é só metadado (a hora do fato é
+ * a do servidor: `processed_at` e a `completed_at` da conclusão). O comando guardado é cortado em 64 caracteres.
+ */
+export const offlineOperation = pgTable(
+  'offline_operation',
+  {
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    clientOperationId: uuid().notNull(),
+    command: text().notNull(),
+    lessonId: uuid(),
+    outcome: text().notNull(),
+    reason: text(),
+    clientCreatedAt: timestamp({ withTimezone: true }),
+    processedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ name: 'offline_operation_pk', columns: [table.userId, table.clientOperationId] }),
+    check('offline_operation_outcome_check', sql`${table.outcome} in ('applied', 'rejected')`),
+    check(
+      'offline_operation_reason_check',
+      sql`(${table.outcome} = 'rejected') = (${table.reason} is not null)`,
+    ),
+    check('offline_operation_command_check', sql`char_length(${table.command}) <= 64`),
+  ],
+);
+
+/**
  * Conclusão do curso (M3-04): HISTÓRICA e única por (pessoa, curso). Nasce na MESMA transação da
  * última aula obrigatória, depois de travar a matrícula, e persiste mesmo que o currículo mude depois
  * (o percentual pode cair; a conclusão não some nem se duplica). `required_total` é o total de aulas

@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 
 import './styles/app.css';
 import { installClientEpoch } from './pwa/client-epoch';
-import { onLocalPurge, startOfflineRefresh } from './offline/runtime';
+import { onLocalPurge, onOutboxApplied, startOfflineRefresh } from './offline/runtime';
 import { registerPwa } from './pwa/register';
 import { routeTree } from './routeTree.gen';
 import { applyTheme, readThemePreference } from './theme';
@@ -28,6 +28,11 @@ onLocalPurge((reason, remote) => {
   if (reason === 'sign_out') queryClient.clear();
   else void queryClient.resetQueries();
   if (remote) window.location.replace('/');
+});
+// M8-03: conclusões enviadas do outbox foram aplicadas: o mapa e a aula abertos relêem o progresso.
+onOutboxApplied(() => {
+  void queryClient.invalidateQueries({ queryKey: ['outline'] });
+  void queryClient.invalidateQueries({ queryKey: ['lesson'] });
 });
 // Offline do aluno (M8-02/M8-05): renova o lease e confere a sessão em segundo plano, só para quem já usou o app neste aparelho.
 // Depois de registrar o ouvinte acima, para nenhuma limpeza passar sem o cache de consultas saber.

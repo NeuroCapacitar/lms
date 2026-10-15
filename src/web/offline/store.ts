@@ -58,7 +58,7 @@ export interface OfflineStore {
 const SCHEMA_VERSION = 1;
 const META_KEY = 'meta';
 
-interface StoreDef {
+export interface StoreDef {
   name: string;
   keyPath?: string;
   indexes?: { name: string; keyPath: string }[];
@@ -71,14 +71,14 @@ const STORE_DEFS: StoreDef[] = [
   { name: 'outlines', keyPath: 'courseId' },
 ];
 
-function wrap<T>(request: IDBRequest<T>): Promise<T> {
+export function wrap<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error('idb_request_failed'));
   });
 }
 
-function finished(tx: IDBTransaction): Promise<void> {
+export function finished(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error ?? new Error('idb_tx_failed'));
@@ -110,7 +110,11 @@ function openOnce(name: string, version: number, defs: StoreDef[]): Promise<IDBD
 }
 
 /** Abre (ou cria) o banco. Banco criado por versão MAIS NOVA do app (rollback): apaga e recria vazio. */
-async function openDatabase(name: string, version: number, defs: StoreDef[]): Promise<IDBDatabase> {
+export async function openDatabase(
+  name: string,
+  version: number,
+  defs: StoreDef[],
+): Promise<IDBDatabase> {
   try {
     return await openOnce(name, version, defs);
   } catch (error) {
@@ -124,7 +128,7 @@ async function openDatabase(name: string, version: number, defs: StoreDef[]): Pr
  * Apaga um banco e ESPERA terminar (conexões abertas em outras abas se fecham sozinhas: `onversionchange`). Se algo segurar a
  * conexão por mais de 3 s, segue em frente: o apagamento fica pendente no navegador e conclui quando a conexão cair.
  */
-function deleteDatabase(name: string): Promise<void> {
+export function deleteDatabase(name: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(resolve, 3000);
     const request = indexedDB.deleteDatabase(name);
@@ -140,14 +144,16 @@ function deleteDatabase(name: string): Promise<void> {
 }
 
 /** Nome do banco da conta: hash do `userId`, para o identificador não aparecer no nome. */
-async function offlineDatabaseName(userId: string): Promise<string> {
-  const bytes = new TextEncoder().encode(`hub-offline:v1:${userId}`);
+export async function hashedDatabaseName(prefix: string, userId: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`${prefix}:v1:${userId}`);
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   const hex = Array.from(digest.slice(0, 16), (byte) => byte.toString(16).padStart(2, '0')).join(
     '',
   );
-  return `hub-offline-${hex}`;
+  return `${prefix}-${hex}`;
 }
+
+const offlineDatabaseName = (userId: string) => hashedDatabaseName('hub-offline', userId);
 
 export async function openOfflineStore(userId: string): Promise<OfflineStore> {
   const db = await openDatabase(await offlineDatabaseName(userId), SCHEMA_VERSION, STORE_DEFS);
@@ -236,7 +242,7 @@ export interface OfflineIndex {
 }
 
 /** O banco já existe? (perguntar NÃO pode criá-lo: depois de sair, o aparelho precisa ficar sem nenhum banco). */
-async function databaseExists(name: string): Promise<boolean> {
+export async function databaseExists(name: string): Promise<boolean> {
   try {
     const known = await indexedDB.databases?.();
     return known ? known.some((info) => info.name === name) : true;

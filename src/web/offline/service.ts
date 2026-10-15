@@ -4,6 +4,13 @@ import {
   leaseUntilOnDeviceClock,
   type OfflineLeaseDto,
 } from '../../features/pwa/offline-lease';
+import {
+  MAX_SYNC_BATCH,
+  type OfflineOperation,
+  type RejectionReason,
+  type SyncResultItem,
+} from '../../features/pwa/offline-sync';
+import type { OutboxItem, OutboxStore } from './outbox';
 import type { OfflineIndex, OfflineStore, PendingSignOut, StoredLease } from './store';
 
 /** Quanto tempo uma verificação online recente dispensa outra (cada aula aberta não chama o servidor de novo). */
@@ -23,8 +30,46 @@ export type PurgeReason = 'sign_out' | 'account_changed' | 'session_ended';
 /** `done`: sessão encerrada (ou já não existia). `network`: sem rede. `error`: o servidor recusou ou falhou. */
 export type SignOutOutcome = 'done' | 'network' | 'error';
 
+/** O que o servidor respondeu ao lote do outbox. Falha de REDE lança. */
+export type SyncCall =
+  | { kind: 'ok'; results: SyncResultItem[] }
+  | { kind: 'unauthenticated' }
+  /** A sessão é de OUTRA pessoa que não a dona do outbox: nada foi aplicado. */
+  | { kind: 'wrong_account' }
+  | { kind: 'error' };
+
+export type SyncSummary =
+  | { kind: 'synced'; applied: number; rejected: number }
+  | { kind: 'nothing' }
+  /** Já havia uma sincronização em andamento nesta aba. */
+  | { kind: 'busy' }
+  /** "Sair" pendente: nada é enviado até a sessão ser revogada. */
+  | { kind: 'skipped' }
+  | { kind: 'no_session' }
+  | { kind: 'wrong_account' }
+  | { kind: 'offline' }
+  | { kind: 'failed' };
+
+export interface OutboxSummary {
+  pending: OutboxItem[];
+  rejected: OutboxItem[];
+}
+
 export interface OfflineDeps {
   now(): number;
+  newId(): string;
+  openOutbox(userId: string): Promise<OutboxStore>;
+  outboxExists(userId: string): Promise<boolean>;
+  /** Há outbox de QUALQUER conta neste aparelho? (ex.: depois de a sessão acabar, o ponteiro some mas o outbox fica). */
+  anyOutbox(): Promise<boolean>;
+  deleteOutbox(userId: string): Promise<void>;
+  postSync(input: { expectedUserId: string; operations: OfflineOperation[] }): Promise<SyncCall>;
+  /** Avisa as telas (e as outras abas) de que o outbox mudou. */
+  notifyOutboxChanged?(): void;
+  /** O servidor APLICOU conclusões: as telas de estudo relêem o progresso. */
+  notifyApplied?(): void;
+  /** Marca "ocupado" (fronteira segura de atualização) enquanto sincroniza; devolve quem libera. */
+  busy?(reason: string): () => void;
   /** Lança em falha de REDE. */
   fetchIdentity(): Promise<Identity>;
   /** Lança em falha de REDE. */
@@ -71,6 +116,123 @@ function isStorable(view: LessonViewDto): boolean {
  */
 export function createOfflineService(deps: OfflineDeps) {
   let persistenceRequested = false;
+  let syncing = false;
+
+  const toWire = (item: OutboxItem): OfflineOperation => ({
+    clientOperationId: item.clientOperationId,
+    command: item.command,
+    lessonId: item.lessonId,
+    clientCreatedAt: new Date(item.createdAt).toISOString(),
+  });
+
+  /**
+   * Envia o outbox da pessoa que está com a sessão AGORA (M8-03), em lotes e na ordem em que foram feitos. Só envia se a sessão for da
+   * DONA do outbox (confere a identidade antes e manda `expectedUserId`, que o servidor também confere). Aplicado ou duplicado sai do
+   * outbox; recusado fica VISÍVEL com o motivo; falha de rede, 401 e erro do servidor MANTÊM tudo para a próxima tentativa. Nunca lança.
+   */
+  async function syncOutbox(knownUserId?: string): Promise<SyncSummary> {
+    if (syncing) return { kind: 'busy' };
+    syncing = true;
+    let release: (() => void) | undefined;
+    try {
+      if (await deps.pendingSignOut.isPending()) return { kind: 'skipped' };
+      let userId = knownUserId;
+      if (userId === undefined) {
+        const identity = await deps.fetchIdentity();
+        if (identity.kind === 'anonymous') return { kind: 'no_session' };
+        userId = identity.userId;
+      }
+      if (!(await deps.outboxExists(userId))) return { kind: 'nothing' };
+      const outbox = await deps.openOutbox(userId);
+      try {
+        let applied = 0;
+        let rejected = 0;
+        let sentAny = false;
+        // Teto de rodadas: um servidor que nunca resolve não prende o app num laço.
+        for (let round = 0; round < 10; round += 1) {
+          const batch = (await outbox.list())
+            .filter((item) => item.state === 'pending')
+            .slice(0, MAX_SYNC_BATCH);
+          if (batch.length === 0) break;
+          release ??= deps.busy?.('sincronizando conclusões');
+          sentAny = true;
+          const ids = batch.map((item) => item.clientOperationId);
+          let call: SyncCall;
+          try {
+            call = await deps.postSync({
+              expectedUserId: userId,
+              operations: batch.map(toWire),
+            });
+          } catch {
+            await outbox.bumpAttempts(ids);
+            return { kind: 'offline' };
+          }
+          if (call.kind === 'unauthenticated') return { kind: 'no_session' };
+          if (call.kind === 'wrong_account') return { kind: 'wrong_account' };
+          if (call.kind === 'error') {
+            await outbox.bumpAttempts(ids);
+            return { kind: 'failed' };
+          }
+          const done: string[] = [];
+          const answered = new Set<string>();
+          for (const result of call.results) {
+            const item = batch[result.index];
+            if (!item) continue;
+            answered.add(item.clientOperationId);
+            const accepted =
+              result.status === 'applied' ||
+              (result.status === 'duplicate' && result.original === 'applied');
+            if (accepted) {
+              done.push(item.clientOperationId);
+              applied += 1;
+              continue;
+            }
+            const reason: RejectionReason = result.reason ?? 'invalid_payload';
+            await outbox.markRejected(item.clientOperationId, reason);
+            rejected += 1;
+          }
+          await outbox.remove(done);
+          if (done.length > 0) deps.notifyApplied?.();
+          // Sem resposta para algum item: continua pendente (a próxima tentativa decide).
+          const unanswered = ids.filter((id) => !answered.has(id));
+          if (unanswered.length > 0) {
+            await outbox.bumpAttempts(unanswered);
+            return { kind: 'failed' };
+          }
+        }
+        return sentAny ? { kind: 'synced', applied, rejected } : { kind: 'nothing' };
+      } finally {
+        outbox.close();
+      }
+    } catch {
+      // Sem rede (ou erro inesperado): tudo fica no outbox.
+      return { kind: 'offline' };
+    } finally {
+      release?.();
+      syncing = false;
+      deps.notifyOutboxChanged?.();
+    }
+  }
+
+  /** O outbox da pessoa conhecida neste aparelho: o que espera envio e o que o servidor recusou (e ela ainda não leu). */
+  async function outboxSummary(): Promise<OutboxSummary> {
+    try {
+      const userId = await deps.index.get();
+      if (!userId || !(await deps.outboxExists(userId))) return { pending: [], rejected: [] };
+      const outbox = await deps.openOutbox(userId);
+      try {
+        const items = await outbox.list();
+        return {
+          pending: items.filter((item) => item.state === 'pending'),
+          rejected: items.filter((item) => item.state === 'rejected'),
+        };
+      } finally {
+        outbox.close();
+      }
+    } catch {
+      return { pending: [], rejected: [] };
+    }
+  }
 
   async function storeForCurrentUser(): Promise<{ userId: string; store: OfflineStore } | null> {
     const userId = await deps.index.get();
@@ -93,6 +255,7 @@ export function createOfflineService(deps: OfflineDeps) {
     if (previous !== null && previous !== identity.userId) await deps.purgeLocal('account_changed');
     const leaseResult = await deps.fetchLease();
     const store = await deps.openStore(identity.userId);
+    let verified: VerifyOutcome;
     try {
       if (leaseResult.kind === 'unavailable') {
         await store.clearAll();
@@ -111,10 +274,13 @@ export function createOfflineService(deps: OfflineDeps) {
       }));
       await store.applyVerification({ userId: identity.userId, now, leases });
       await deps.index.set(identity.userId);
-      return { kind: 'verified', userId: identity.userId, courses: leases.length };
+      verified = { kind: 'verified', userId: identity.userId, courses: leases.length };
     } finally {
       store.close();
     }
+    // Toda verificação online bem-sucedida também descarrega o outbox desta pessoa (M8-03). Nunca lança.
+    await syncOutbox(identity.userId);
+    return verified;
   }
 
   /** Revoga no servidor um "sair" feito sem rede. `true` = não há mais nada pendente. */
@@ -239,7 +405,8 @@ export function createOfflineService(deps: OfflineDeps) {
     async refreshInBackground(): Promise<void> {
       try {
         if (!(await flushPendingSignOut())) return;
-        if ((await deps.index.get()) === null) return;
+        // Sem ponteiro (ex.: a sessão acabou e o estudo foi apagado) mas COM outbox pendente, a pessoa ainda pode voltar e enviar.
+        if ((await deps.index.get()) === null && !(await deps.anyOutbox())) return;
         await verify();
       } catch {
         // Sem rede: tenta de novo na próxima oportunidade.
@@ -251,10 +418,18 @@ export function createOfflineService(deps: OfflineDeps) {
      * HORA e deixa a revogação da sessão para quando a rede voltar (`pending`). Se o servidor falhar online (`failed`), NADA é
      * apagado: a pessoa continua logada e pode tentar de novo.
      */
-    async signOut(): Promise<'done' | 'pending' | 'failed'> {
+    async signOut(
+      options: { discardOutbox?: boolean } = {},
+    ): Promise<'done' | 'pending' | 'failed'> {
+      const userId = await deps.index.get().catch(() => null);
       const outcome = await deps.requestSignOut();
       if (outcome === 'error') return 'failed';
       await deps.purgeLocal('sign_out');
+      // A pessoa CONFIRMOU descartar o que não foi enviado (M8-05, passo 1): só então o outbox sai do aparelho.
+      if (options.discardOutbox && userId) {
+        await deps.deleteOutbox(userId);
+        deps.notifyOutboxChanged?.();
+      }
       if (outcome === 'network') {
         await deps.pendingSignOut.mark().catch(() => undefined);
         return 'pending';
@@ -263,6 +438,70 @@ export function createOfflineService(deps: OfflineDeps) {
     },
 
     flushPendingSignOut,
+
+    syncOutbox: () => syncOutbox(),
+    outboxSummary,
+
+    /**
+     * Conclui uma aula de texto SEM rede (M8-03): guarda o comando no outbox (um por aula) com um id novo. Quem confere acesso, drip e
+     * sequência é o servidor, quando a rede voltar; aqui só se guarda. `no_user`: ninguém conhecido neste aparelho.
+     */
+    async enqueueCompletion(input: {
+      lessonId: string;
+      courseId: string;
+      lessonTitle: string;
+    }): Promise<'queued' | 'already_pending' | 'no_user' | 'failed'> {
+      try {
+        const userId = await deps.index.get();
+        if (!userId) return 'no_user';
+        const outbox = await deps.openOutbox(userId);
+        try {
+          const { created } = await outbox.enqueue({
+            clientOperationId: deps.newId(),
+            command: 'lesson.complete',
+            lessonId: input.lessonId,
+            courseId: input.courseId,
+            lessonTitle: input.lessonTitle,
+            createdAt: deps.now(),
+          });
+          return created ? 'queued' : 'already_pending';
+        } finally {
+          outbox.close();
+          deps.notifyOutboxChanged?.();
+        }
+      } catch {
+        return 'failed';
+      }
+    },
+
+    /** A pessoa leu a recusa: o item sai do outbox. */
+    async dismissRejected(clientOperationId: string): Promise<void> {
+      try {
+        const userId = await deps.index.get();
+        if (!userId || !(await deps.outboxExists(userId))) return;
+        const outbox = await deps.openOutbox(userId);
+        try {
+          await outbox.remove([clientOperationId]);
+        } finally {
+          outbox.close();
+          deps.notifyOutboxChanged?.();
+        }
+      } catch {
+        // Fica para a próxima.
+      }
+    },
+
+    /**
+     * Antes de sair (M8-05, passo 1): tenta enviar o outbox com um prazo curto e diz quantas conclusões AINDA não foram enviadas. Se
+     * sobrar alguma, a tela pede confirmação antes de descartar.
+     */
+    async prepareSignOut(timeoutMs = 4000): Promise<{ pending: number }> {
+      await Promise.race([
+        syncOutbox(),
+        new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+      ]);
+      return { pending: (await outboxSummary()).pending.length };
+    },
 
     rememberLesson(view: LessonViewDto) {
       if (!isStorable(view)) return Promise.resolve('skipped' as const);

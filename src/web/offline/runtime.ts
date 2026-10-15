@@ -1,7 +1,10 @@
 import { offlineLeaseSchema } from '../../features/pwa/offline-lease';
+import { MAX_SYNC_BATCH, syncResponseSchema } from '../../features/pwa/offline-sync';
 import { requestSignOut } from '../api/auth';
+import { markBusy } from '../pwa/safe-boundary';
+import { anyOutboxExists, deleteOutbox, openOutbox, outboxExists } from './outbox';
 import { purgeBrowserData } from './purge';
-import { createOfflineService, type OfflineDeps, type PurgeReason } from './service';
+import { createOfflineService, type OfflineDeps, type PurgeReason, type SyncCall } from './service';
 import { createOfflineIndex, createPendingSignOut, openOfflineStore } from './store';
 
 /**
@@ -20,15 +23,67 @@ export function onLocalPurge(listener: (reason: PurgeReason, remote: boolean) =>
   return () => purgeListeners.delete(listener);
 }
 
+const outboxListeners = new Set<() => void>();
+const appliedListeners = new Set<() => void>();
+
+/** Chamado quando o servidor aplicou conclusões enviadas pelo outbox: o progresso mostrado pode estar velho. */
+export function onOutboxApplied(listener: () => void): () => void {
+  appliedListeners.add(listener);
+  return () => appliedListeners.delete(listener);
+}
+
+/** Chamado quando o outbox muda (nesta aba ou em outra): as telas relêem as pendências. */
+export function onOutboxChange(listener: () => void): () => void {
+  outboxListeners.add(listener);
+  return () => outboxListeners.delete(listener);
+}
+
 const PURGE_REASONS: readonly string[] = ['sign_out', 'account_changed', 'session_ended'];
-channel?.addEventListener('message', (event: MessageEvent<{ purged?: string }>) => {
-  const reason = event.data?.purged;
-  if (typeof reason !== 'string' || !PURGE_REASONS.includes(reason)) return;
-  for (const listener of purgeListeners) listener(reason as PurgeReason, true);
-});
+channel?.addEventListener(
+  'message',
+  (event: MessageEvent<{ purged?: string; outbox?: string }>) => {
+    if (event.data?.outbox === 'changed') {
+      for (const listener of outboxListeners) listener();
+      return;
+    }
+    const reason = event.data?.purged;
+    if (typeof reason !== 'string' || !PURGE_REASONS.includes(reason)) return;
+    for (const listener of purgeListeners) listener(reason as PurgeReason, true);
+  },
+);
 
 const deps: OfflineDeps = {
   now: () => Date.now(),
+  newId: () => crypto.randomUUID(),
+  openOutbox,
+  outboxExists,
+  anyOutbox: anyOutboxExists,
+  deleteOutbox,
+  notifyOutboxChanged() {
+    channel?.postMessage({ outbox: 'changed' });
+    for (const listener of outboxListeners) listener();
+  },
+  busy: (reason) => markBusy(reason),
+  notifyApplied() {
+    for (const listener of appliedListeners) listener();
+  },
+
+  async postSync(input): Promise<SyncCall> {
+    const response = await fetch('/api/offline/sync', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        expectedUserId: input.expectedUserId,
+        operations: input.operations.slice(0, MAX_SYNC_BATCH),
+      }),
+    });
+    if (response.status === 401) return { kind: 'unauthenticated' };
+    if (response.status === 409) return { kind: 'wrong_account' };
+    if (!response.ok) return { kind: 'error' };
+    const parsed = syncResponseSchema().safeParse(await response.json().catch(() => null));
+    return parsed.success ? { kind: 'ok', results: parsed.data.results } : { kind: 'error' };
+  },
 
   async purgeLocal(reason) {
     try {
@@ -64,7 +119,7 @@ const deps: OfflineDeps = {
       if (body?.error?.code === 'offline_not_available') return { kind: 'unavailable' };
     }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return { kind: 'ok', lease: offlineLeaseSchema.parse(await response.json()) };
+    return { kind: 'ok', lease: offlineLeaseSchema().parse(await response.json()) };
   },
 
   index: createOfflineIndex(),
