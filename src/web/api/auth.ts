@@ -131,10 +131,11 @@ export async function requestReauth(): Promise<RequestReauthResult> {
 }
 
 /**
- * Encerra a sessão deste aparelho (`POST /api/auth/sign-out`, a única rota nativa do Better Auth
- * exposta). Devolve `true` quando o servidor confirmou; o cookie some na resposta.
+ * Encerra a sessão deste aparelho (`POST /api/auth/sign-out`, a única rota nativa do Better Auth exposta); o cookie some na
+ * resposta. `done`: encerrada (ou já não havia sessão: 401). `network`: sem rede. `error`: o servidor recusou ou falhou.
  */
-export async function signOut(): Promise<boolean> {
+export async function requestSignOut(): Promise<'done' | 'network' | 'error'> {
   const response = await postJson('/api/auth/sign-out', {});
-  return response?.ok ?? false;
+  if (!response) return 'network';
+  return response.ok || response.status === 401 ? 'done' : 'error';
 }

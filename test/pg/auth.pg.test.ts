@@ -140,6 +140,10 @@ describe('logout e origem confiável', () => {
     expect(out.status).toBe(200);
     expect(await sessionOf(user.id)).toHaveLength(0);
     expect((await call('/me', { headers })).status).toBe(401);
+    // M8-05: o navegador também é mandado limpar cache e armazenamento (defesa adicional à purga por JavaScript).
+    expect(out.headers.get('clear-site-data')).toBe('"cache", "storage"');
+    // O cookie de sessão continua sendo invalidado na mesma resposta.
+    expect(out.headers.getSetCookie().join(';')).toMatch(/session_token=;|Max-Age=0/i);
   });
 
   it('POST de origem não confiável é recusado e a sessão permanece', async () => {
@@ -148,6 +152,7 @@ describe('logout e origem confiável', () => {
     evil.set('origin', 'https://evil.example');
     const out = await call('/auth/sign-out', { method: 'POST', headers: evil });
     expect(out.status).toBe(403);
+    expect(out.headers.get('clear-site-data')).toBeNull(); // recusado: nada é limpo
     expect(await sessionOf(user.id)).toHaveLength(1);
   });
 

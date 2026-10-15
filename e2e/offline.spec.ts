@@ -1,155 +1,25 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
+import {
+  COURSE_ID,
+  HOUR,
+  L,
+  T0,
+  goOffline,
+  mockApi,
+  newBackend,
+  openLesson,
+  savedCount,
+  storedLessons,
+  type Backend,
+} from './support/offline-mock';
+
 /**
  * Offline do aluno (M8-02) contra o build de produção (`vite preview`), com o IndexedDB REAL do Chromium e a API simulada.
  * "Sem rede" aqui é a API abortando com `internetdisconnected` (o app vê um `TypeError` do `fetch`, como na vida real).
  * Cobre: usuário A→B, relógio adiantado e atrasado, lease vencido, acesso revogado entre verificações, cache apagado,
  * duas abas, armazenamento cheio, Staff, aula que não é de texto e o conteúdo gravado. NÃO cobre Safari/iPhone (gate M8-04).
  */
-const COURSE_ID = '11111111-1111-4111-8111-111111111111';
-const L = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
-const T0 = new Date('2026-10-15T12:00:00.000Z');
-const HOUR = 3_600_000;
-
-const doc = (text: string) => ({
-  type: 'doc',
-  content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
-});
-
-const lessonView = (n: number, extra: Record<string, unknown> = {}) => ({
-  course: { id: COURSE_ID, title: 'Curso Demonstrativo' },
-  lesson: {
-    id: L(n),
-    title: `Aula ${n}`,
-    isOptional: false,
-    body: doc(`Conteúdo secreto da aula ${n}.`),
-    ...extra,
-  },
-  completed: false,
-  previous: n > 1 ? { id: L(n - 1), title: `Aula ${n - 1}` } : null,
-  next: { id: L(n + 1), title: `Aula ${n + 1}` },
-});
-
-const outline = {
-  course: { id: COURSE_ID, title: 'Curso Demonstrativo', sequenceMode: 'free' },
-  access: { hasAccess: true, reason: 'ok', expiresAt: '2027-01-10T12:00:00.000Z' },
-  progress: { completed: 0, total: 3, percent: 0 },
-  completedAt: null,
-  modules: [
-    {
-      id: 'm1',
-      title: 'Primeiros passos',
-      releasesAt: '2026-10-01T03:00:00.000Z',
-      lessons: [1, 2, 3].map((n) => ({
-        id: L(n),
-        title: `Aula ${n}`,
-        isOptional: false,
-        completed: false,
-        locked: null,
-        releasesAt: null,
-      })),
-    },
-  ],
-};
-
-interface Backend {
-  online: boolean;
-  userId: string;
-  /** Hora do servidor devolvida no lease (acompanha o relógio simulado do navegador). */
-  serverNow: () => Date;
-  /** Cursos que têm lease agora (vazio = acesso revogado). */
-  leaseCourses: string[];
-  staff: boolean;
-  leaseCalls: number;
-}
-
-function newBackend(overrides: Partial<Backend> = {}): Backend {
-  return {
-    online: true,
-    userId: 'aluna-a',
-    serverNow: () => new Date(),
-    leaseCourses: [COURSE_ID],
-    staff: false,
-    leaseCalls: 0,
-    ...overrides,
-  };
-}
-
-/** A API simulada. O portão "sem rede" é registrado POR ÚLTIMO: o Playwright executa a rota mais recente primeiro. */
-async function mockApi(context: BrowserContext, backend: Backend) {
-  await context.route('**/api/me/legal', (route) =>
-    route.fulfill({ json: { accepted: true, documents: [] } }),
-  );
-  await context.route('**/api/me', (route) =>
-    route.fulfill({
-      json: { id: backend.userId, email: `${backend.userId}@example.test`, name: 'Pessoa' },
-    }),
-  );
-  await context.route('**/api/offline/lease', (route) => {
-    backend.leaseCalls += 1;
-    if (backend.staff) {
-      return route.fulfill({ status: 403, json: { error: { code: 'offline_not_available' } } });
-    }
-    const now = backend.serverNow();
-    return route.fulfill({
-      json: {
-        serverNow: now.toISOString(),
-        courses: backend.leaseCourses.map((courseId) => ({
-          courseId,
-          leaseUntil: new Date(now.getTime() + 72 * HOUR).toISOString(),
-        })),
-      },
-    });
-  });
-  await context.route('**/api/courses/*/outline', (route) => route.fulfill({ json: outline }));
-  await context.route('**/api/lessons/*/discussion**', (route) =>
-    route.fulfill({ json: { threads: [] } }),
-  );
-  await context.route(/\/api\/lessons\/[0-9a-f-]{36}$/, (route) => {
-    const id = route.request().url().split('/').pop()!;
-    const n = Number(id.slice(-1));
-    return route.fulfill({ json: n === 5 ? lessonView(5, { kind: 'quiz' }) : lessonView(n) });
-  });
-  await context.route('**/api/**', (route) =>
-    backend.online ? route.fallback() : route.abort('internetdisconnected'),
-  );
-}
-
-/** As aulas guardadas, em TODOS os bancos de conta deste navegador (nunca em outro lugar). */
-async function storedLessons(page: Page): Promise<Record<string, string[]>> {
-  return page.evaluate(async () => {
-    const out: Record<string, string[]> = {};
-    for (const info of await indexedDB.databases()) {
-      const name = info.name ?? '';
-      if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open(name);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
-        const request = db.transaction('lessons').objectStore('lessons').getAllKeys();
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      db.close();
-      out[name] = keys.map(String);
-    }
-    return out;
-  });
-}
-
-const savedCount = async (page: Page) =>
-  Object.values(await storedLessons(page)).reduce((sum, list) => sum + list.length, 0);
-
-async function openLesson(page: Page, n: number) {
-  await page.goto(`/estudar/${COURSE_ID}/aulas/${L(n)}`);
-  await expect(page.getByRole('heading', { level: 1, name: `Aula ${n}` })).toBeVisible();
-}
-
-const goOffline = (backend: Backend) => {
-  backend.online = false;
-};
 
 test.describe('guardar e ler sem rede', () => {
   test('a aula de texto visitada abre sem rede, com a faixa "sem conexão" e somente leitura', async ({
@@ -238,7 +108,7 @@ test.describe('guardar e ler sem rede', () => {
 });
 
 test.describe('isolamento entre contas', () => {
-  test('A estuda; B entra no mesmo navegador e NÃO vê nada de A (nem sem rede)', async ({
+  test('A estuda; B entra no mesmo navegador: o que era de A é APAGADO e B não vê nada dele (nem sem rede)', async ({
     page,
     context,
   }) => {
@@ -250,7 +120,8 @@ test.describe('isolamento entre contas', () => {
     // B entra (online) e estuda outra aula.
     backend.userId = 'aluno-b';
     await openLesson(page, 2);
-    await expect.poll(async () => Object.keys(await storedLessons(page)).length).toBe(2);
+    // O que era de A saiu do aparelho; só a aula de B está guardada.
+    await expect.poll(async () => Object.values(await storedLessons(page)).flat()).toEqual([L(2)]);
 
     goOffline(backend);
     await page.goto(`/estudar/${COURSE_ID}/aulas/${L(1)}`);
@@ -261,7 +132,7 @@ test.describe('isolamento entre contas', () => {
 
     // Os nomes dos bancos não carregam o identificador da pessoa.
     const names = Object.keys(await storedLessons(page));
-    expect(names).toHaveLength(2);
+    expect(names).toHaveLength(1);
     for (const name of names) expect(name).not.toMatch(/aluna|aluno/);
   });
 

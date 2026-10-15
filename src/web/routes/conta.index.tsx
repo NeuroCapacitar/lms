@@ -11,12 +11,13 @@ import {
   type ProfileFormValues,
   type Theme,
 } from '../../features/identity/profile';
-import { signOut } from '../api/auth';
 import { fetchMyInterests, withdrawCourseInterest } from '../api/interest';
 import { fetchProfile, saveProfile, UnauthenticatedError } from '../api/profile';
 import { MyCertificates } from '../components/my-certificates';
 import { Button } from '../components/ui/button';
 import { RequireTerms } from '../components/require-terms';
+import { SignOutSection, SignedOutNotice } from '../components/sign-out';
+import { useSignedOutPending } from '../offline/signed-out';
 import { TextField } from '../components/ui/field';
 import { useBusy } from '../pwa/safe-boundary';
 import { setThemePreference } from '../theme';
@@ -69,20 +70,7 @@ function Account() {
     }
   }, [profile.data, form]);
 
-  const [leaving, setLeaving] = useState(false);
-  const [leaveFailed, setLeaveFailed] = useState(false);
-  async function leave() {
-    setLeaving(true);
-    setLeaveFailed(false);
-    if (await signOut()) {
-      // Nada da pessoa fica em memória: o cache de consultas é descartado e a página recarrega.
-      queryClient.clear();
-      window.location.assign('/');
-      return;
-    }
-    setLeaving(false);
-    setLeaveFailed(true);
-  }
+  const signedOutPending = useSignedOutPending();
 
   const save = useMutation({
     mutationFn: (values: ProfileFormValues) =>
@@ -97,6 +85,8 @@ function Account() {
       setThemePreference(saved.theme);
     },
   });
+
+  if (signedOutPending) return <SignedOutNotice />;
 
   if (profile.isPending) {
     return (
@@ -127,6 +117,7 @@ function Account() {
         <Button type="button" variant="secondary" onClick={() => void profile.refetch()}>
           Tentar novamente
         </Button>
+        <SignOutSection />
       </>
     );
   }
@@ -202,22 +193,7 @@ function Account() {
       <MyCertificates />
       <CourseNotices />
 
-      <section aria-labelledby="sessao-titulo" className="mt-12 grid max-w-md gap-3">
-        <h2 id="sessao-titulo" className="text-xl font-semibold">
-          Sessão
-        </h2>
-        <p className="text-[var(--text-muted)]">Encerra o acesso neste aparelho.</p>
-        {leaveFailed ? (
-          <p role="alert" className="font-medium text-[var(--text-danger)]">
-            Não foi possível sair agora. Tente novamente.
-          </p>
-        ) : null}
-        <div>
-          <Button type="button" variant="secondary" disabled={leaving} onClick={() => void leave()}>
-            {leaving ? 'Saindo…' : 'Sair da conta'}
-          </Button>
-        </div>
-      </section>
+      <SignOutSection />
     </>
   );
 }
