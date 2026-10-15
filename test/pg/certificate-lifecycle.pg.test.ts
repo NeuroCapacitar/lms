@@ -252,6 +252,8 @@ describe('download do dono', () => {
     );
     const bytes = new Uint8Array(await response.arrayBuffer());
     expect(await sha256Hex(bytes)).toBe(row.pdfSha256);
+    // M8-06: o hash que o Worker conferiu vai no cabeçalho, para o app conferir a cópia offline.
+    expect(response.headers.get('x-content-sha256')).toBe(row.pdfSha256);
   });
 
   it('certificado na fila (não ready) não baixa: 404', async () => {

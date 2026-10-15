@@ -1,3 +1,4 @@
+import type { MyCertificateDto } from '../../features/certificate/lifecycle';
 import { offlineLeaseSchema } from '../../features/pwa/offline-lease';
 import { MAX_SYNC_BATCH, syncResponseSchema } from '../../features/pwa/offline-sync';
 import { requestSignOut } from '../api/auth';
@@ -124,6 +125,32 @@ const deps: OfflineDeps = {
 
   index: createOfflineIndex(),
   openStore: openOfflineStore,
+
+  async fetchCertificates() {
+    const response = await fetch('/api/me/certificates', { credentials: 'same-origin' });
+    if (response.status === 401) return null;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return ((await response.json()) as { certificates: MyCertificateDto[] }).certificates;
+  },
+
+  async fetchCertificatePdf(id) {
+    const response = await fetch(`/api/me/certificates/${id}/download`, {
+      credentials: 'same-origin',
+    });
+    if (response.status === 401) return { kind: 'unauthenticated' };
+    if (response.status === 404) return { kind: 'not_available' };
+    if (!response.ok) return { kind: 'error' };
+    return {
+      kind: 'ok',
+      bytes: await response.arrayBuffer(),
+      sha256: response.headers.get('x-content-sha256'),
+    };
+  },
+
+  async sha256(bytes) {
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+    return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  },
 
   async storageEstimate() {
     return navigator.storage?.estimate?.();

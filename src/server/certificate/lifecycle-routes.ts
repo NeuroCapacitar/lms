@@ -92,6 +92,8 @@ export function myCertificateRoutes(deps: {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Length': String(file.bytes.byteLength),
+          // O hash que o Worker JÁ conferiu: o app guarda a cópia offline e o recalcula antes de abri-la (M8-06).
+          'X-Content-SHA256': file.sha256,
           'Content-Disposition': `attachment; filename="${file.filename}"`,
           'Cache-Control': 'private, no-store',
           'X-Content-Type-Options': 'nosniff',

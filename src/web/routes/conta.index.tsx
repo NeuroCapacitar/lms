@@ -117,6 +117,7 @@ function Account() {
         <Button type="button" variant="secondary" onClick={() => void profile.refetch()}>
           Tentar novamente
         </Button>
+        <MyCertificates />
         <SignOutSection />
       </>
     );
