@@ -140,3 +140,27 @@ describe('pelo ponto de entrada do Worker (index.ts)', () => {
     expect(logged).not.toContain('pessoa@example.com');
   });
 });
+
+describe('época do cliente (M8-01)', () => {
+  const app = () => createApp();
+
+  it('cliente com época antiga recebe 409 client_outdated em qualquer /api, sem abrir o banco', async () => {
+    for (const path of ['/api/health/ready', '/api/me/profile', '/api/qualquer-coisa']) {
+      const response = await app().request(path, { headers: { 'x-client-epoch': '0' } }, env);
+      expect(response.status, path).toBe(409);
+      expect(await response.json()).toEqual({ error: { code: 'client_outdated' } });
+    }
+    expect(output.join('\n')).not.toMatch(/ECONNREFUSED/);
+  });
+
+  it('a época atual e a ausência do cabeçalho passam adiante', async () => {
+    const current = await app().request(
+      '/api/nada-por-aqui',
+      { headers: { 'x-client-epoch': '1' } },
+      env,
+    );
+    expect(current.status).toBe(404);
+    const none = await app().request('/api/nada-por-aqui', {}, env);
+    expect(none.status).toBe(404);
+  });
+});

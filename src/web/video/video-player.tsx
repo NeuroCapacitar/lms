@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { markBusy } from '../pwa/safe-boundary';
+
 import type { LessonVideoDto } from '../../features/access/outline';
 import { sendVideoProgress } from '../api/learning';
 import { Button } from '../components/ui/button';
@@ -73,6 +75,8 @@ export function VideoPlayer({
           onDenied: () => setDenied(true),
         });
     reporterRef.current = reporter ?? null;
+    // M8-01: vídeo tocando é uma fronteira INSEGURA para atualizar o app.
+    let releaseBusy: (() => void) | undefined;
 
     function onMessage(event: MessageEvent) {
       // As DUAS conferências, antes de olhar o conteúdo: origem do provider e o iframe desta aula.
@@ -81,6 +85,11 @@ export function VideoPlayer({
       const normalized: PlayerEvent | undefined = adapter!.normalize(event);
       if (!normalized) return;
       reporter?.handle(normalized);
+      if (normalized.type === 'play') releaseBusy ??= markBusy('vídeo tocando');
+      if (['pause', 'ended', 'error'].includes(normalized.type)) {
+        releaseBusy?.();
+        releaseBusy = undefined;
+      }
       if (
         normalized.type === 'ended' &&
         !preview &&
@@ -104,6 +113,7 @@ export function VideoPlayer({
       window.removeEventListener('message', onMessage);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onPageHide);
+      releaseBusy?.();
       // Ao sair da aula (navegação dentro do app) também envia o que falta.
       reporter?.flush();
       reporter?.dispose();

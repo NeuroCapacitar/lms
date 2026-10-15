@@ -5,11 +5,17 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import './styles/app.css';
+import { installClientEpoch } from './pwa/client-epoch';
+import { registerPwa } from './pwa/register';
 import { routeTree } from './routeTree.gen';
 import { applyTheme, readThemePreference } from './theme';
 
 // Aplica a preferência salva antes da primeira renderização (sem script inline, compatível com CSP).
 applyTheme(readThemePreference());
+
+// PWA (M8-01): a época do cliente em todo /api e o Service Worker (só em produção).
+installClientEpoch();
+registerPwa();
 
 const queryClient = new QueryClient();
 const router = createRouter({ routeTree });

@@ -12,7 +12,12 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
-  use: { baseURL: `http://localhost:${port}`, trace: 'retain-on-failure' },
+  // Service Worker BLOQUEADO por padrão: ele interceptaria as rotas simuladas dos testes. Só o `pwa.spec.ts` o libera.
+  use: {
+    baseURL: `http://localhost:${port}`,
+    trace: 'retain-on-failure',
+    serviceWorkers: 'block',
+  },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: `bun run build && node scripts/e2e-prepare-fake-video.mjs && bun x vite preview --port ${port} --strictPort`,
