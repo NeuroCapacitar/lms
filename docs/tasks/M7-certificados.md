@@ -182,7 +182,7 @@ Ordem sugerida: M7-01 → M7-06 → M7-02 → M7-07 → M7-03 → M7-09 → M7-0
 
 ### M7-09 — Gate de paridade prévia ↔ PDF (P-18)
 
-**Dependências:** M7-02, M7-03 · **Estado:** `not_started`
+**Dependências:** M7-02, M7-03 · **Estado:** PARCIAL (2026-10-15): a comparação automática de posição e conteúdo do PDF com o layout (inclusive o PDF REAL do Browser Run como fixture) está `implemented`; faltam a conferência humana do Admin, o QR lido por leitor, `pdffonts` e mais de um leitor de PDF; evidência em `docs/implementation/STATUS.md`
 
 **Objetivo.** Provar que o que o Admin vê na prévia é o que sai no PDF; sem isso, a emissão não vai para Production.
 

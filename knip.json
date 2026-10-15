@@ -20,11 +20,6 @@
     "e2e-journey/**/*.ts"
   ],
   "ignore": ["src/web/routeTree.gen.ts"],
-  "ignoreDependencies": [
-    "@swc/core",
-    "cloudflare",
-    "tailwindcss",
-    "@fontsource-variable/lexend-deca"
-  ],
+  "ignoreDependencies": ["@swc/core", "cloudflare", "tailwindcss"],
   "ignoreBinaries": ["gitleaks"]
 }

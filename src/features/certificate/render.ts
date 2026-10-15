@@ -116,7 +116,7 @@ function textStyle(field: LayoutField, fontSize: number): string {
  * O TEXTO simples (sem marcação) de cada campo de texto, que serve ao ajuste de corpo; a marcação é montada à parte,
  * sempre com `escapeHtml`. Exportada para o editor medir o estouro com os mesmos textos.
  */
-function plainTextOf(
+export function plainTextOf(
   id: FieldId,
   data: {
     holderName: string;
