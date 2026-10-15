@@ -85,7 +85,7 @@ export async function openCertificateDownload(
   db: Database,
   storage: ObjectStorage,
   input: { userId: string; certificateId: string },
-): Promise<{ bytes: Uint8Array; filename: string }> {
+): Promise<{ bytes: Uint8Array; filename: string; sha256: string }> {
   const [row] = await db
     .select()
     .from(certificate)
@@ -106,7 +106,7 @@ export async function openCertificateDownload(
     );
     throw new CertificateIntegrityError();
   }
-  return { bytes, filename: `certificado-${row.code}.pdf` };
+  return { bytes, filename: `certificado-${row.code}.pdf`, sha256: row.pdfSha256 };
 }
 
 /**

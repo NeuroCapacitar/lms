@@ -121,7 +121,7 @@ Ordem sugerida: M8-01 → M8-02 → M8-05 → M8-03 → M8-06 → M8-04.
 
 ### M8-06 — Certificados offline (prévia com marca de verificação)
 
-**Dependências:** M8-02, M7-04 · **Estado:** `not_started`
+**Dependências:** M8-02, M7-04 · **Estado:** `implemented` (2026-10-15; só Chromium; Staging e WebKit/iPhone NÃO; sem a prévia leve do snapshot; evidência em `docs/implementation/STATUS.md`)
 
 **Objetivo.** A pessoa consulta seus certificados offline sem ver "válido" desatualizado.
 

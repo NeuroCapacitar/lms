@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outline';
 import { advanceClock } from '../../features/pwa/offline-lease';
 import type { OfflineOperation, SyncResultItem } from '../../features/pwa/offline-sync';
+import type { MyCertificateDto } from '../../features/certificate/lifecycle';
 import type { OutboxItem, OutboxStore } from './outbox';
 import {
   createOfflineService,
@@ -10,12 +11,15 @@ import {
   type LeaseFetch,
   type OfflineDeps,
   type SignOutOutcome,
+  type CertificatePdfFetch,
   type SyncCall,
 } from './service';
 import type {
   OfflineIndex,
   OfflineMeta,
   OfflineStore,
+  StoredCertificatePdf,
+  StoredCertificates,
   StoredLease,
   StoredLesson,
   StoredOutline,
@@ -63,7 +67,31 @@ class MemoryStore implements OfflineStore {
   async getOutline(courseId: string) {
     return this.outlines.get(courseId) ?? null;
   }
+  certificates: StoredCertificates | null = null;
+  pdfs = new Map<string, StoredCertificatePdf>();
+  async replaceCertificates(input: StoredCertificates) {
+    this.certificates = input;
+    const ready = new Set(input.items.filter((item) => item.status === 'ready').map((i) => i.id));
+    for (const id of this.pdfs.keys()) if (!ready.has(id)) this.pdfs.delete(id);
+  }
+  async getCertificates() {
+    return this.certificates;
+  }
+  async putCertificatePdf(record: StoredCertificatePdf) {
+    this.pdfs.set(record.id, record);
+  }
+  async getCertificatePdf(id: string) {
+    return this.pdfs.get(id) ?? null;
+  }
+  async deleteCertificatePdf(id: string) {
+    this.pdfs.delete(id);
+  }
+  async listCertificatePdfIds() {
+    return [...this.pdfs.keys()];
+  }
   async clearAll() {
+    this.certificates = null;
+    this.pdfs.clear();
     this.meta = null;
     this.leases.clear();
     this.lessons.clear();
@@ -148,6 +176,9 @@ let syncAnswer: (operations: OfflineOperation[]) => SyncCall;
 let idSeq: number;
 let changed: number;
 let appliedSignals: number;
+let certificatesAnswer: MyCertificateDto[] | null;
+let pdfAnswer: CertificatePdfFetch;
+let certificateFetches: number;
 
 const index: OfflineIndex = {
   get: async () => pointer,
@@ -216,6 +247,19 @@ function baseDeps(): OfflineDeps {
     notifyApplied: () => {
       appliedSignals += 1;
     },
+    fetchCertificates: async () => {
+      if (networkDown) throw new TypeError('Failed to fetch');
+      certificateFetches += 1;
+      return certificatesAnswer;
+    },
+    fetchCertificatePdf: async () => {
+      if (networkDown) throw new TypeError('Failed to fetch');
+      return pdfAnswer;
+    },
+    sha256: async (bytes) => {
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+      return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    },
     fetchIdentity: async () => identity,
     fetchLease: async () => leaseFetch,
     index,
@@ -276,6 +320,9 @@ beforeEach(() => {
   idSeq = 0;
   changed = 0;
   appliedSignals = 0;
+  certificatesAnswer = [];
+  certificateFetches = 0;
+  pdfAnswer = { kind: 'not_available' };
 });
 
 describe('offline: guardar e ler', () => {
@@ -808,5 +855,190 @@ describe('M8-03: outbox offline e sincronização', () => {
     const [first, second] = await Promise.all([offline.syncOutbox(), offline.syncOutbox()]);
     expect([first.kind, second.kind].sort()).toEqual(['busy', 'synced']);
     expect(sent).toHaveLength(1);
+  });
+});
+
+describe('M8-06: certificados offline', () => {
+  const bytesOf = (text: string) => new TextEncoder().encode(text).buffer as ArrayBuffer;
+  const sha = async (bytes: ArrayBuffer) => {
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+    return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  };
+  const cert = (id: string, status: MyCertificateDto['status'] = 'ready'): MyCertificateDto => ({
+    id,
+    courseTitle: `Curso ${id}`,
+    status,
+    code: `COD-${id}`,
+    readyAt: '2026-10-10T12:00:00.000Z',
+    canDownload: status === 'ready',
+  });
+
+  async function withList(list: MyCertificateDto[]) {
+    const offline = service();
+    await offline.verify(); // identifica a pessoa (ponteiro)
+    expect(await offline.rememberCertificates(list)).toBe('saved');
+    return offline;
+  }
+
+  it('guarda a lista com o instante da verificação e a lê sem rede, SEMPRE com essa data', async () => {
+    const offline = await withList([cert('c1'), cert('c2', 'revoked')]);
+    networkDown = true;
+    clock += 5 * HOUR;
+    const read = await offline.readCertificates();
+    expect(read).toMatchObject({ kind: 'ok', verifiedAt: T0, pdfIds: [] });
+    expect(read.kind === 'ok' && read.items.map((item) => item.status)).toEqual([
+      'ready',
+      'revoked',
+    ]);
+  });
+
+  it('ninguém conhecido, ou nada guardado: bloqueado (nunca inventa uma lista)', async () => {
+    expect(await service().readCertificates()).toEqual({ kind: 'blocked', reason: 'no_user' });
+    pointer = 'user-a';
+    expect(await service().readCertificates()).toEqual({ kind: 'blocked', reason: 'not_saved' });
+  });
+
+  it('lista vazia e ninguém conhecido: não guarda nem chama o servidor', async () => {
+    let calls = 0;
+    const offline = createOfflineService({
+      ...baseDeps(),
+      fetchIdentity: async () => {
+        calls += 1;
+        return identity;
+      },
+    });
+    expect(await offline.rememberCertificates([])).toBe('skipped');
+    expect(calls).toBe(0);
+  });
+
+  it('sem pessoa conhecida, guardar a lista primeiro CONFIRMA a identidade online; anônimo não guarda nada', async () => {
+    identity = { kind: 'anonymous' };
+    expect(await service().rememberCertificates([cert('c1')])).toBe('skipped');
+    expect(stores.size).toBe(0);
+    identity = { kind: 'user', userId: 'user-a' };
+    expect(await service().rememberCertificates([cert('c1')])).toBe('saved');
+    expect(pointer).toBe('user-a');
+  });
+
+  it('baixar o PDF de propósito: confere o hash do servidor, guarda os bytes com o SHA-256 e abre offline', async () => {
+    const offline = await withList([cert('c1')]);
+    const bytes = bytesOf('%PDF-1.7 certificado do aluno');
+    pdfAnswer = { kind: 'ok', bytes, sha256: await sha(bytes) };
+    expect(await offline.saveCertificatePdf('c1')).toBe('saved');
+    expect(storeOf('user-a').pdfs.get('c1')?.sha256).toBe(await sha(bytes));
+    networkDown = true;
+    const opened = await offline.openCertificatePdf('c1');
+    expect(opened).toMatchObject({ kind: 'ok', filename: 'certificado-COD-c1.pdf' });
+    expect(opened.kind === 'ok' && new TextDecoder().decode(opened.bytes)).toContain('%PDF-1.7');
+    expect((await offline.readCertificates()).kind === 'ok').toBe(true);
+  });
+
+  it('o hash recebido NÃO bate com o que o servidor conferiu: nada é guardado', async () => {
+    const offline = await withList([cert('c1')]);
+    pdfAnswer = {
+      kind: 'ok',
+      bytes: bytesOf('conteúdo trocado no caminho'),
+      sha256: 'a'.repeat(64),
+    };
+    expect(await offline.saveCertificatePdf('c1')).toBe('integrity_failed');
+    expect(storeOf('user-a').pdfs.size).toBe(0);
+  });
+
+  it('só guarda PDF de certificado que está na lista como pronto; 404, sem sessão e erro do servidor viram resultados', async () => {
+    const offline = await withList([cert('c1'), cert('c2', 'revoked')]);
+    const bytes = bytesOf('%PDF');
+    pdfAnswer = { kind: 'ok', bytes, sha256: await sha(bytes) };
+    expect(await offline.saveCertificatePdf('c2')).toBe('failed'); // revogado: não está pronto
+    expect(await offline.saveCertificatePdf('fora-da-lista')).toBe('failed');
+    pdfAnswer = { kind: 'not_available' };
+    expect(await offline.saveCertificatePdf('c1')).toBe('not_available');
+    pdfAnswer = { kind: 'unauthenticated' };
+    expect(await offline.saveCertificatePdf('c1')).toBe('unauthenticated');
+    pdfAnswer = { kind: 'error' };
+    expect(await offline.saveCertificatePdf('c1')).toBe('failed');
+    networkDown = true;
+    expect(await offline.saveCertificatePdf('c1')).toBe('failed'); // sem rede não baixa
+    expect(storeOf('user-a').pdfs.size).toBe(0);
+  });
+
+  it('CACHE ADULTERADO: o hash recalculado diverge, a cópia é DESCARTADA e o app avisa', async () => {
+    const offline = await withList([cert('c1')]);
+    const bytes = bytesOf('%PDF original');
+    pdfAnswer = { kind: 'ok', bytes, sha256: await sha(bytes) };
+    await offline.saveCertificatePdf('c1');
+    const record = storeOf('user-a').pdfs.get('c1')!;
+    storeOf('user-a').pdfs.set('c1', { ...record, bytes: bytesOf('%PDF adulterado') });
+    expect(await offline.openCertificatePdf('c1')).toEqual({ kind: 'tampered' });
+    expect(storeOf('user-a').pdfs.size).toBe(0);
+    expect(await offline.openCertificatePdf('c1')).toEqual({ kind: 'missing' });
+  });
+
+  it('REVOGADO depois do download: ao reverificar online a lista é renovada e a cópia do PDF SAI', async () => {
+    const offline = await withList([cert('c1')]);
+    const bytes = bytesOf('%PDF');
+    pdfAnswer = { kind: 'ok', bytes, sha256: await sha(bytes) };
+    await offline.saveCertificatePdf('c1');
+    // Sem rede a cópia ainda abre (limite dito na tela); a revogação só chega ao reconectar.
+    networkDown = true;
+    expect((await offline.openCertificatePdf('c1')).kind).toBe('ok');
+    networkDown = false;
+    certificatesAnswer = [cert('c1', 'revoked')];
+    clock += 2 * HOUR;
+    await offline.verify();
+    expect(storeOf('user-a').pdfs.size).toBe(0);
+    const read = await offline.readCertificates();
+    expect(read.kind === 'ok' && read.items[0]?.status).toBe('revoked');
+    expect(read.kind === 'ok' && read.verifiedAt).toBe(T0 + 2 * HOUR);
+    expect(await offline.openCertificatePdf('c1')).toEqual({ kind: 'missing' });
+  });
+
+  it('substituído ou fora da lista: perde o PDF; a lista nova traz a data da NOVA verificação', async () => {
+    const offline = await withList([cert('c1'), cert('c2')]);
+    const bytes = bytesOf('%PDF');
+    pdfAnswer = { kind: 'ok', bytes, sha256: await sha(bytes) };
+    await offline.saveCertificatePdf('c1');
+    await offline.saveCertificatePdf('c2');
+    certificatesAnswer = [cert('c1', 'revoked')]; // c2 saiu da lista
+    clock += HOUR;
+    await offline.verify();
+    expect(storeOf('user-a').pdfs.size).toBe(0);
+  });
+
+  it('só renova a lista a quem JÁ guarda certificados (não chama o servidor à toa)', async () => {
+    const offline = service();
+    await offline.verify();
+    expect(certificateFetches).toBe(0);
+  });
+
+  it('a lista guardada que já diz "não pronto" remove a cópia ao tentar abrir', async () => {
+    const offline = await withList([cert('c1')]);
+    const bytes = bytesOf('%PDF');
+    pdfAnswer = { kind: 'ok', bytes, sha256: await sha(bytes) };
+    await offline.saveCertificatePdf('c1');
+    const store = storeOf('user-a');
+    store.certificates = { verifiedAt: T0, items: [cert('c1', 'revoked')] }; // lista e PDF dessincronizados
+    expect(await offline.openCertificatePdf('c1')).toEqual({ kind: 'not_ready' });
+    expect(store.pdfs.size).toBe(0);
+  });
+
+  it('o PDF de A é inacessível a B (cada conta tem o seu banco) e a purga do aparelho leva tudo', async () => {
+    const offline = await withList([cert('c1')]);
+    const bytes = bytesOf('%PDF');
+    pdfAnswer = { kind: 'ok', bytes, sha256: await sha(bytes) };
+    await offline.saveCertificatePdf('c1');
+    identity = { kind: 'user', userId: 'user-b' };
+    await offline.verify(); // B entra: o aparelho é limpo (account_changed)
+    expect(purges).toEqual(['account_changed']);
+    expect(await offline.openCertificatePdf('c1')).toEqual({ kind: 'missing' });
+    expect(stores.has('user-a')).toBe(false);
+  });
+
+  it('remover a cópia a pedido da pessoa', async () => {
+    const offline = await withList([cert('c1')]);
+    const bytes = bytesOf('%PDF');
+    pdfAnswer = { kind: 'ok', bytes, sha256: await sha(bytes) };
+    await offline.saveCertificatePdf('c1');
+    await offline.removeCertificatePdf('c1');
+    expect(storeOf('user-a').pdfs.size).toBe(0);
   });
 });

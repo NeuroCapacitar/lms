@@ -1,4 +1,5 @@
 import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outline';
+import type { MyCertificateDto } from '../../features/certificate/lifecycle';
 import { advanceClock } from '../../features/pwa/offline-lease';
 
 /**
@@ -34,6 +35,20 @@ export interface StoredOutline {
   outline: CourseOutlineDto;
 }
 
+/** A lista de certificados da pessoa, guardada com o instante da ÚLTIMA verificação online (epoch ms do aparelho). */
+export interface StoredCertificates {
+  verifiedAt: number;
+  items: MyCertificateDto[];
+}
+
+/** O PDF que a pessoa baixou DE PROPÓSITO para ler offline. `sha256` é o que o servidor conferiu; é recalculado antes de abrir. */
+export interface StoredCertificatePdf {
+  id: string;
+  sha256: string;
+  bytes: ArrayBuffer;
+  savedAt: number;
+}
+
 export interface OfflineStore {
   getMeta(): Promise<OfflineMeta | null>;
   /** Lê o maior instante visto e o avança para `max(visto, now)`, de forma atômica (várias abas). Devolve o valor ANTERIOR. */
@@ -49,13 +64,23 @@ export interface OfflineStore {
   listLessonIds(courseId: string): Promise<string[]>;
   putOutline(record: StoredOutline): Promise<void>;
   getOutline(courseId: string): Promise<StoredOutline | null>;
+  /**
+   * Substitui a lista de certificados pela que o servidor acabou de dar. Num só passo: o que saiu da lista, ou deixou de ser
+   * `ready` (revogado, substituído, em fila), perde também o PDF guardado.
+   */
+  replaceCertificates(input: StoredCertificates): Promise<void>;
+  getCertificates(): Promise<StoredCertificates | null>;
+  putCertificatePdf(record: StoredCertificatePdf): Promise<void>;
+  getCertificatePdf(id: string): Promise<StoredCertificatePdf | null>;
+  deleteCertificatePdf(id: string): Promise<void>;
+  listCertificatePdfIds(): Promise<string[]>;
   /** Apaga TUDO desta conta (conta com papel de Staff, ou purga). */
   clearAll(): Promise<void>;
   close(): void;
 }
 
 /** Versão do esquema. Qualquer mudança incompatível PURGA os dados antigos (são só uma cópia; o servidor é a fonte). */
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const META_KEY = 'meta';
 
 export interface StoreDef {
@@ -69,7 +94,11 @@ const STORE_DEFS: StoreDef[] = [
   { name: 'leases', keyPath: 'courseId' },
   { name: 'lessons', keyPath: 'lessonId', indexes: [{ name: 'byCourse', keyPath: 'courseId' }] },
   { name: 'outlines', keyPath: 'courseId' },
+  { name: 'certificates' },
+  { name: 'certificatePdfs', keyPath: 'id' },
 ];
+const ALL_STORES = STORE_DEFS.map((def) => def.name);
+const CERTIFICATES_KEY = 'list';
 
 export function wrap<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -222,9 +251,36 @@ export async function openOfflineStore(userId: string): Promise<OfflineStore> {
     putOutline: (record) => put('outlines', record),
     getOutline: (courseId) => stored<StoredOutline>('outlines', courseId),
 
+    async replaceCertificates(input) {
+      const tx = db.transaction(['certificates', 'certificatePdfs'], 'readwrite');
+      tx.objectStore('certificates').put(input, CERTIFICATES_KEY);
+      const readyIds = new Set(
+        input.items.filter((item) => item.status === 'ready').map((item) => item.id),
+      );
+      const pdfs = tx.objectStore('certificatePdfs');
+      for (const key of (await wrap(pdfs.getAllKeys())) as string[]) {
+        if (!readyIds.has(key)) pdfs.delete(key);
+      }
+      await finished(tx);
+    },
+    getCertificates: () => stored<StoredCertificates>('certificates', CERTIFICATES_KEY),
+    putCertificatePdf: (record) => put('certificatePdfs', record),
+    getCertificatePdf: (id) => stored<StoredCertificatePdf>('certificatePdfs', id),
+    async deleteCertificatePdf(id) {
+      const tx = db.transaction('certificatePdfs', 'readwrite');
+      tx.objectStore('certificatePdfs').delete(id);
+      await finished(tx);
+    },
+    async listCertificatePdfIds() {
+      const tx = db.transaction('certificatePdfs', 'readonly');
+      return ((await wrap(tx.objectStore('certificatePdfs').getAllKeys())) as IDBValidKey[]).map(
+        String,
+      );
+    },
+
     async clearAll() {
-      const tx = db.transaction(['meta', 'leases', 'lessons', 'outlines'], 'readwrite');
-      for (const name of ['meta', 'leases', 'lessons', 'outlines']) tx.objectStore(name).clear();
+      const tx = db.transaction(ALL_STORES, 'readwrite');
+      for (const name of ALL_STORES) tx.objectStore(name).clear();
       await finished(tx);
     },
     close: () => db.close(),

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { expect, type BrowserContext, type Page } from '@playwright/test';
 
 /**
@@ -72,6 +74,19 @@ export interface Backend {
   /** O que o servidor JÁ processou (idempotência por id) e as aulas concluídas de fato. */
   processed: Map<string, 'applied' | 'rejected'>;
   completedLessons: string[];
+  /** Certificados da pessoa (`GET /api/me/certificates`) e o PDF servido no download. */
+  certificates: {
+    id: string;
+    courseTitle: string;
+    status: string;
+    code: string;
+    readyAt: string | null;
+    canDownload: boolean;
+  }[];
+  pdf: Buffer;
+  /** O cabeçalho `X-Content-SHA256` do download: `undefined` = o hash certo; uma string = adulterado no caminho. */
+  pdfHashHeader: string | undefined;
+  pdfDownloads: number;
 }
 
 export function newBackend(overrides: Partial<Backend> = {}): Backend {
@@ -90,6 +105,10 @@ export function newBackend(overrides: Partial<Backend> = {}): Backend {
     syncCalls: [],
     processed: new Map(),
     completedLessons: [],
+    certificates: [],
+    pdf: Buffer.from('%PDF-1.7\nCERTIFICADO SINTETICO DE TESTE\n%%EOF'),
+    pdfHashHeader: undefined,
+    pdfDownloads: 0,
     ...overrides,
   };
 }
@@ -121,8 +140,30 @@ export async function mockApi(context: BrowserContext, backend: Backend) {
     route.fulfill({ json: { interests: [] } }),
   );
   await context.route('**/api/me/certificates', (route) =>
-    route.fulfill({ json: { certificates: [] } }),
+    backend.session
+      ? route.fulfill({ json: { certificates: backend.certificates } })
+      : route.fulfill({ status: 401, json: { error: { code: 'unauthenticated' } } }),
   );
+  await context.route('**/api/me/certificates/*/download', (route) => {
+    backend.pdfDownloads += 1;
+    const id = route.request().url().split('/').at(-2)!;
+    const item = backend.certificates.find((entry) => entry.id === id);
+    if (!backend.session) {
+      return route.fulfill({ status: 401, json: { error: { code: 'unauthenticated' } } });
+    }
+    if (!item || item.status !== 'ready') {
+      return route.fulfill({ status: 404, json: { error: { code: 'not_found' } } });
+    }
+    return route.fulfill({
+      status: 200,
+      body: backend.pdf,
+      headers: {
+        'content-type': 'application/pdf',
+        'x-content-sha256':
+          backend.pdfHashHeader ?? createHash('sha256').update(backend.pdf).digest('hex'),
+      },
+    });
+  });
   await context.route('**/api/auth/sign-out', (route) => {
     backend.signOutCalls += 1;
     if (backend.signOutStatus === 200) backend.session = false;

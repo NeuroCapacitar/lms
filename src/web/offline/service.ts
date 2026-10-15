@@ -10,6 +10,7 @@ import {
   type RejectionReason,
   type SyncResultItem,
 } from '../../features/pwa/offline-sync';
+import type { MyCertificateDto } from '../../features/certificate/lifecycle';
 import type { OutboxItem, OutboxStore } from './outbox';
 import type { OfflineIndex, OfflineStore, PendingSignOut, StoredLease } from './store';
 
@@ -83,7 +84,40 @@ export interface OfflineDeps {
   /** Cota do navegador, se ele a informa. */
   storageEstimate?(): Promise<{ usage?: number; quota?: number } | undefined>;
   requestPersistence?(): Promise<unknown>;
+  /** A lista de certificados da pessoa; `null` = sem sessão (401). Lança em falha de REDE. */
+  fetchCertificates(): Promise<MyCertificateDto[] | null>;
+  /** O PDF do dono (`sha256` = o hash que o servidor conferiu, se mandou). Lança em falha de REDE. */
+  fetchCertificatePdf(id: string): Promise<CertificatePdfFetch>;
+  sha256(bytes: ArrayBuffer): Promise<string>;
 }
+
+export type CertificatePdfFetch =
+  | { kind: 'ok'; bytes: ArrayBuffer; sha256: string | null }
+  /** 404: não é dele, não está pronto, foi revogado ou substituído. */
+  | { kind: 'not_available' }
+  | { kind: 'unauthenticated' }
+  | { kind: 'error' };
+
+export type CertificatesRead =
+  | { kind: 'ok'; items: MyCertificateDto[]; verifiedAt: number; pdfIds: string[] }
+  | { kind: 'blocked'; reason: 'no_user' | 'not_saved' };
+
+export type PdfSaveOutcome =
+  | 'saved'
+  | 'not_available'
+  | 'unauthenticated'
+  /** O hash do arquivo recebido não bate com o que o servidor conferiu: nada é guardado. */
+  | 'integrity_failed'
+  | 'failed';
+
+export type PdfOpenOutcome =
+  | { kind: 'ok'; bytes: ArrayBuffer; filename: string }
+  /** Nunca foi guardado (ou já foi removido). */
+  | { kind: 'missing' }
+  /** O arquivo guardado foi alterado: o hash recalculado não bate; a cópia foi DESCARTADA. */
+  | { kind: 'tampered' }
+  /** A lista guardada já diz que não está mais pronto (revogado ou substituído): a cópia foi removida. */
+  | { kind: 'not_ready' };
 
 export type BlockedReason =
   /** Ninguém usou o app online neste aparelho (ou o ponteiro foi apagado). */
@@ -280,7 +314,26 @@ export function createOfflineService(deps: OfflineDeps) {
     }
     // Toda verificação online bem-sucedida também descarrega o outbox desta pessoa (M8-03). Nunca lança.
     await syncOutbox(identity.userId);
+    // E, se a pessoa já guarda certificados neste aparelho, a lista é renovada: revogado ou substituído leva a cópia do PDF junto (M8-06).
+    await refreshCertificates(identity.userId);
     return verified;
+  }
+
+  /** Renova a lista de certificados guardada (só se já existe uma) e poda o que deixou de valer. Nunca lança. */
+  async function refreshCertificates(userId: string): Promise<void> {
+    try {
+      const store = await deps.openStore(userId);
+      try {
+        if ((await store.getCertificates()) === null) return;
+        const list = await deps.fetchCertificates();
+        if (list === null) return;
+        await store.replaceCertificates({ verifiedAt: deps.now(), items: list });
+      } finally {
+        store.close();
+      }
+    } catch {
+      // Sem rede ou erro: a cópia antiga segue com a data da última verificação.
+    }
   }
 
   /** Revoga no servidor um "sair" feito sem rede. `true` = não há mais nada pendente. */
@@ -391,6 +444,130 @@ export function createOfflineService(deps: OfflineDeps) {
 
   return {
     verify,
+
+    /**
+     * Guarda a lista de certificados que o servidor acabou de dar, com o instante DESTA verificação (M8-06). O que saiu da lista, ou
+     * deixou de estar pronto, perde também o PDF guardado. Melhor esforço; nunca lança.
+     */
+    async rememberCertificates(list: MyCertificateDto[]): Promise<'saved' | 'skipped' | 'failed'> {
+      try {
+        if (await deps.pendingSignOut.isPending()) return 'skipped';
+        if ((await deps.index.get()) === null) {
+          // Sem certificado e sem ninguém conhecido, não há o que guardar (e nem se chama o servidor à toa).
+          if (list.length === 0) return 'skipped';
+          // Ninguém conhecido ainda: confirma a identidade (online) antes de guardar qualquer coisa da pessoa.
+          if ((await verify()).kind !== 'verified') return 'skipped';
+        }
+        const current = await storeForCurrentUser();
+        if (!current) return 'skipped';
+        try {
+          await current.store.replaceCertificates({ verifiedAt: deps.now(), items: list });
+        } finally {
+          current.store.close();
+        }
+        return 'saved';
+      } catch {
+        return 'failed';
+      }
+    },
+
+    /** A lista guardada, SEMPRE com o instante da última verificação online (nunca mostra "válido" sem ele). */
+    async readCertificates(): Promise<CertificatesRead> {
+      try {
+        const current = await storeForCurrentUser();
+        if (!current) return { kind: 'blocked', reason: 'no_user' };
+        try {
+          const saved = await current.store.getCertificates();
+          if (!saved) return { kind: 'blocked', reason: 'not_saved' };
+          return {
+            kind: 'ok',
+            items: saved.items,
+            verifiedAt: saved.verifiedAt,
+            pdfIds: await current.store.listCertificatePdfIds(),
+          };
+        } finally {
+          current.store.close();
+        }
+      } catch {
+        return { kind: 'blocked', reason: 'no_user' };
+      }
+    },
+
+    /**
+     * Baixa o PDF PARA LER OFFLINE (só quando a pessoa pede). Confere o hash recebido contra o que o servidor conferiu e guarda os
+     * bytes com o SHA-256 (por conta). Sem a lista guardada não guarda (o PDF precisa de uma entrada "pronto" para ser podado).
+     */
+    async saveCertificatePdf(id: string): Promise<PdfSaveOutcome> {
+      try {
+        if (await deps.pendingSignOut.isPending()) return 'failed';
+        const fetched = await deps.fetchCertificatePdf(id);
+        if (fetched.kind === 'unauthenticated') return 'unauthenticated';
+        if (fetched.kind === 'not_available') return 'not_available';
+        if (fetched.kind === 'error') return 'failed';
+        const computed = await deps.sha256(fetched.bytes);
+        if (fetched.sha256 !== null && fetched.sha256 !== computed) return 'integrity_failed';
+        const current = await storeForCurrentUser();
+        if (!current) return 'failed';
+        try {
+          const saved = await current.store.getCertificates();
+          if (!saved?.items.some((item) => item.id === id && item.status === 'ready'))
+            return 'failed';
+          await current.store.putCertificatePdf({
+            id,
+            sha256: computed,
+            bytes: fetched.bytes,
+            savedAt: deps.now(),
+          });
+        } finally {
+          current.store.close();
+        }
+        return 'saved';
+      } catch {
+        return 'failed';
+      }
+    },
+
+    /** Abre a cópia guardada: o SHA-256 é RECALCULADO; se divergir, a cópia é descartada (cache adulterado ou corrompido). */
+    async openCertificatePdf(id: string): Promise<PdfOpenOutcome> {
+      try {
+        const current = await storeForCurrentUser();
+        if (!current) return { kind: 'missing' };
+        try {
+          const record = await current.store.getCertificatePdf(id);
+          if (!record) return { kind: 'missing' };
+          const saved = await current.store.getCertificates();
+          const item = saved?.items.find((entry) => entry.id === id);
+          if (!item || item.status !== 'ready') {
+            await current.store.deleteCertificatePdf(id);
+            return { kind: 'not_ready' };
+          }
+          if ((await deps.sha256(record.bytes)) !== record.sha256) {
+            await current.store.deleteCertificatePdf(id);
+            return { kind: 'tampered' };
+          }
+          return { kind: 'ok', bytes: record.bytes, filename: `certificado-${item.code}.pdf` };
+        } finally {
+          current.store.close();
+        }
+      } catch {
+        return { kind: 'missing' };
+      }
+    },
+
+    /** A pessoa apagou a cópia do PDF deste aparelho. */
+    async removeCertificatePdf(id: string): Promise<void> {
+      try {
+        const current = await storeForCurrentUser();
+        if (!current) return;
+        try {
+          await current.store.deleteCertificatePdf(id);
+        } finally {
+          current.store.close();
+        }
+      } catch {
+        // Fica para a próxima.
+      }
+    },
 
     /** Há uma pessoa que já verificou o acesso online neste aparelho? (o app abre offline só para ela). */
     async hasKnownUser(): Promise<boolean> {
