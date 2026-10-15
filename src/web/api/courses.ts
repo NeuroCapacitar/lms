@@ -1,6 +1,6 @@
 import type { PublicCoursePageDto } from '../../features/catalog/public-course';
 import type { StudentCatalogItem } from '../../features/catalog/student-catalog';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /** Cliente do catálogo do aluno (M2-04): `GET /api/catalog/courses`. 401 e 403 viram os erros de `getJson`. */
 export const fetchCatalog = async () =>

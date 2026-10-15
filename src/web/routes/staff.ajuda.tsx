@@ -20,7 +20,7 @@ import {
   setFaqState,
   updateFaq,
 } from '../api/help';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { ConfirmButton } from '../components/confirm-button';
 import { RichTextView } from '../components/rich-text/rich-text-view';
 import { Button } from '../components/ui/button';

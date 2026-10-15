@@ -350,3 +350,12 @@ Persistência sempre em PG18 real (mock não prova SQL nem concorrência); sem N
 
 - Unit: `src/features/help/help.test.ts` (schemas, categorias, `Reply-To` seguro). Servidor: `test/pg/help.pg.test.ts` (FAQ só com `help.edit`, rascunho invisível, ordem e criações simultâneas, pedido com limite e paralelismo, e-mail só com id e categoria, `Reply-To` da conta e recusa de injeção de cabeçalho chamando o handler real com um mailer roteirizado, falha do Resend sem perder o pedido, constraints). Telas: `e2e/ajuda.spec.ts` (aluno e Staff).
 - O e-mail de suporte só leva o id e a categoria; o texto do pedido fica no banco. Nenhum teste pode procurar o texto do pedido nem o endereço da pessoa em `email_message` ou na outbox (há varredura).
+
+## PWA e offline do aluno (M8-01, M8-02)
+
+- O Service Worker fica **bloqueado por padrão** nos Playwright (`serviceWorkers: 'block'` nas duas configs): ele interceptaria as rotas simuladas. Só `e2e/pwa.spec.ts` e o último bloco de `e2e/offline.spec.ts` usam `test.use({ serviceWorkers: 'allow' })`, contra o build de produção (`vite preview`).
+- "Sem rede" nos testes de offline é o portão de API registrado POR ÚLTIMO (o Playwright executa a rota mais recente primeiro) que aborta com `internetdisconnected`: o app vê um `TypeError` do `fetch`, como na vida real. Recarregar sem rede com o Service Worker usa `context.setOffline(true)`.
+- Relógio: `page.clock.install({ time })` + `page.clock.setSystemTime(...)`. O lease é medido pelo relógio do APARELHO a partir da verificação (o tempo corre depois do `install`), então teste fronteiras com folga (71 h e 73 h), não com o instante exato; o instante exato é coberto no unit (`offline-lease.test.ts`).
+- Unit do offline: `src/features/pwa/offline-lease.test.ts` (regra pura) e `src/web/offline/service.test.ts` (núcleo com um IndexedDB de MENTIRA que segue o mesmo contrato; o IndexedDB real é provado no navegador). Servidor: `test/pg/offline-lease.pg.test.ts` (`POST /api/offline/lease`).
+- O teste "o shell pré-cacheado é FECHADO" (`e2e/pwa.spec.ts`) falha se uma tela do aluno passar a depender de um chunk que o pré-cache deixa de fora (aconteceu com o módulo compartilhado `api/staff`). Código que o aluno usa NÃO pode morar em arquivo nomeado `staff*`.
+- Safari/iPhone NÃO são cobertos por nada disto: gate M8-04 com aparelho real.

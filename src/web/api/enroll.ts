@@ -1,6 +1,6 @@
 import type { AccessDto } from '../../features/access/access';
 import { postAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Cliente do acesso a um curso (M3-02). A tela só pergunta e pede; o servidor decide (oferta aberta,

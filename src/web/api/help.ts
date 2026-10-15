@@ -6,7 +6,7 @@ import type {
 } from '../../features/help/help';
 import type { RichText } from '../../features/content/rich-text';
 import { postAction, sendAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Clientes da Ajuda (M5-14). A interface só mostra e envia; quem decide permissão, limite e validade é o servidor.

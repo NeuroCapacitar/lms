@@ -1,6 +1,6 @@
 import type { OperationsSnapshot, OpsAlert } from '../../features/ops/operations';
 import { postAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /** Cliente da tela "Operação" (M4-05). A tela só mostra e pede: o servidor decide cada ação. */
 export interface OperationsResponse {

@@ -132,6 +132,40 @@ test.describe('Service Worker', () => {
     expect(urls.filter((url) => url.includes('staff') || url.includes('/api/'))).toEqual([]);
   });
 
+  test('o shell pré-cacheado é FECHADO: nenhum arquivo do aluno depende de um chunk que ficou de fora do cache', async ({
+    page,
+  }) => {
+    // Regressão do M8-02: o módulo compartilhado `api/staff` virou o chunk `staff-*.js`, ficou de fora do cache e a aula do
+    // aluno não abria sem rede ("Failed to fetch dynamically imported module").
+    await controlled(page);
+    const missing = await page.evaluate(async () => {
+      const cached = new Set<string>();
+      const sources = new Map<string, string>();
+      for (const name of await caches.keys()) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) {
+          const path = new URL(request.url).pathname;
+          cached.add(path.split('/').pop()!);
+          if (path.startsWith('/assets/') && path.endsWith('.js')) {
+            sources.set(path.split('/').pop()!, await (await cache.match(request))!.text());
+          }
+        }
+      }
+      const out: string[] = [];
+      for (const [file, text] of sources) {
+        for (const match of text.matchAll(/["'`]\.\/([^"'`]+\.js)["'`]/g)) {
+          const target = match[1]!;
+          // O roteador (index) carrega as rotas da Staff sob demanda: elas ficam de fora DE PROPÓSITO (a Staff é só online).
+          if (!cached.has(target) && !(file.startsWith('index-') && target.startsWith('staff'))) {
+            out.push(`${file} -> ${target}`);
+          }
+        }
+      }
+      return out;
+    });
+    expect(missing).toEqual([]);
+  });
+
   test('sem rede, a Staff mostra "só online" (a página do SW), nunca o app da Staff', async ({
     page,
     context,

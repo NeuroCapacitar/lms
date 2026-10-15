@@ -1,9 +1,26 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 
-import type { LegalDocumentDto, LegalKind } from '../../features/identity/legal';
+import type { LegalDocumentDto, LegalKind, LegalStatusDto } from '../../features/identity/legal';
 import { acceptLegal, fetchLegal } from '../api/legal';
+import { offline } from '../offline/runtime';
+import { isNetworkFailure } from '../offline/study';
 import { Button } from './ui/button';
+
+/**
+ * Sem rede, quem já verificou o acesso online neste aparelho (M8-02) segue para o conteúdo guardado: o lease só é emitido
+ * a quem JÁ aceitou os termos vigentes. É conforto de interface; a barreira real é o servidor em toda chamada.
+ */
+async function legalOrOffline() {
+  try {
+    return await fetchLegal();
+  } catch (error) {
+    if (isNetworkFailure(error) && (await offline.hasKnownUser())) {
+      return { accepted: true, documents: [] } satisfies LegalStatusDto;
+    }
+    throw error;
+  }
+}
 
 const TITLES: Record<LegalKind, string> = {
   terms: 'Termos de Uso',
@@ -21,7 +38,8 @@ export function RequireTerms({ children }: { children: ReactNode }) {
   // numa sessão curta no Staging). Aceitar invalida a consulta, então a tela libera na hora.
   const legal = useQuery({
     queryKey: ['legal'],
-    queryFn: fetchLegal,
+    queryFn: legalOrOffline,
+    networkMode: 'always',
     retry: false,
     staleTime: 5 * 60_000,
   });
@@ -31,7 +49,9 @@ export function RequireTerms({ children }: { children: ReactNode }) {
     return (
       <>
         <p role="alert" className="mb-4 font-medium text-[var(--text-danger)]">
-          Não foi possível verificar o aceite dos termos agora.
+          {isNetworkFailure(legal.error)
+            ? 'Sem conexão. Entre online ao menos uma vez neste aparelho para estudar offline.'
+            : 'Não foi possível verificar o aceite dos termos agora.'}
         </p>
         <Button type="button" variant="secondary" onClick={() => void legal.refetch()}>
           Tentar novamente

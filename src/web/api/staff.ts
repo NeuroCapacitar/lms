@@ -1,25 +1,11 @@
-import type { AccessDto } from '../../features/identity/capabilities';
 import type { InvitationDto } from '../../features/identity/staff-invitation';
 import type { TeamMemberDto } from '../../features/identity/team';
 import { postAction } from './action';
-import { UnauthenticatedError } from './profile';
+import { getJson } from './http';
 
 /** Cliente da área da Staff (M1-10). A interface só mostra: o servidor decide cada ação. */
-export class ForbiddenError extends Error {
-  constructor() {
-    super('forbidden');
-  }
-}
+export { ForbiddenError } from './http';
 
-export async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(path, { credentials: 'same-origin' });
-  if (response.status === 401) throw new UnauthenticatedError();
-  if (response.status === 403) throw new ForbiddenError();
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return (await response.json()) as T;
-}
-
-export const fetchAccess = () => getJson<AccessDto>('/api/me/access');
 export const fetchTeam = async () =>
   (await getJson<{ members: TeamMemberDto[] }>('/api/staff/team')).members;
 export const fetchInvitations = async () =>

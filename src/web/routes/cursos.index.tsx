@@ -10,7 +10,7 @@ import {
 } from '../../features/catalog/student-catalog';
 import { formatBrl } from '../../features/catalog/money';
 import { fetchCatalog } from '../api/courses';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import { UnauthenticatedError } from '../api/profile';
 import { BuyControl } from '../components/buy-control';
 import { AccessStatus, EnrollControl } from '../components/enroll-control';

@@ -3,7 +3,7 @@ import type { DraftDto } from '../../features/catalog/curriculum';
 import type { SaveDraftBody } from '../../features/catalog/curriculum';
 import type { PublishPreview } from '../../features/catalog/curriculum-diff';
 import { sendAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Cliente do Course Builder (M2-03). A interface só pede e mostra: o servidor decide cada ação

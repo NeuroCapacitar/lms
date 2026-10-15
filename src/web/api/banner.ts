@@ -6,7 +6,7 @@ import type {
   StaffPanelBannerDto,
 } from '../../features/banner/banner';
 import { postAction, sendAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Clientes dos banners do painel e das imagens do login (M5-15). A interface só mostra e envia; quem decide

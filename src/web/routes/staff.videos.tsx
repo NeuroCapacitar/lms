@@ -10,7 +10,7 @@ import {
   type VideoProvider,
 } from '../../features/video/providers';
 import type { ActionResult } from '../api/action';
-import { ForbiddenError } from '../api/staff';
+import { ForbiddenError } from '../api/http';
 import {
   createVideoConnection,
   fetchVideoConnections,

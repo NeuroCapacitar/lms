@@ -1,6 +1,6 @@
 import type { InterestStatsDto, MyInterestDto } from '../../features/interest/interest';
 import { postAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /** Cliente do interesse em cursos ainda não abertos (M5-06). Quem decide é o servidor; a tela só envia e mostra. */
 export const fetchMyInterests = async () =>

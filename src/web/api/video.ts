@@ -1,7 +1,7 @@
 import type { VideoConnectionDto, VideoProvider } from '../../features/video/providers';
 import type { ProviderAvailabilityDto } from '../../features/video/verification';
 import { postAction, sendAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /** Cliente da tela "Vídeo" (M5-01, só Admin). O segredo vai UMA vez e nunca é lido de volta. */
 export const fetchVideoConnections = async () =>

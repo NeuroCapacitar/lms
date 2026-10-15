@@ -56,6 +56,7 @@ import { videoRoutes } from '../video/routes';
 import { emailQuotaExhausted } from '../email/quota-store';
 import { previewRoutes } from '../learning/preview-routes';
 import { learningRoutes } from '../learning/routes';
+import { offlineRoutes } from '../offline/routes';
 import { methodRoutes } from './method-routes';
 import { confirmReauth, createReauthChallenge, hasRecentReauth } from './reauth';
 import { staffRoutes } from './staff-routes';
@@ -228,6 +229,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   routes.use('/courses/*', withDatabase, requireAcceptedTerms());
   routes.use('/lessons/*', withDatabase, requireAcceptedTerms());
   routes.use('/media/*', withDatabase, requireAcceptedTerms());
+  routes.use('/offline/*', withDatabase, requireAcceptedTerms());
 
   routes.post('/auth/link/request', async (c) => {
     c.header('Cache-Control', 'no-store');
@@ -524,6 +526,12 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   routes.route(
     '/',
     learningRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
+  );
+
+  // Offline do aluno (M8-02): /api/offline/lease (sessão e termos; Staff recusada).
+  routes.route(
+    '/',
+    offlineRoutes({ withDatabase, ...(overrides.clock ? { clock: overrides.clock } : {}) }),
   );
 
   // Discussão por aula (M5-05): /api/lessons/:id/discussion (a mesma aula que abre para a pessoa).

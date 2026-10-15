@@ -6,7 +6,7 @@ import type {
 import type { RefundRequestDto } from '../../features/commerce/refund';
 import type { ReviewDto } from '../../features/commerce/review';
 import { postAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Clientes das revisões financeiras (M6-04). A tela só mostra e envia; quem decide permissão, tipo da revisão,

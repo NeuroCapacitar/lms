@@ -2,6 +2,7 @@ import type { ProgressPayload, SendOutcome } from '../video/progress-reporter';
 import { postAction } from './action';
 import type { CourseOutlineDto, LessonViewDto } from '../../features/access/outline';
 import type { LessonLockReason } from '../../features/access/lesson-access';
+import type { BlockedReason } from '../offline/service';
 
 /**
  * Cliente do estudo (M3-03). As respostas 403 do servidor dizem PORQUE (sem acesso ao curso ou aula
@@ -9,8 +10,19 @@ import type { LessonLockReason } from '../../features/access/lesson-access';
  */
 export type DeniedReason = 'no_access' | 'expired' | 'suspended';
 
+/** Presente só quando a resposta veio da cópia guardada no aparelho (sem rede), e não do servidor. */
+export interface OfflineInfo {
+  /** Fim do lease do curso (epoch ms do relógio do aparelho). */
+  leaseUntil: number;
+  savedAt: number;
+  /** Só no mapa do curso: as aulas que existem guardadas. */
+  savedLessonIds?: string[];
+}
+
 export type StudyResult<T> =
-  | { kind: 'ok'; data: T }
+  | { kind: 'ok'; data: T; offline?: OfflineInfo }
+  /** Sem rede e sem poder mostrar a cópia guardada (lease vencido, relógio, nunca guardada...). */
+  | { kind: 'offline_blocked'; reason: BlockedReason }
   | { kind: 'denied'; reason: DeniedReason }
   | { kind: 'locked'; reason: LessonLockReason; releasesAt: string | null }
   | { kind: 'not_found' }

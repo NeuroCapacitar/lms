@@ -10,7 +10,7 @@ import type {
   TemplatesDto,
 } from '../../features/certificate/template';
 import { postAction, sendAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Clientes do emitente, do signatário e do template do certificado (M7-06 e M7-03). A interface só mostra e envia;

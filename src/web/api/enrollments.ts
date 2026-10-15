@@ -1,6 +1,6 @@
 import type { EnrolleePageDto } from '../../features/access/manual-enrollment';
 import { postAction } from './action';
-import { getJson } from './staff';
+import { getJson } from './http';
 
 /**
  * Cliente da matrícula manual e da lista de inscritos (M3-06). A tela só pede e mostra: cada rota

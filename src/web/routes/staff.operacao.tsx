@@ -5,7 +5,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import type { LaneName, OperationsSnapshot, ProblemItem } from '../../features/ops/operations';
 import type { ActionResult } from '../api/action';
 import { fetchOperations, pauseQueue, requeueItem } from '../api/operations';
-import { ForbiddenError, fetchAccess } from '../api/staff';
+import { ForbiddenError, fetchAccess } from '../api/http';
 import { ReauthPanel } from '../components/reauth-panel';
 import { Button } from '../components/ui/button';
 import { TextField } from '../components/ui/field';
