@@ -24,6 +24,8 @@ const BENIGN_KEYS = new Set([
   'triggers',
   'python_modules',
   'observability',
+  // Browser Run (M7-02): usa o serviço da conta para gerar PDF; não referencia nenhum recurso nosso.
+  'browser',
 ]);
 
 /** Chaves tratadas por regras próprias (recursos e variáveis). */

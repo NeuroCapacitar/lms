@@ -43,6 +43,8 @@ export const ENVIRONMENTS: Readonly<Record<EnvironmentName, ExpectedEnvironment>
     workerName: 'hub-staging',
     resources: {
       hyperdrive: ['cea4be9d4370457b93f1feb7469d2ceb'],
+      // Mídia e certificados (M5-07, M7-02): os dois buckets do Staging (criados em 2026-10-15).
+      r2_buckets: ['hub-staging-media-private', 'hub-staging-media-public'],
       queue_producers: [
         'hub-staging-finance',
         'hub-staging-general',

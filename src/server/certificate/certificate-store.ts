@@ -314,6 +314,8 @@ export class CertificateRenderTransientError extends Error {
  */
 export interface CertificateRenderer {
   render(input: {
+    /** O banco da execução: o renderer lê dele a assinatura e o fundo (mídia privada) pelo id do snapshot. */
+    db: Database;
     certificateId: string;
     code: string;
     snapshot: CertificateSnapshot;
@@ -370,6 +372,7 @@ export function createCertificateRenderHandler(
     let rendered: RenderedCertificate;
     try {
       rendered = await deps.renderer.render({
+        db,
         certificateId: row.id,
         code: row.code,
         snapshot: snapshot.data,

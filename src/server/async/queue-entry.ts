@@ -5,6 +5,7 @@ import { processBatch, processDeadLetters } from './consumer';
 import { paymentReaderFor, refundProviderFor } from '../commerce/factory';
 import { emailHandlerDeps } from '../email/factory';
 import { createHandlers } from './handlers';
+import { certificateDeps } from '../certificate/factory';
 
 /** Reembolso (M6-05): só existe com a chave do Asaas configurada. */
 function financeDeps(env: Env) {
@@ -42,6 +43,7 @@ export async function handleQueueBatch(batch: MessageBatch<unknown>, env: Env): 
       handlers: createHandlers({
         email: emailHandlerDeps(env),
         finance: financeDeps(env),
+        certificate: certificateDeps(env),
       }),
       owner: `queue:${batch.queue}:${crypto.randomUUID()}`,
       alert: logAlert,
