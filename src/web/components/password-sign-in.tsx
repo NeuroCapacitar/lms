@@ -21,6 +21,7 @@ export function PasswordSignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [captcha, setCaptcha] = useState<string | null>(null);
+  const [renewCaptcha, setRenewCaptcha] = useState(0);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const onToken = useCallback((token: string | null) => setCaptcha(token), []);
@@ -42,6 +43,9 @@ export function PasswordSignIn() {
       return;
     }
     setError(MESSAGES[result]);
+    // O token do Turnstile já foi gasto neste pedido: pede um novo para a próxima tentativa.
+    setCaptcha(null);
+    setRenewCaptcha((n) => n + 1);
   }
 
   return (
@@ -67,7 +71,7 @@ export function PasswordSignIn() {
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
-      <Turnstile onToken={onToken} />
+      <Turnstile onToken={onToken} renewSignal={renewCaptcha} />
       {error ? (
         <p role="alert" className="font-medium text-[var(--text-danger)]">
           {error}

@@ -48,10 +48,12 @@ function loadTurnstile(): Promise<TurnstileApi> {
 interface TurnstileProps {
   /** Recebe o token quando a verificação passa e `null` quando expira ou falha. */
   onToken: (token: string | null) => void;
+  /** O token vale para UMA verificação: depois de qualquer tentativa que falhou, quem usa o widget muda este número e ele pede um novo. */
+  renewSignal?: number;
 }
 
 /** Widget de verificação (Cloudflare Turnstile) do pedido de link. */
-export function Turnstile({ onToken }: TurnstileProps) {
+export function Turnstile({ onToken, renewSignal = 0 }: TurnstileProps) {
   const container = useRef<HTMLDivElement>(null);
   const siteKey =
     import.meta.env.VITE_TURNSTILE_SITE_KEY ?? (import.meta.env.DEV ? DEV_TEST_SITE_KEY : '');
@@ -75,7 +77,7 @@ export function Turnstile({ onToken }: TurnstileProps) {
       cancelled = true;
       if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
     };
-  }, [siteKey, onToken]);
+  }, [siteKey, onToken, renewSignal]);
 
   if (!siteKey) {
     return <p role="alert">A verificação de segurança não está configurada neste ambiente.</p>;

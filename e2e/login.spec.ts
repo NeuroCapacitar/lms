@@ -40,6 +40,39 @@ test.describe('pedido de link (/entrar)', () => {
     expect(posted).toEqual({ email: 'pessoa@example.com', captchaToken: 'token-simulado' });
   });
 
+  test('depois de uma falha o widget pede um token NOVO: a nova tentativa não reusa o token gasto', async ({
+    page,
+  }) => {
+    await page.route('https://challenges.cloudflare.com/**', (route) =>
+      route.fulfill({
+        contentType: 'text/javascript',
+        body: 'window.__renders = 0; window.turnstile = { render: (el, o) => { window.__renders += 1; const t = "token-" + window.__renders; setTimeout(() => o.callback(t), 0); return "w" + window.__renders; }, remove: () => {} };',
+      }),
+    );
+    const sent: string[] = [];
+    await page.route('**/api/auth/link/request', async (route) => {
+      sent.push((route.request().postDataJSON() as { captchaToken: string }).captchaToken);
+      await route.fulfill(
+        sent.length === 1
+          ? { status: 403, json: { error: { code: 'captcha_failed' } } }
+          : { status: 200, json: { status: 'ok' } },
+      );
+    });
+    await page.goto('/entrar');
+    await page.getByLabel('E-mail').fill('pessoa@example.com');
+    await page.getByRole('button', { name: 'Enviar link de acesso' }).click();
+    await expect(
+      page.getByText('Não foi possível confirmar a verificação de segurança'),
+    ).toBeVisible();
+    // O widget renova sozinho (novo token) e a pessoa só tenta de novo, sem recarregar a página.
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __renders: number }).__renders))
+      .toBe(2);
+    await page.getByRole('button', { name: 'Enviar link de acesso' }).click();
+    await expect(page.getByRole('status')).toContainText('Se o e-mail informado puder entrar');
+    expect(sent).toEqual(['token-1', 'token-2']);
+  });
+
   test('captcha recusado pelo servidor mostra aviso e mantém o formulário', async ({ page }) => {
     await stubTurnstile(page);
     await page.route('**/api/auth/link/request', (route) =>
