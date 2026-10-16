@@ -64,6 +64,8 @@ export interface OfflineStore {
   listLessonIds(courseId: string): Promise<string[]>;
   putOutline(record: StoredOutline): Promise<void>;
   getOutline(courseId: string): Promise<StoredOutline | null>;
+  /** Todos os mapas de curso guardados (a porta de entrada do estudo sem rede). */
+  listOutlines(): Promise<StoredOutline[]>;
   /**
    * Substitui a lista de certificados pela que o servidor acabou de dar. Num só passo: o que saiu da lista, ou deixou de ser
    * `ready` (revogado, substituído, em fila), perde também o PDF guardado.
@@ -280,6 +282,10 @@ export async function openOfflineStore(userId: string): Promise<OfflineStore> {
     },
     putOutline: (record) => put('outlines', record),
     getOutline: (courseId) => stored<StoredOutline>('outlines', courseId),
+    async listOutlines() {
+      const tx = db.transaction('outlines', 'readonly');
+      return (await wrap(tx.objectStore('outlines').getAll())) as StoredOutline[];
+    },
 
     async replaceCertificates(input) {
       const tx = db.transaction(['certificates', 'certificatePdfs'], 'readwrite');
