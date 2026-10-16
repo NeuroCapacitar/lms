@@ -57,9 +57,11 @@ test.describe('guardar e ler sem rede', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Curso Demonstrativo' }),
     ).toBeVisible();
+    // A gravação do mapa é assíncrona (identidade, lease e só então o IndexedDB): abrir a aula por NAVEGAÇÃO COMPLETA antes de ela
+    // terminar descarrega a página e perde a gravação em andamento. Espera o mapa ficar guardado antes de sair dele.
+    await expect.poll(() => savedOutlineCount(page)).toBe(1);
     await openLesson(page, 2);
     await expect.poll(() => savedCount(page)).toBe(1);
-    await expect.poll(() => savedOutlineCount(page)).toBe(1); // o mapa também é gravado de forma assíncrona
 
     goOffline(backend);
     await page.goto(`/estudar/${COURSE_ID}`);
