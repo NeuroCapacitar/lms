@@ -11,6 +11,7 @@ import { safeReturnTo } from '../../features/identity/return-to';
 import { rememberReturnTo } from '../return-to';
 import { LoginMediaLayout } from '../components/login-media';
 import { PasswordSignIn } from '../components/password-sign-in';
+import { PasteLinkSignIn } from '../components/paste-link-sign-in';
 import { SupportAddress } from '../components/support-address';
 import { Turnstile } from '../components/turnstile';
 import { Button } from '../components/ui/button';
@@ -95,6 +96,7 @@ function SignIn() {
           Se o e-mail informado puder entrar, enviamos um link de acesso. Ele vale por 15 minutos e
           só funciona uma vez.
         </p>
+        <PasteLinkSignIn defaultOpen />
       </>
     );
   }
@@ -132,6 +134,8 @@ function SignIn() {
           </Button>
         </div>
       </form>
+
+      <PasteLinkSignIn />
 
       <section aria-labelledby="outras-formas" className="mt-12 grid max-w-md gap-4">
         <h2 id="outras-formas" className="text-xl font-semibold">
