@@ -138,6 +138,36 @@ function openOnce(name: string, version: number, defs: StoreDef[]): Promise<IDBD
   });
 }
 
+/**
+ * Abre o banco SÓ SE ELE EXISTIR (`null` se não existe). Quem apenas LÊ nunca pode criar: `indexedDB.databases()` pode vir desatualizada
+ * (no WebKit lista por um instante um banco recém-apagado), e abrir `open(nome)` sobre essa lista recriaria um banco VAZIO depois de
+ * sair da conta, que é justamente o que o aparelho limpo não pode ter. Aqui o upgrade (que só acontece se o banco não existe) é ABORTADO.
+ */
+function openIfExists(
+  name: string,
+  version: number,
+  defs: StoreDef[],
+): Promise<IDBDatabase | null> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(name, version);
+    request.onupgradeneeded = () => {
+      // Banco inexistente (versão 0): não cria nada. Banco de versão antiga e incompatível é migrado por `openDatabase`, não aqui.
+      if (request.transaction) request.transaction.abort();
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
+    request.onerror = () => {
+      const error = request.error;
+      if (error?.name === 'AbortError') resolve(null);
+      else reject(error ?? new Error('idb_open_failed'));
+    };
+    void defs;
+  });
+}
+
 /** Abre (ou cria) o banco. Banco criado por versão MAIS NOVA do app (rollback): apaga e recria vazio. */
 export async function openDatabase(
   name: string,
@@ -311,8 +341,8 @@ export function createOfflineIndex(): OfflineIndex {
   const open = () => openDatabase(INDEX_DB, 1, [INDEX_STORE]);
   return {
     async get() {
-      if (!(await databaseExists(INDEX_DB))) return null;
-      const db = await open();
+      const db = await openIfExists(INDEX_DB, 1, [INDEX_STORE]);
+      if (!db) return null;
       try {
         const tx = db.transaction('current', 'readonly');
         const value = (await wrap(tx.objectStore('current').get(INDEX_KEY))) as unknown;
@@ -322,8 +352,8 @@ export function createOfflineIndex(): OfflineIndex {
       }
     },
     async set(userId) {
-      if (userId === null && !(await databaseExists(INDEX_DB))) return;
-      const db = await open();
+      const db = userId === null ? await openIfExists(INDEX_DB, 1, [INDEX_STORE]) : await open();
+      if (!db) return;
       try {
         const tx = db.transaction('current', 'readwrite');
         if (userId === null) tx.objectStore('current').delete(INDEX_KEY);
@@ -340,6 +370,13 @@ const DB_PREFIX = 'hub-offline-';
 
 /** Apaga TODOS os bancos offline deste navegador (de qualquer conta e o ponteiro). Nunca lança: o que falhar fica para a próxima. */
 export async function deleteAllOfflineDatabases(): Promise<void> {
+  await sweepOfflineDatabases();
+  // Segunda varredura: algo que já estava abrindo um banco no instante da purga pode tê-lo recriado vazio (ver `openIfExists`).
+  await new Promise<void>((resolve) => setTimeout(resolve, 300));
+  await sweepOfflineDatabases();
+}
+
+async function sweepOfflineDatabases(): Promise<void> {
   const names = new Set<string>([INDEX_DB]);
   try {
     for (const info of (await indexedDB.databases?.()) ?? []) {
@@ -377,8 +414,8 @@ export function createPendingSignOut(): PendingSignOut {
       }
     },
     async isPending() {
-      if (!(await databaseExists(PENDING_DB))) return false;
-      const db = await openDatabase(PENDING_DB, 1, [PENDING_STORE]);
+      const db = await openIfExists(PENDING_DB, 1, [PENDING_STORE]);
+      if (!db) return false;
       try {
         const tx = db.transaction('flag', 'readonly');
         return (await wrap(tx.objectStore('flag').get('pending'))) === true;

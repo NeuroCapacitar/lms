@@ -60,7 +60,7 @@ A tela **`/diagnostico`** do app mostra só **nomes e contagens** (nunca conteú
 | # | Passo | Esperado | C |
 | --- | --- | --- | --- |
 | B1 | Playwright em Chromium: `bun run test:e2e` e `bun run test:journey` | Verdes (já são, em CI). | C |
-| B2 | Playwright em **WebKit**: os specs `offline*.spec.ts`, `pwa.spec.ts`, `diagnostico.spec.ts` | Verdes em WebKit (WebKit do Playwright **não** substitui o iPhone; só pega regressões de motor). **Pendente:** instalar o WebKit do Playwright (download: autorização do responsável). | C |
+| B2 | Playwright em **WebKit**: os specs `offline*.spec.ts`, `pwa.spec.ts`, `diagnostico.spec.ts` | Verdes em WebKit (WebKit do Playwright **não** substitui o iPhone; só pega regressões de motor). **Feito em 2026-10-16:** `bun run test:e2e:webkit` (WebKit 27.2, build 2370 do Playwright) passou 58/58 com 1 pulado ("formulário sujo", por limite do WebKit do Playwright com Service Worker; o iPhone cobre no A15); evidência no `STATUS.md`. | C |
 | B3 | Chrome e Edge desktop reais: instalar, A3 a A8 e A12 | Mesmo resultado do Chromium automatizado. | |
 | B4 | Android real (Chrome): instalar pelo menu, A3 a A8, A12, A15 | Mesmo resultado. | |
 

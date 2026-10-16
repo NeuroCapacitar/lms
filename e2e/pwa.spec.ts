@@ -244,7 +244,15 @@ test.describe('atualização do app', () => {
 
   test('formulário sujo é fronteira INSEGURA: o botão fica desabilitado e diz por quê; ao sair da tela, libera', async ({
     page,
+    browserName,
   }) => {
+    // No WebKit do Playwright, `page.route` NÃO alcança as chamadas de uma página controlada por Service Worker: o perfil simulado
+    // não chega e a tela mostra "Entre para ver…". É limite da ferramenta (a regra é a mesma do Chromium); no iPhone real o item A15
+    // do roteiro cobre o comportamento.
+    test.skip(
+      browserName === 'webkit',
+      'rotas simuladas não alcançam página controlada por SW no WebKit',
+    );
     await stubSession(page);
     await controlled(page, '/conta');
     await offerNewVersion(page);

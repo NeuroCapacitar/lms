@@ -10,6 +10,7 @@ import {
   newBackend,
   openLesson,
   savedCount,
+  lastVerifiedAt,
   savedOutlineCount,
   storedLessons,
   type Backend,
@@ -243,6 +244,9 @@ test.describe('lease e relógio', () => {
     await page.goto(`/estudar/${COURSE_ID}/aulas/${L(1)}`);
     await expect(page.getByRole('heading', { level: 1, name: 'Aula 1' })).toBeVisible();
     await expect.poll(() => backend.leaseCalls).toBeGreaterThan(1);
+    // O pedido do lease saiu, mas a verificação só vale quando está GRAVADA (relógio e lease zerados): espera a gravação, e não só o pedido,
+    // antes de cortar a rede (no WebKit a gravação demora mais que no Chromium).
+    await expect.poll(() => lastVerifiedAt(page)).toBeGreaterThanOrEqual(T0.getTime() + 2 * HOUR);
     backend.online = false;
     await page.goto(`/estudar/${COURSE_ID}/aulas/${L(1)}`);
     await expect(page.getByText('Conteúdo secreto da aula 1.')).toBeVisible();

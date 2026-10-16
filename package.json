@@ -38,7 +38,8 @@
     "test:workers": "bun run build && vitest run --project workers",
     "test:pg": "vitest run --project pg",
     "test:journey": "playwright test -c playwright.journey.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:webkit": "node scripts/e2e-webkit.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",

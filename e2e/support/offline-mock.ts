@@ -325,6 +325,34 @@ export async function outboxItems(
   });
 }
 
+/** O instante (epoch ms do aparelho) da ÚLTIMA verificação online gravada nos bancos de conta; `null` se não há. */
+export async function lastVerifiedAt(page: Page): Promise<number | null> {
+  return page.evaluate(async () => {
+    let latest: number | null = null;
+    for (const info of await indexedDB.databases()) {
+      const name = info.name ?? '';
+      if (!name.startsWith('hub-offline-') || name === 'hub-offline-index') continue;
+      const db = await new Promise<IDBDatabase | null>((resolve) => {
+        const request = indexedDB.open(name);
+        request.onupgradeneeded = () => request.transaction?.abort();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => resolve(null);
+      });
+      if (!db) continue;
+      const meta = await new Promise<{ lastVerifiedAt?: number } | undefined>((resolve) => {
+        const request = db.transaction('meta').objectStore('meta').get('meta');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => resolve(undefined);
+      });
+      db.close();
+      if (meta?.lastVerifiedAt && (latest === null || meta.lastVerifiedAt > latest)) {
+        latest = meta.lastVerifiedAt;
+      }
+    }
+    return latest;
+  });
+}
+
 /** Quantos mapas de curso estão guardados no aparelho (todas as contas). */
 export async function savedOutlineCount(page: Page): Promise<number> {
   return page.evaluate(async () => {
