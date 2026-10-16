@@ -60,6 +60,8 @@ A tela **`/diagnostico`** do app mostra só **nomes e contagens** (nunca conteú
 | A16 | **Dias sem uso** (informativo): com dados guardados, não abrir o app por **8 dias**; depois abrir **em modo avião** | Anotar o que sobrou (`/diagnostico`) ou o que o iOS apagou. Define a política (o lease já tolera perda total do cache). | |
 | A17 | **Persistência** (informativo): `/diagnostico` → "Pedir armazenamento persistente" | Anotar o resultado. | |
 
+> **RESULTADO MEDIDO (2026-10-16, iPhone 12 / iOS 26):** o link do e-mail NÃO loga o app instalado (confirmado). Por isso a tela Entrar tem **"Já recebeu o link? Cole aqui"**: no e-mail, **segure o link e escolha Copiar (sem tocar nele)**, volte ao app instalado e **cole** no campo. Use esse caminho no A2(a).
+>
 > **Nota crítica sobre o login no app instalado (A2).** No iOS, o app da tela inicial tem **armazenamento próprio**, separado do Safari, e o link do e-mail abre no **Safari**, não no app. É possível que a sessão criada ao tocar no link fique no Safari e o app instalado continue sem login. Faça **os dois** e anote: (a) pedir o link **dentro do app instalado** e tocar nele; (b) fazer **todo o roteiro numa aba do Safari** (sem instalar). Se (a) não logar o app instalado, isso é um **achado do gate**: o app instalado precisa de outro jeito de entrar (decisão do responsável; fora deste roteiro). Os itens A3 a A15 valem para **onde a pessoa conseguir ficar logada**; registre qual.
 
 ### Parte B — Chromium e WebKit automatizados e dispositivos Chromium reais
