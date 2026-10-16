@@ -12,8 +12,11 @@ const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 test('aparelho limpo: build, rede e "nenhum" banco e cache de usuário; copiar entrega o texto', async ({
   page,
   context,
+  browserName,
 }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  // O WebKit do Playwright não conhece as permissões de área de transferência: lá a cópia é conferida só pela mensagem da tela.
+  if (browserName !== 'webkit')
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/diagnostico');
   const report = page.getByLabel('Relatório do aparelho');
   await expect(report).toContainText('Rede: online');
@@ -22,6 +25,7 @@ test('aparelho limpo: build, rede e "nenhum" banco e cache de usuário; copiar e
   await expect(report).toContainText(/Build: [0-9a-f]{7,}|Build: dev/);
   await page.getByRole('button', { name: 'Copiar relatório' }).click();
   await expect(page.getByText('Relatório copiado.')).toBeVisible();
+  if (browserName === 'webkit') return;
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toContain('Relatório do aparelho');
   expect(copied).toContain('Bancos IndexedDB (0):');

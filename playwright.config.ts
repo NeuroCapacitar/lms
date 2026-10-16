@@ -18,7 +18,21 @@ export default defineConfig({
     trace: 'retain-on-failure',
     serviceWorkers: 'block',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // WebKit (M8-04, item B2): SÓ com `E2E_WEBKIT=1` (`bun run test:e2e:webkit`), porque o WebKit do Playwright é um download à parte e o
+    // CI não o tem. Cobre só os specs do PWA/offline: pega regressão de MOTOR, e NÃO substitui o iPhone (iOS real: instalação, limites do
+    // armazenamento e limpeza de dados do Safari).
+    ...(process.env.E2E_WEBKIT
+      ? [
+          {
+            name: 'webkit',
+            use: { ...devices['Desktop Safari'] },
+            testMatch: /(offline[\w-]*|pwa|diagnostico)\.spec\.ts$/,
+          },
+        ]
+      : []),
+  ],
   webServer: {
     command: `bun run build && node scripts/e2e-prepare-fake-video.mjs && bun x vite preview --port ${port} --strictPort`,
     url: `http://localhost:${port}/api/health/live`,
