@@ -33,6 +33,19 @@ if (!remote) {
   process.exit(1);
 }
 
+// Sem a chave PÚBLICA do widget o build sai SEM captcha e a tela de entrar fica inutilizável ("A verificação de segurança não está
+// configurada neste ambiente"): foi o que aconteceu quando publicações locais não a levaram. Por isso RECUSA em vez de avisar.
+if (!process.env.VITE_TURNSTILE_SITE_KEY) {
+  console.error(
+    [
+      'recusado: VITE_TURNSTILE_SITE_KEY ausente (o build sairia sem captcha e ninguém conseguiria entrar).',
+      'Os valores públicos vivem nas variáveis do GitHub; exporte-os antes de publicar localmente:',
+      '  export VITE_TURNSTILE_SITE_KEY="$(gh variable get VITE_TURNSTILE_SITE_KEY)"',
+      '  export VITE_SENTRY_DSN="$(gh variable get VITE_SENTRY_DSN)"',
+    ].join(String.fromCharCode(10)),
+  );
+  process.exit(1);
+}
 if (!process.env.VITE_SENTRY_DSN) {
   console.warn('AVISO: VITE_SENTRY_DSN ausente; o SPA sai sem relatório de erros');
 }
