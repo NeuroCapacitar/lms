@@ -30,6 +30,7 @@
   "exclude": [
     "scripts/admin-bootstrap.ts",
     "scripts/seed-demo.ts",
+    "scripts/gate-account.ts",
     "scripts/verify-email-templates.ts"
   ]
 }
