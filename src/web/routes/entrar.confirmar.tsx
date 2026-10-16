@@ -3,8 +3,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { confirmLink, confirmReauth, type ConfirmReauthResult } from '../api/auth';
-import { afterSignIn } from '../offline/runtime';
-import { takeReturnTo } from '../return-to';
+import { completeSignIn } from '../sign-in-complete';
 import { Button } from '../components/ui/button';
 
 export const Route = createFileRoute('/entrar/confirmar')({ component: ConfirmSignIn });
@@ -65,18 +64,8 @@ function ConfirmSignIn() {
     }
     const result = await confirmLink(token);
     if (result === 'ok') {
-      // Outra pessoa pode ter usado este aparelho: nada da sessão anterior (como o aceite dos termos,
-      // que fica em cache) pode valer para a nova.
-      queryClient.clear();
-      // Volta à página de onde a pessoa veio (caminho interno validado) ou à página inicial.
-      const back = takeReturnTo();
-      // M8-05: se entrou OUTRA pessoa, o que era da anterior sai do aparelho antes de qualquer tela ler dado local.
-      await afterSignIn();
-      if (back) {
-        window.location.assign(back);
-        return;
-      }
-      await navigate({ to: '/' });
+      // Cache de consultas, troca de conta e volta à página de origem (ver `completeSignIn`).
+      await completeSignIn(queryClient, () => navigate({ to: '/' }));
       return;
     }
     setState({ kind: 'failed', reason: result });
