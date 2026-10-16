@@ -133,6 +133,19 @@ export type OfflineRead<T> =
   | { kind: 'ok'; data: T; leaseUntil: number; savedAt: number; savedLessonIds?: string[] }
   | { kind: 'blocked'; reason: BlockedReason };
 
+/** Um curso que dá para estudar sem rede neste aparelho: tem mapa guardado e lease em dia. */
+interface SavedCourse {
+  courseId: string;
+  title: string;
+  savedAt: number;
+  leaseUntil: number;
+  savedLessons: number;
+}
+
+export type SavedCoursesRead =
+  | { kind: 'ok'; courses: SavedCourse[] }
+  | { kind: 'blocked'; reason: BlockedReason };
+
 export type VerifyOutcome =
   | { kind: 'verified'; userId: string; courses: number }
   /** Sem sessão agora. Se havia dados de alguém neste aparelho, foram apagados (`session_ended`). */
@@ -702,6 +715,49 @@ export function createOfflineService(deps: OfflineDeps) {
           ? { data: record.view, savedAt: record.savedAt }
           : null;
       });
+    },
+
+    /**
+     * Os cursos que se pode abrir SEM rede (a porta de entrada do app instalado, que não tem barra de endereço). Mesma regra de
+     * `read`: só entra curso com lease em dia e relógio coerente. Se há mapas guardados mas NENHUM vale, devolve o motivo.
+     */
+    async readSavedCourses(): Promise<SavedCoursesRead> {
+      try {
+        const current = await storeForCurrentUser();
+        if (!current) return { kind: 'blocked', reason: 'no_user' };
+        try {
+          const now = deps.now();
+          const previousClock = await current.store.touchClock(current.userId, now);
+          const courses: SavedCourse[] = [];
+          let blocked: BlockedReason | null = null;
+          for (const record of await current.store.listOutlines()) {
+            const lease = await current.store.getLease(record.courseId);
+            const status = evaluateOfflineLease({
+              leaseUntil: lease?.leaseUntil ?? null,
+              now,
+              maxSeenClock: previousClock,
+            });
+            if (status.status === 'none') blocked ??= 'no_lease';
+            else if (status.status === 'expired') blocked ??= 'lease_expired';
+            else if (status.status === 'clock_suspect') blocked ??= 'clock_suspect';
+            else {
+              courses.push({
+                courseId: record.courseId,
+                title: record.outline.course.title,
+                savedAt: record.savedAt,
+                leaseUntil: lease!.leaseUntil,
+                savedLessons: (await current.store.listLessonIds(record.courseId)).length,
+              });
+            }
+          }
+          if (courses.length === 0 && blocked) return { kind: 'blocked', reason: blocked };
+          return { kind: 'ok', courses };
+        } finally {
+          current.store.close();
+        }
+      } catch {
+        return { kind: 'blocked', reason: 'no_user' };
+      }
     },
 
     readOutline(courseId: string) {

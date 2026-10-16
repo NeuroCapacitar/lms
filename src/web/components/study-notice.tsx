@@ -23,7 +23,7 @@ export function lockMessage(reason: LessonLockReason, releasesAt: string | null)
   }
 }
 
-const OFFLINE_BLOCKED: Record<BlockedReason, string> = {
+export const OFFLINE_BLOCKED: Record<BlockedReason, string> = {
   no_user: 'Sem conexão. Entre online ao menos uma vez neste aparelho para estudar offline.',
   no_lease:
     'Sem conexão. Este curso ainda não foi liberado para estudo offline neste aparelho: abra-o com internet primeiro.',

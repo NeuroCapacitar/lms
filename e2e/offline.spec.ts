@@ -1,3 +1,4 @@
+import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import {
@@ -110,6 +111,68 @@ test.describe('guardar e ler sem rede', () => {
     await page.reload();
     await expect(page.getByRole('heading', { level: 1, name: 'Aula 1' })).toBeVisible();
     await expect(page.getByText(/Você está sem conexão/)).toHaveCount(0);
+  });
+});
+
+test.describe('porta de entrada sem rede (app instalado abre na página inicial)', () => {
+  async function saveCourse(page: Page, backend: Backend, context: BrowserContext) {
+    await mockApi(context, backend);
+    await page.goto(`/estudar/${COURSE_ID}`);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Curso Demonstrativo' }),
+    ).toBeVisible();
+    await expect.poll(() => savedOutlineCount(page)).toBe(1);
+    await openLesson(page, 2);
+    await expect.poll(() => savedCount(page)).toBe(1);
+  }
+
+  test('sem rede, a página inicial diz "Sem conexão" e leva ao curso guardado', async ({
+    page,
+    context,
+  }) => {
+    const backend = newBackend();
+    await saveCourse(page, backend, context);
+
+    goOffline(backend);
+    await page.goto('/');
+    await expect(page.getByRole('status').filter({ hasText: /^Sem conexão\.$/ })).toBeVisible();
+    await expect(page.getByText('Serviço indisponível.')).toHaveCount(0);
+    await expect(page.getByText(/Estes cursos abrem sem internet/)).toBeVisible();
+    await expect(page.getByText(/1 aula guardada · vale até/)).toBeVisible();
+    const { violations } = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(violations.map((v) => v.id)).toEqual([]);
+
+    await page.getByRole('link', { name: 'Curso Demonstrativo' }).click();
+    await expect(page).toHaveURL(`/estudar/${COURSE_ID}`);
+    await expect(
+      page.getByText(/Você está sem conexão\. Esta é a cópia guardada em/),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /Aula 2/ })).toBeVisible();
+  });
+
+  test('sem rede, "Cursos" mostra o que está guardado em vez de só "não foi possível carregar"', async ({
+    page,
+    context,
+  }) => {
+    const backend = newBackend();
+    await saveCourse(page, backend, context);
+
+    goOffline(backend);
+    await page.goto('/cursos');
+    await expect(page.getByRole('heading', { name: 'Guardados neste aparelho' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Curso Demonstrativo' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tentar novamente' })).toBeVisible();
+  });
+
+  test('aparelho que nunca entrou online: mensagem clara, sem lista', async ({ page, context }) => {
+    const backend = newBackend();
+    await mockApi(context, backend);
+    goOffline(backend);
+    await page.goto('/');
+    await expect(page.getByText('Sem conexão.', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Entre online ao menos uma vez neste aparelho/)).toBeVisible();
   });
 });
 

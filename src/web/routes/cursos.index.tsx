@@ -12,6 +12,8 @@ import { formatBrl } from '../../features/catalog/money';
 import { fetchCatalog } from '../api/courses';
 import { ForbiddenError } from '../api/http';
 import { UnauthenticatedError } from '../api/profile';
+import { OfflineSavedCourses } from '../offline/saved-courses';
+import { isNetworkFailure } from '../offline/study';
 import { BuyControl } from '../components/buy-control';
 import { AccessStatus, EnrollControl } from '../components/enroll-control';
 import { InterestControl } from '../components/interest-control';
@@ -58,6 +60,8 @@ function Catalog() {
   const courses = useQuery({
     queryKey: ['catalog'],
     queryFn: fetchCatalog,
+    // Sem rede o padrão PAUSARIA a consulta e a tela ficaria em "Carregando…": a falha de rede abre os cursos guardados (M8-04).
+    networkMode: 'always',
     retry: false,
     staleTime: 30_000,
   });
@@ -86,6 +90,7 @@ function Catalog() {
 
       {courses.isError && !unauthenticated ? (
         <>
+          {isNetworkFailure(courses.error) ? <OfflineSavedCourses /> : null}
           <p role="alert" className="mb-4 font-medium text-[var(--text-danger)]">
             {courses.error instanceof ForbiddenError
               ? 'Você não tem acesso a esta lista.'

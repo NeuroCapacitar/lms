@@ -61,6 +61,9 @@ class MemoryStore implements OfflineStore {
   async listLessonIds(courseId: string) {
     return [...this.lessons.values()].filter((l) => l.courseId === courseId).map((l) => l.lessonId);
   }
+  async listOutlines() {
+    return [...this.outlines.values()];
+  }
   async putOutline(record: StoredOutline) {
     this.outlines.set(record.courseId, record);
   }
@@ -376,6 +379,82 @@ describe('offline: guardar e ler', () => {
 
   it('nunca verificou online neste aparelho: no_user', async () => {
     expect(await service().readLesson(COURSE, 'l1')).toEqual({
+      kind: 'blocked',
+      reason: 'no_user',
+    });
+  });
+});
+
+describe('M8-04: cursos guardados como porta de entrada sem rede', () => {
+  async function savedCourse() {
+    const offline = service();
+    await offline.rememberLesson(lessonView('l1'));
+    await offline.rememberOutline(outline());
+    networkDown = true;
+    return offline;
+  }
+
+  it('lista o curso guardado com título, aulas guardadas e fim do lease', async () => {
+    const offline = await savedCourse();
+    clock = T0 + 10 * HOUR;
+    expect(await offline.readSavedCourses()).toEqual({
+      kind: 'ok',
+      courses: [
+        {
+          courseId: COURSE,
+          title: 'Curso',
+          savedAt: T0,
+          leaseUntil: T0 + 72 * HOUR,
+          savedLessons: 1,
+        },
+      ],
+    });
+  });
+
+  it('com a pessoa conhecida mas nada guardado: lista vazia (não é bloqueio)', async () => {
+    const offline = service();
+    await offline.verify();
+    networkDown = true;
+    expect(await offline.readSavedCourses()).toEqual({ kind: 'ok', courses: [] });
+  });
+
+  it('ninguém conhecido neste aparelho: no_user', async () => {
+    expect(await service().readSavedCourses()).toEqual({ kind: 'blocked', reason: 'no_user' });
+  });
+
+  it('lease vencido: o curso NÃO aparece e o motivo é dito', async () => {
+    const offline = await savedCourse();
+    clock = T0 + 72 * HOUR;
+    expect(await offline.readSavedCourses()).toEqual({ kind: 'blocked', reason: 'lease_expired' });
+  });
+
+  it('relógio atrasado além da tolerância: bloqueia a lista inteira até reverificar online', async () => {
+    const offline = await savedCourse();
+    clock = T0 + 20 * HOUR;
+    expect((await offline.readSavedCourses()).kind).toBe('ok'); // avança o maior instante visto
+    clock = T0 + 5 * HOUR; // alguém voltou o relógio
+    expect(await offline.readSavedCourses()).toEqual({ kind: 'blocked', reason: 'clock_suspect' });
+  });
+
+  it('A guarda; B entra no mesmo navegador: B não vê o curso de A', async () => {
+    const offline = await savedCourse();
+    networkDown = false;
+    identity = { kind: 'user', userId: 'user-b' };
+    leaseFetch = lease();
+    await offline.verify();
+    networkDown = true;
+    expect(await offline.readSavedCourses()).toEqual({ kind: 'ok', courses: [] });
+  });
+
+  it('banco indisponível: vira bloqueio, nunca exceção', async () => {
+    pointer = 'user-a';
+    const deps: OfflineDeps = {
+      ...baseDeps(),
+      openStore: async () => {
+        throw new Error('banco apagado');
+      },
+    };
+    expect(await createOfflineService(deps).readSavedCourses()).toEqual({
       kind: 'blocked',
       reason: 'no_user',
     });
