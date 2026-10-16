@@ -33,8 +33,12 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <main id="conteudo" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-10">
         {children}
       </main>
-      <footer className="mx-auto max-w-5xl px-4 py-8 text-sm text-[var(--text-muted)]">
-        NeuroCapacitar Hub
+      <footer className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-8 text-sm text-[var(--text-muted)]">
+        <span>NeuroCapacitar Hub</span>
+        {/* O app instalado (tela inicial) não tem barra de endereço: sem este link o /diagnostico (M8-04) seria inalcançável. */}
+        <Link to="/diagnostico" className="inline-flex min-h-11 items-center underline">
+          Diagnóstico do aparelho
+        </Link>
       </footer>
     </>
   );

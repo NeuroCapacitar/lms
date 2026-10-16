@@ -30,6 +30,7 @@ A tela **`/diagnostico`** do app mostra só **nomes e contagens** (nunca conteú
 - `hub-offline-index`: ponteiro de "quem usou por último".
 - `hub-offline-<hash>`: o estudo da conta (`lessons`, `outlines`, `leases`, `certificates`, `certificatePdfs`).
 - `hub-outbox-<hash>`: conclusões feitas offline ainda não enviadas (`ops`).
+- No **app instalado** (sem barra de endereço), a tela abre pelo link **"Diagnóstico do aparelho"** no rodapé de qualquer página.
 - `hub-pending-signout`: "sair" feito sem rede, ainda não revogado no servidor.
 - Cache `workbox-precache-…`: o shell público do app (é o ÚNICO cache esperado depois de sair).
 

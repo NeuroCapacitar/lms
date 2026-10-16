@@ -77,3 +77,14 @@ for (const scheme of ['light', 'dark'] as const) {
     ).toEqual([]);
   });
 }
+
+test('o app instalado não tem barra de endereço: o link do rodapé leva ao diagnóstico de qualquer página', async ({
+  page,
+}) => {
+  for (const path of ['/', '/sobre', '/cursos']) {
+    await page.goto(path);
+    await page.getByRole('link', { name: 'Diagnóstico do aparelho' }).click();
+    await expect(page).toHaveURL(/\/diagnostico$/);
+    await expect(page.getByLabel('Relatório do aparelho')).toBeVisible();
+  }
+});
