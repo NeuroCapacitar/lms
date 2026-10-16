@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { parsePastedLink } from './pasted-link';
 
 const ORIGIN = 'https://hub.example.test';
-const TOKEN = 'abcdEFGH1234ijklMNOP5678qrstUVWX';
+const TOKEN = 'token-de-teste-com-mais-de-16-caracteres';
 const LINK = `${ORIGIN}/entrar/confirmar#token=${TOKEN}`;
 
 describe('link de acesso colado', () => {

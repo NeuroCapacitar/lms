@@ -6,7 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
  * e o app o confirma dentro do próprio armazenamento. Contra o build de produção, com a API simulada.
  */
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-const TOKEN = 'abcdEFGH1234ijklMNOP5678qrstUVWX';
+const TOKEN = 'token-de-teste-com-mais-de-16-caracteres';
 
 async function stub(page: Page, confirmStatus = 200) {
   const calls: unknown[] = [];
