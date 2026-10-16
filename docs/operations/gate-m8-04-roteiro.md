@@ -13,6 +13,12 @@ Precisa de: um **iPhone físico** (modelo e versão do iOS anotados), um e-mail 
 
 ## 2. Antes de começar
 
+**Contas de teste JÁ PREPARADAS no Staging (2026-10-16), com `scripts/gate-account.ts`** (só endereços com sufixo `+gate`; Production é recusada):
+
+- **Conta A**: `neurocapacitar.projetos+gate-a@gmail.com`. Matriculada no curso demonstrativo com o drip aberto (todos os módulos), as 5 aulas obrigatórias concluídas, o curso concluído e um **certificado sintético** (nasce em fila; o PDF sai no próximo ciclo do Cron, até ~30 min depois da preparação). A aula opcional **"Leitura complementar" fica em aberto** de propósito: é a que o roteiro conclui sem rede.
+- **Conta B**: `neurocapacitar.projetos+gate-b@gmail.com`. Só a matrícula (serve ao passo "outra conta").
+- As duas entram pelo **link de acesso** (o e-mail chega na caixa `neurocapacitar.projetos@gmail.com`) e aceitam os termos na primeira vez. Para refazer o estado inicial depois de um teste, peça ao agente para rodar o script de novo (repetível; não duplica).
+
 1. O agente informa: URL do Staging (`https://hub-staging.neurocapacitar-projetos.workers.dev`), **SHA do build** (também aparece no `/diagnostico`) e o e-mail da conta de teste já inscrita.
 2. No iPhone: Ajustes → Safari → **Avançado → Dados de sites** (ou Limpar Histórico e Dados de Sites) e remova o que houver do domínio do Staging. Navegação privada **desligada**. Data e hora **automáticas** (ligadas).
 3. Abra `…/diagnostico` no Safari e **copie o relatório** (botão "Copiar relatório"): é a linha de base. Esperado: `Bancos IndexedDB (0): nenhum`; `Caches (0): nenhum`.
@@ -37,12 +43,12 @@ A tela **`/diagnostico`** do app mostra só **nomes e contagens** (nunca conteú
 | --- | --- | --- | --- |
 | A1 | Safari → o site → Compartilhar → **Adicionar à Tela de Início** | Ícone na tela inicial; ao abrir, sem barra do Safari (modo app). O `/diagnostico` diz `Modo: app instalado (tela inicial)`. | |
 | A2 | **Entrar** por link de acesso (veja a nota logo abaixo) | A pessoa fica logada onde vai testar. | C |
-| A3 | Abrir o curso demonstrativo → abrir a aula "Boas-vindas" (online) → voltar ao mapa → abrir "Como estudar aqui" | `/diagnostico` mostra `hub-offline-<hash>` com `lessons≥1`, `outlines≥1`, `leases=1` e `hub-offline-index`. | C |
+| A3 | Abrir o curso demonstrativo → abrir a aula "Boas-vindas" (online) → voltar ao mapa → abrir "Como estudar aqui" → voltar ao mapa → abrir **"Leitura complementar"** (a aula opcional, que a conta A deixa em aberto de propósito) | `/diagnostico` mostra `hub-offline-<hash>` com `lessons≥1`, `outlines≥1`, `leases=1` e `hub-offline-index`. | C |
 | A4 | Ligar o **modo avião**; fechar o app no seletor de apps; **abrir de novo** | O app abre (o shell vem do Service Worker). `/diagnostico`: `Rede: offline`, `Service Worker … controla esta página`. | C |
-| A5 | Abrir o curso → "Boas-vindas" (guardada) | Faixa "Você está sem conexão. Esta é a cópia guardada em… vale até…"; texto da aula visível. Uma aula **não** visitada mostra "não foi guardada para estudo offline". Vídeo e quiz mostram que precisam de internet. | C |
-| A6 | Ainda offline: **Concluir aula** em "Boas-vindas" | "Conclusão guardada neste aparelho…"; faixa "1 conclusão de aula aguardando envio"; no mapa, "conclusão aguardando envio". `/diagnostico`: `hub-outbox-<hash>: ops=1`. | C |
-| A7 | **Desligar o modo avião**; abrir/voltar ao app | Em até ~1 min a faixa some; o mapa mostra a aula **concluída** e o progresso subiu **uma** aula. O agente confere no banco: **exatamente 1** conclusão. `/diagnostico`: `ops=0` (ou sem o banco do outbox). Repetir "Enviar agora" não duplica. | C |
-| A8 | **Lease**: modo avião; Ajustes → Geral → Data e Hora → desligar "Automático" e **avançar 4 dias**; abrir "Boas-vindas" no app | Mensagem: o prazo do estudo offline deste curso terminou (e a aula **não** aparece). | C |
+| A5 | Abrir o curso → **"Leitura complementar"** (guardada) | Faixa "Você está sem conexão. Esta é a cópia guardada em… vale até…"; texto da aula visível. Uma aula **não** visitada mostra "não foi guardada para estudo offline". Vídeo e quiz mostram que precisam de internet. | C |
+| A6 | Ainda offline: **Concluir aula** em "Leitura complementar" | "Conclusão guardada neste aparelho…"; faixa "1 conclusão de aula aguardando envio"; no mapa, "conclusão aguardando envio". `/diagnostico`: `hub-outbox-<hash>: ops=1`. | C |
+| A7 | **Desligar o modo avião**; abrir/voltar ao app | Em até ~1 min a faixa some; o mapa mostra "Leitura complementar" como **concluída** (o progresso das obrigatórias continua 100%, porque a aula é opcional). O agente confere no banco: **exatamente 1** conclusão a mais (de 5 para 6). `/diagnostico`: `ops=0` (ou sem o banco do outbox). Repetir "Enviar agora" não duplica. | C |
+| A8 | **Lease**: modo avião; Ajustes → Geral → Data e Hora → desligar "Automático" e **avançar 4 dias**; abrir "Leitura complementar" (ou qualquer aula guardada) no app | Mensagem: o prazo do estudo offline deste curso terminou (e a aula **não** aparece). | C |
 | A9 | Ainda no modo avião: **voltar a data para 1 dia depois da data real** (ou seja, ainda à frente do real, porém atrás do que o app já viu) e abrir a aula | Mensagem de relógio atrás do horário já visto (o app bloqueia até verificar online). | C |
 | A10 | Data e hora **automáticas** de novo; desligar o modo avião; abrir o app | O app volta a funcionar normalmente e renova o lease (a aula guardada abre de novo sem rede depois de renovar). | C |
 | A11 | **Certificado** (conta com certificado sintético; o agente prepara): Minha conta → "Guardar para ler offline" → modo avião → "Baixar a cópia guardada" | O arquivo é baixado e **abre** no visualizador de PDF do iOS com o nome `certificado-<código>.pdf`. Sem rede a lista mostra "Emitido · verificado em…" e o aviso de que não dá para confirmar a validade. | |

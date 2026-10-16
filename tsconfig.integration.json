@@ -28,6 +28,7 @@
     "test/pg/access.pg.test.ts",
     "test/pg/reauth.pg.test.ts",
     "scripts/admin-bootstrap.ts",
+    "scripts/gate-account.ts",
     "scripts/seed-demo.ts",
     "scripts/verify-email-templates.ts",
     "scripts/seed-demo-core.ts",
