@@ -13,6 +13,8 @@
     "deploy:staging": "bun scripts/deploy-staging.ts",
     "smoke": "bun scripts/smoke.ts",
     "load:staging": "bun scripts/load-staging.ts",
+    "backup:db": "bun scripts/backup/backup.ts",
+    "backup:rehearsal": "bun scripts/backup/restore-rehearsal.ts",
     "dns:parity": "bun scripts/dns-parity.ts",
     "preview": "vite preview",
     "types": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false wrangler types",

@@ -3,6 +3,7 @@
   "entry": [
     "scripts/*.ts",
     "scripts/*.mjs",
+    "scripts/backup/*.ts",
     "scripts/db/*.ts",
     "scripts/**/*.test.ts",
     "scripts/db/*.integration.ts",
@@ -21,5 +22,5 @@
   ],
   "ignore": ["src/web/routeTree.gen.ts"],
   "ignoreDependencies": ["@swc/core", "cloudflare", "tailwindcss"],
-  "ignoreBinaries": ["gitleaks"]
+  "ignoreBinaries": ["gitleaks", "age", "age-keygen", "pg_dump", "pg_restore"]
 }
