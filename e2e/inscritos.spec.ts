@@ -144,7 +144,7 @@ async function setup(page: Page, capabilities: string[], rows = ROWS) {
 
 const open = async (page: Page) => {
   await page.goto(`/staff/cursos/${COURSE_ID}`);
-  await page.getByRole('tab', { name: 'Inscritos', exact: true }).click();
+  await page.getByRole('tab', { name: 'Pessoas inscritas', exact: true }).click();
 };
 async function expectNoViolations(page: Page, context: string) {
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
@@ -160,7 +160,9 @@ test.describe('lista', () => {
   }) => {
     await setup(page, READER);
     await open(page);
-    await expect(page.getByRole('heading', { level: 2, name: 'Inscritos (4)' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Pessoas inscritas (4)' }),
+    ).toBeVisible();
     const table = page.getByRole('table', { name: 'Pessoas inscritas neste curso' });
     await expect(table.getByRole('row')).toHaveCount(5);
     const ana = table.getByRole('row').filter({ hasText: 'Ana Ativa' });
@@ -182,7 +184,7 @@ test.describe('lista', () => {
   test('vazio, erro com "Tentar novamente" e permissão negada', async ({ page }) => {
     await setup(page, READER, []);
     await open(page);
-    await expect(page.getByText('Ninguém está inscrito neste curso ainda.')).toBeVisible();
+    await expect(page.getByText('Ninguém se inscreveu neste curso ainda.')).toBeVisible();
 
     await page.unrouteAll();
     await setup(page, READER);
@@ -192,7 +194,7 @@ test.describe('lista', () => {
     );
     await open(page);
     await expect(page.getByRole('alert')).toContainText(
-      'Não foi possível carregar os inscritos agora.',
+      'Não foi possível carregar as pessoas inscritas agora.',
     );
     fail = false;
     await page.getByRole('button', { name: 'Tentar novamente' }).click();
@@ -205,7 +207,7 @@ test.describe('lista', () => {
     );
     await open(page);
     await expect(page.getByRole('alert')).toHaveText(
-      'Você não tem permissão para ver os inscritos.',
+      'Você não tem permissão para ver as pessoas inscritas.',
     );
   });
 

@@ -96,7 +96,7 @@ function StaffBanners() {
     <>
       <h1 className="mb-2 text-3xl font-semibold">Banners</h1>
       <p className="mb-8 max-w-prose text-[var(--text-muted)]">
-        Os destaques que o aluno vê no topo dos cursos e as imagens da tela de login.
+        Os destaques que as pessoas inscritas veem no topo dos cursos e as imagens da tela de login.
       </p>
       <p aria-live="polite" className="sr-only">
         {announce}

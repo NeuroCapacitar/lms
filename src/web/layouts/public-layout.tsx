@@ -35,10 +35,15 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       </main>
       <footer className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-8 text-sm text-[var(--text-muted)]">
         <span>NeuroCapacitar Hub</span>
-        {/* O app instalado (tela inicial) não tem barra de endereço: sem este link o /diagnostico (M8-04) seria inalcançável. */}
-        <Link to="/diagnostico" className="inline-flex min-h-11 items-center underline">
-          Diagnóstico do aparelho
-        </Link>
+        <span className="flex flex-wrap items-center gap-x-5">
+          <Link to="/acessibilidade" className="inline-flex min-h-11 items-center underline">
+            Acessibilidade
+          </Link>
+          {/* O app instalado (tela inicial) não tem barra de endereço: sem este link o /diagnostico (M8-04) seria inalcançável. */}
+          <Link to="/diagnostico" className="inline-flex min-h-11 items-center underline">
+            Diagnóstico do aparelho
+          </Link>
+        </span>
       </footer>
     </>
   );

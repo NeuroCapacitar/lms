@@ -18,6 +18,8 @@
 
 @layer base {
   html {
+    /* WCAG 2.4.11: a faixa fixa da prévia (sticky, no topo) não pode cobrir o elemento que recebe o foco ao rolar. */
+    scroll-padding-top: 5rem;
     font-family: var(--font-family-sans);
     background-color: var(--surface-page);
     color: var(--text-default);

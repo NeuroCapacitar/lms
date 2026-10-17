@@ -128,7 +128,7 @@ test.describe('compra (M6-02)', () => {
       access: { hasAccess: true, reason: 'active', expiresAt: '2027-01-01T00:00:00.000Z' },
     });
     await page.goto('/cursos');
-    await expect(page.getByText('Você está inscrito')).toBeVisible();
+    await expect(page.getByText('Sua inscrição está ativa')).toBeVisible();
     await expect(page.getByRole('button', { name: /comprar/i })).toHaveCount(0);
 
     const expired = await page.context().newPage();

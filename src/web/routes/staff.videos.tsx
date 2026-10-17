@@ -218,6 +218,11 @@ function VideoConnections() {
         nunca volta para esta tela. Cada mudança pede a confirmação da sua identidade e fica na
         auditoria.
       </p>
+      <p className="mb-8 max-w-prose text-[var(--text-muted)]">
+        Acessibilidade: a plataforma não gera legendas. Publique os vídeos já com legenda no
+        provedor; vídeo sem legenda não atende à WCAG 1.2.2 e isso consta na declaração de
+        acessibilidade.
+      </p>
 
       {needsReauth ? <ReauthPanel action={needsReauth} /> : null}
       {message ? (

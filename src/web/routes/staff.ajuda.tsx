@@ -61,7 +61,7 @@ function StaffHelp() {
     <>
       <h1 className="mb-2 text-3xl font-semibold">Ajuda</h1>
       <p className="mb-8 max-w-prose text-[var(--text-muted)]">
-        A FAQ que os alunos veem e os pedidos de suporte recebidos.
+        A FAQ que as pessoas inscritas veem e os pedidos de suporte recebidos.
       </p>
       <FaqSection />
       <RequestsSection />
@@ -130,7 +130,7 @@ function FaqSection() {
             onSubmit={(value) =>
               run(
                 () => createFaq(value),
-                'Item criado como rascunho. Publique para os alunos verem.',
+                'Item criado como rascunho. Publique para as pessoas inscritas verem.',
               )
             }
           />

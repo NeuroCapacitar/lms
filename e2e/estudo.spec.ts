@@ -167,7 +167,7 @@ test.describe('mapa do curso', () => {
   });
 
   for (const [reason, text] of [
-    ['no_access', 'Você não está inscrito neste curso.'],
+    ['no_access', 'Você não tem inscrição neste curso.'],
     [
       'expired',
       'Seu acesso a este curso terminou. Inscreva-se de novo para continuar de onde parou.',
