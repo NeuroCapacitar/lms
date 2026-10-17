@@ -4,7 +4,8 @@ import { Hono } from 'hono';
 import { withDatabase } from '../db/client';
 import { CLIENT_EPOCH_HEADER, isClientOutdated } from '../features/pwa/pwa';
 import { authRoutes, type AuthRouteOverrides } from './auth/routes';
-import { injectMeta, serveCoursePage } from './catalog/course-page';
+import { injectMeta, resolveCoursePage } from './catalog/course-page';
+import { servePublicCached, waitUntilOf } from './http/public-cache';
 import { loadPublicCoursePage } from './catalog/public-page';
 import { publicLoginMediaRoutes } from './banner/routes';
 import { publicHelpRoutes } from './help/routes';
@@ -74,15 +75,21 @@ export function createApp(options: { auth?: AuthRouteOverrides } = {}) {
         c.get('log')?.error(error instanceof Error ? error : new Error('certificate_page_failed')),
     }),
   );
+  // Cache de borda curto (M9-07): a página só depende do slug; falha de banco e SPA pura nunca são guardadas.
   app.get('/cursos/*', (c) =>
-    serveCoursePage(c.req.raw, c.env, {
-      loadCourse: (env, slug) =>
-        withDatabase(env.HYPERDRIVE, (db) =>
-          loadPublicCoursePage(db, slug, env.MEDIA_PUBLIC_BASE_URL),
-        ),
-      inject: injectMeta,
-      onError: (error) =>
-        c.get('log')?.error(error instanceof Error ? error : new Error('course_page_failed')),
+    servePublicCached({
+      request: c.req.raw,
+      waitUntil: waitUntilOf(c),
+      produce: () =>
+        resolveCoursePage(c.req.raw, c.env, {
+          loadCourse: (env, slug) =>
+            withDatabase(env.HYPERDRIVE, (db) =>
+              loadPublicCoursePage(db, slug, env.MEDIA_PUBLIC_BASE_URL),
+            ),
+          inject: injectMeta,
+          onError: (error) =>
+            c.get('log')?.error(error instanceof Error ? error : new Error('course_page_failed')),
+        }),
     }),
   );
 

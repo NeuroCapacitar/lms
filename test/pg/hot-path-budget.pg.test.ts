@@ -122,17 +122,17 @@ async function setup() {
 /**
  * Tetos de idas ao banco por rota quente = o que foi MEDIDO em 2026-10-17 (docs/review/evidencias/m9-07/). Servem de guarda de regressão:
  * uma rota que passe a fazer MAIS idas falha aqui. Baixar o teto exige uma otimização medida; subir exige motivo escrito.
- * Onde está o custo: a sessão é lida duas vezes por requisição (o portão dos Termos e a rota), e o mapa, a aula, a conclusão e o heartbeat
- * recarregam a árvore do currículo publicado para decidir drip e sequência.
+ * Medido antes de `withSessionOnce` (ADR 0032): 9, 20, 21, 20, 22, 21 e 15; a sessão era lida duas vezes por requisição. O que sobra de custo:
+ * o mapa, a aula, a conclusão e o heartbeat recarregam a árvore do currículo publicado para decidir drip e sequência (decisão: não mexer, ADR 0032).
  */
 const BUDGET = {
-  sessao: 9,
-  mapa: 20,
-  aula_texto: 21,
-  concluir_aula_texto: 20,
-  heartbeat_video: 22,
-  heartbeat_repetido: 21,
-  catalogo: 15,
+  sessao: 7,
+  mapa: 18,
+  aula_texto: 19,
+  concluir_aula_texto: 18,
+  heartbeat_video: 20,
+  heartbeat_repetido: 19,
+  catalogo: 13,
 } as const;
 
 const measured: Record<string, number> = {};

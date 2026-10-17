@@ -136,7 +136,7 @@
 
 ### M9-07 — Performance e orçamento de custo (Neon, Workers, acordar)
 
-**Dependências:** M0-12 (spike de latência/acordar), M9-01, M9-02, M7-08 · **Estado:** `in_progress` (feitos: idas ao banco e EXPLAIN, uma otimização medida, configuração, cold start, consumo estimado e carga leve no Staging; achado: Error 1102 por limite de CPU do plano gratuito do Worker; pendentes: rotas logadas em Staging, custo marginal no Neon, plano do Worker, outras franquias: ver `docs/implementation/STATUS.md` e `docs/review/evidencias/m9-07/README.md`)
+**Dependências:** M0-12 (spike de latência/acordar), M9-01, M9-02, M7-08 · **Estado:** `in_progress` (feitos: idas ao banco e EXPLAIN, uma otimização medida, configuração, cold start, consumo estimado e carga leve no Staging; achado: Error 1102 por limite de CPU do plano gratuito do Worker; decisões da ADR 0032 aplicadas (cache curto nas rotas públicas, sessão lida uma vez, Cron mantido em 30 min, Workers Paid adiado); pendentes: rotas logadas em Staging, custo marginal no Neon, Workers Paid no fim do desenvolvimento, outras franquias: ver `docs/implementation/STATUS.md` e `docs/review/evidencias/m9-07/README.md`)
 
 **Objetivo.** Provar, por medição, que a v1 cabe no free tier e no teto de US$ 10/mês (só Workers Paid é custo certo).
 

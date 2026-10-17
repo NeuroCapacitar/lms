@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 
 import { withDatabase } from '../../db/client';
+import { PUBLIC_CACHE_TTL, servePublicCached, waitUntilOf } from '../http/public-cache';
 import { loadPublicCoursePage } from './public-page';
 
 /**
@@ -9,11 +10,23 @@ import { loadPublicCoursePage } from './public-page';
  */
 export function publicCourseRoutes() {
   const routes = new Hono<{ Bindings: Env }>();
-  routes.get('/courses/:slug', async (c) => {
-    const page = await withDatabase(c.env.HYPERDRIVE, (db) =>
-      loadPublicCoursePage(db, c.req.param('slug'), c.env.MEDIA_PUBLIC_BASE_URL),
-    );
-    return page ? c.json(page) : c.json({ error: { code: 'not_found' } }, 404);
-  });
+  // Cache de borda curto (M9-07): dado público e igual para todos; só guarda leitura bem-sucedida do banco.
+  routes.get('/courses/:slug', (c) =>
+    servePublicCached({
+      request: c.req.raw,
+      waitUntil: waitUntilOf(c),
+      produce: async () => {
+        const page = await withDatabase(c.env.HYPERDRIVE, (db) =>
+          loadPublicCoursePage(db, c.req.param('slug'), c.env.MEDIA_PUBLIC_BASE_URL),
+        );
+        return page
+          ? { response: c.json(page), ttl: PUBLIC_CACHE_TTL.found }
+          : {
+              response: c.json({ error: { code: 'not_found' } }, 404),
+              ttl: PUBLIC_CACHE_TTL.missing,
+            };
+      },
+    }),
+  );
   return routes;
 }

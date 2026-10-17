@@ -119,10 +119,17 @@ Versionada em `scripts/load-staging.ts`: recusa qualquer endereço que não seja
 4. Browser Run (horas), Queues (operações), Workers Logs (volume), R2 e o contador de 5.000 transformações do Images: não medidos.
 5. **Orçamento final das rotas quentes** ("nenhuma acima do orçamento"): continua PENDENTE até o plano do Worker ser decidido.
 
-## 13. Decisões do responsável, medidas (acrescenta à tabela da seção 6)
+## 13. Decisões (2026-10-17): o responsável delegou "analise e tome a melhor decisão"
 
-| Opção | Evidência | O que muda |
+A decisão completa, com o motivo de cada uma e o que NÃO foi adotado, está na **[ADR 0032](../../../adr/0032-m9-07-desempenho-cache-publico-cron-e-sessao.md)**. Resumo:
+
+| Opção | Decisão | Resultado medido |
 | --- | --- | --- |
-| **D. Contratar o Workers Paid (US$ 5/mês)** | O Error 1102 sob 20 simultâneas (1,3% a 4%) e o limite de 100 mil requisições por dia | Despesa recorrente prevista no ADR 0003. Sem isso a v1 não é estável |
-| **E. Cache de borda curto nas rotas públicas** (`/api/public/courses/:slug`, `/cursos/:slug`, `login-media`) | Hoje `no-store` e cada visita acorda o banco | Menos acordadas do Neon e menos CPU; o dado é público (o M2-04 já fala em "cache curto"); precisa decidir o prazo e a invalidação ao publicar |
-| **F. Cron de 60 em 60 minutos em vez de 30** | O Cron de 30 min custa ≈ 32 CU-h/mês; de 60 min seria ≈ 16 | Mais latência na emissão de certificados e na republicação do outbox (M7-02, M4-03) |
+| D. Workers Paid (US$ 5/mês) | **Adiado** (decisão do responsável): rever quando só faltar ir para Production; pré-requisito do Go/No-Go | Staging aguenta até ~10 simultâneas sem erro; acima disso o Error 1102 é esperado |
+| E. Cache de borda curto nas rotas públicas | **Adotado** (60 s; "não existe" 30 s) | 11 testes no `workerd` com o Cache API de verdade; **não verificável no Staging** (`*.workers.dev` não tem Cache API): conferir em Production |
+| F. Cron de 60 min | **Não adotado**: mantém 30 min (ADR 0027 confirmada) com regra de saída em 55 CU-h/mês | Consumo medido dentro do modelo (≈ 32 CU-h/mês só o Cron); o risco sem controle era o tráfego anônimo, tratado pela E |
+| A. Ler a sessão uma vez por requisição | **Adotado** (`withSessionOnce`) | −2 idas em toda rota autenticada: `/me/access` 9 → 7, catálogo 15 → 13, concluir 20 → 18, mapa 20 → 18, aula 21 → 19, heartbeat 22 → 20 |
+| B. Heartbeat leve | **Não adotado**: mantém a reverificação completa (M5-02); desenho seguro registrado para depois | — |
+| C. Cache do currículo publicado | **Não adotado**: sem evidência de necessidade na escala do produto | — |
+
+**Não verificado:** o efeito do cache e do memo sobre o Error 1102 no Staging (o Cache API não roda em `*.workers.dev`, e o memo corta idas ao banco, não CPU de início de isolado); o ganho de CPU só se mede no plano pago.

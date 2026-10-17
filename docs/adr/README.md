@@ -37,5 +37,6 @@ Crie uma ADR **somente** para decisão arquitetural relevante e cara de reverter
 | 0029 | Spike M0-10: Better Auth 1.7.7, magic link com confirmação por POST |
 | 0030 | Spike M0-15: Browser Run gera o PDF do certificado (A4, Lexend Deca, CSP obrigatória) |
 | 0031 | Spike M0-17: meta tags por HTMLRewriter (aceite pendente dos validadores) |
+| 0032 | M9-07: cache curto nas rotas públicas, sessão lida uma vez, Cron em 30 min, Workers Paid no fim |
 
 Cada spike do M0 que concluir terá sua ADR (numeração seguinte, 0032 em diante) com o resultado "passou" ou "reabrir decisão".
