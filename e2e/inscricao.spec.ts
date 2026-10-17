@@ -120,7 +120,7 @@ test.describe('página do curso', () => {
     const state = await stub(page);
     await page.goto('/cursos/demo');
     await page.getByRole('button', { name: 'Inscrever-se' }).click();
-    await expect(page.getByText('Você está inscrito. Acesso até 10/01/2027.')).toBeVisible();
+    await expect(page.getByText('Sua inscrição está ativa. Acesso até 10/01/2027.')).toBeVisible();
     expect(state.enrollCalls).toEqual([{ offerId: OFFER_ID }]);
     await expect(page.getByRole('button', { name: /Inscrever-se/ })).toHaveCount(0);
   });
@@ -133,14 +133,14 @@ test.describe('página do curso', () => {
     const button = page.getByRole('button', { name: 'Inscrever-se' });
     await button.dblclick();
     await expect(page.getByRole('button', { name: 'Inscrevendo…' })).toBeDisabled();
-    await expect(page.getByText(/Você está inscrito/)).toBeVisible();
+    await expect(page.getByText(/Sua inscrição está ativa/)).toBeVisible();
     expect(state.enrollCalls).toHaveLength(1);
   });
 
   test('já tem acesso: mostra até quando e não oferece o botão', async ({ page }) => {
     await stub(page, { access: ACTIVE });
     await page.goto('/cursos/demo');
-    await expect(page.getByText('Você está inscrito. Acesso até 10/01/2027.')).toBeVisible();
+    await expect(page.getByText('Sua inscrição está ativa. Acesso até 10/01/2027.')).toBeVisible();
     await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
   });
 
@@ -200,7 +200,7 @@ test.describe('catálogo', () => {
     await page.goto('/cursos');
     const card = page.getByRole('listitem').filter({ hasText: 'Curso Demonstrativo' });
     await card.getByRole('button', { name: 'Inscrever-se' }).click();
-    await expect(card.getByText('Você está inscrito. Acesso até 10/01/2027.')).toBeVisible();
+    await expect(card.getByText('Sua inscrição está ativa. Acesso até 10/01/2027.')).toBeVisible();
     expect(state.enrollCalls).toEqual([{ offerId: OFFER_ID }]);
   });
 
@@ -208,7 +208,7 @@ test.describe('catálogo', () => {
     await stub(page, { access: ACTIVE });
     await page.goto('/cursos');
     const card = page.getByRole('listitem').filter({ hasText: 'Curso Demonstrativo' });
-    await expect(card.getByText(/Você está inscrito/)).toBeVisible();
+    await expect(card.getByText(/Sua inscrição está ativa/)).toBeVisible();
     await expect(card.getByRole('button')).toHaveCount(0);
   });
 });

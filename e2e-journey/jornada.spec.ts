@@ -148,7 +148,7 @@ test('2. o catálogo mostra o curso gratuito e "Inscrever-se" dá acesso, sem pa
   const before = await counts();
   await card.getByRole('button', { name: 'Inscrever-se' }).click();
   await expect(
-    card.getByText(/Você está inscrito\. Acesso até \d{2}\/\d{2}\/\d{4}\./),
+    card.getByText(/Sua inscrição está ativa\. Acesso até \d{2}\/\d{2}\/\d{4}\./),
   ).toBeVisible();
   const after = await counts();
   expect(after.entitlement).toBe(before.entitlement + 1);
@@ -354,8 +354,11 @@ test('7. negativos de autenticação e de acesso: sem sessão, aula de outro cur
 test('8. o Suporte com grant matricula manualmente, suspende, reativa e abre a prévia', async () => {
   await signIn(support, SUPPORT_EMAIL);
   await support.goto(`/staff/cursos/${ids.demoCourseId}`);
-  await acceptTermsIfAsked(support, support.getByRole('tab', { name: 'Inscritos', exact: true }));
-  await support.getByRole('tab', { name: 'Inscritos', exact: true }).click();
+  await acceptTermsIfAsked(
+    support,
+    support.getByRole('tab', { name: 'Pessoas inscritas', exact: true }),
+  );
+  await support.getByRole('tab', { name: 'Pessoas inscritas', exact: true }).click();
   const table = support.getByRole('table', { name: 'Pessoas inscritas neste curso' });
   await expect(table.getByRole('row').filter({ hasText: STUDENT_EMAIL })).toBeVisible();
 
@@ -408,7 +411,9 @@ test('8. o Suporte com grant matricula manualmente, suspende, reativa e abre a p
 
   // prévia: tudo liberado e NADA é gravado
   const before = await counts();
-  await support.getByRole('link', { name: 'Ver como aluno (prévia do curso publicado)' }).click();
+  await support
+    .getByRole('link', { name: 'Ver como pessoa inscrita (prévia do curso publicado)' })
+    .click();
   await expect(support.getByRole('region', { name: 'Aviso de prévia' })).toHaveText(
     'Prévia — nada é gravado.',
   );

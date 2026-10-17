@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 
 const FAILURES: Record<string, string> = {
   course_already_open: 'As inscrições deste curso já abriram. Atualize a página.',
-  already_enrolled: 'Você já está inscrito neste curso.',
+  already_enrolled: 'Você já tem inscrição neste curso.',
   not_found: 'Este curso não está mais disponível para aviso.',
 };
 

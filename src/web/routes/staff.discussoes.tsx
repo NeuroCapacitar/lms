@@ -82,8 +82,8 @@ function StaffDiscussions() {
     <>
       <h1 className="mb-2 text-3xl font-semibold">Discussões</h1>
       <p className="mb-6 max-w-prose text-[var(--text-muted)]">
-        Perguntas dos alunos nas aulas. Ocultar, restaurar e excluir pedem um motivo e ficam na
-        auditoria. O nome mostrado é o do perfil, nunca o e-mail.
+        Perguntas das pessoas inscritas nas aulas. Ocultar, restaurar e excluir pedem um motivo e
+        ficam na auditoria. O nome mostrado é o do perfil, nunca o e-mail.
       </p>
       <div role="group" aria-label="Lista" className="mb-6 flex flex-wrap gap-2">
         {VIEWS.map((option) => (

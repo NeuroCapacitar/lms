@@ -234,7 +234,9 @@ test.describe('aula na prévia', () => {
 });
 
 test.describe('entrada e acessibilidade', () => {
-  test('o editor do curso tem o link "Ver como aluno" que leva à prévia', async ({ page }) => {
+  test('o editor do curso tem o link "Ver como pessoa inscrita" que leva à prévia', async ({
+    page,
+  }) => {
     await setup(page);
     await page.route(`**/api/staff/courses/${COURSE_ID}`, (route) =>
       route.fulfill({
@@ -263,7 +265,9 @@ test.describe('entrada e acessibilidade', () => {
       }),
     );
     await page.goto(`/staff/cursos/${COURSE_ID}`);
-    await page.getByRole('link', { name: 'Ver como aluno (prévia do curso publicado)' }).click();
+    await page
+      .getByRole('link', { name: 'Ver como pessoa inscrita (prévia do curso publicado)' })
+      .click();
     await expect(page).toHaveURL(new RegExp(`/staff/previa/${COURSE_ID}$`));
     await expect(banner(page)).toBeVisible();
   });

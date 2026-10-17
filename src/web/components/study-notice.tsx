@@ -17,7 +17,7 @@ export function lockMessage(reason: LessonLockReason, releasesAt: string | null)
     case 'suspended':
       return 'Seu acesso a este curso está suspenso. Fale com o suporte.';
     case 'no_access':
-      return 'Você não está inscrito neste curso.';
+      return 'Você não tem inscrição neste curso.';
     case 'retired':
       return 'Esta aula não está mais disponível.';
   }
@@ -36,7 +36,7 @@ export const OFFLINE_BLOCKED: Record<BlockedReason, string> = {
 };
 
 const DENIED: Record<DeniedReason, string> = {
-  no_access: 'Você não está inscrito neste curso.',
+  no_access: 'Você não tem inscrição neste curso.',
   expired: 'Seu acesso a este curso terminou. Inscreva-se de novo para continuar de onde parou.',
   suspended: 'Seu acesso a este curso está suspenso. Fale com o suporte.',
 };

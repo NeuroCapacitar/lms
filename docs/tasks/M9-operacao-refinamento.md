@@ -158,7 +158,7 @@
 
 ### M9-08 — UX e acessibilidade finais (WCAG 2.2 AA)
 
-**Dependências:** M0-07, M9-01 · **Estado:** `not_started`
+**Dependências:** M0-07, M9-01 · **Estado:** `in_progress` (passos 1, 3 e 5 feitos, 2 e 4 parciais: leitor de tela manual e pendências do checklist; ver `docs/implementation/STATUS.md` e `docs/operations/accessibility-checklist.md`)
 
 **Objetivo.** Verificar, no produto inteiro, os critérios assumidos em design.
 

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AcessibilidadeRouteImport } from './routes/acessibilidade'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as BaseVisualRouteImport } from './routes/base-visual'
 import { Route as ConviteRouteImport } from './routes/convite'
@@ -49,6 +50,11 @@ import { Route as StaffPreviaCourseIdAulasLessonIdRouteImport } from './routes/s
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcessibilidadeRoute = AcessibilidadeRouteImport.update({
+  id: '/acessibilidade',
+  path: '/acessibilidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AjudaRoute = AjudaRouteImport.update({
@@ -234,6 +240,7 @@ const StaffPreviaCourseIdAulasLessonIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acessibilidade': typeof AcessibilidadeRoute
   '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
@@ -272,6 +279,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acessibilidade': typeof AcessibilidadeRoute
   '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
@@ -310,6 +318,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/acessibilidade': typeof AcessibilidadeRoute
   '/ajuda': typeof AjudaRoute
   '/base-visual': typeof BaseVisualRoute
   '/convite': typeof ConviteRoute
@@ -350,6 +359,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acessibilidade'
     | '/ajuda'
     | '/base-visual'
     | '/convite'
@@ -388,6 +398,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acessibilidade'
     | '/ajuda'
     | '/base-visual'
     | '/convite'
@@ -425,6 +436,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/acessibilidade'
     | '/ajuda'
     | '/base-visual'
     | '/convite'
@@ -464,6 +476,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcessibilidadeRoute: typeof AcessibilidadeRoute
   AjudaRoute: typeof AjudaRoute
   BaseVisualRoute: typeof BaseVisualRoute
   ConviteRoute: typeof ConviteRoute
@@ -490,6 +503,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acessibilidade': {
+      id: '/acessibilidade'
+      path: '/acessibilidade'
+      fullPath: '/acessibilidade'
+      preLoaderRoute: typeof AcessibilidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ajuda': {
@@ -786,6 +806,7 @@ const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcessibilidadeRoute: AcessibilidadeRoute,
   AjudaRoute: AjudaRoute,
   BaseVisualRoute: BaseVisualRoute,
   ConviteRoute: ConviteRoute,

@@ -150,7 +150,7 @@ export function CourseEditor({ courseId }: { courseId: string }) {
     { id: 'detalhes', label: 'Detalhes' },
     { id: 'curriculo', label: 'Currículo' },
     ...(canOffers ? [{ id: 'oferta' as const, label: 'Oferta' }] : []),
-    { id: 'inscritos', label: 'Inscritos' },
+    { id: 'inscritos', label: 'Pessoas inscritas' },
     { id: 'previa', label: 'Pré-visualização' },
     { id: 'publicar', label: 'Publicar' },
   ];
@@ -170,7 +170,7 @@ export function CourseEditor({ courseId }: { courseId: string }) {
 
       <p className="mb-6">
         <Link to="/staff/previa/$courseId" params={{ courseId }}>
-          Ver como aluno (prévia do curso publicado)
+          Ver como pessoa inscrita (prévia do curso publicado)
         </Link>
       </p>
 

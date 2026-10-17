@@ -144,3 +144,36 @@ describe('estrutura dos tokens', () => {
     expect(css).not.toMatch(/Geist/i);
   });
 });
+
+// Estado hover dos botões (M9-08): `hover:brightness-95` filtra o elemento INTEIRO, texto e fundo, a 95% de cada canal sRGB. O contraste
+// precisa continuar valendo com os dois escurecidos. Botão desabilitado (`opacity-60`) é componente inativo: a WCAG 1.4.3 o dispensa.
+const HOVER_FACTOR = 0.95;
+const dim = (color: ReturnType<typeof parseColor>) => ({
+  r: color.r * HOVER_FACTOR,
+  g: color.g * HOVER_FACTOR,
+  b: color.b * HOVER_FACTOR,
+});
+
+describe.each<Theme>(['light', 'dark'])('estado hover dos botões no tema %s', (theme) => {
+  it.each([
+    ['--button-primary-fg', '--button-primary-bg'],
+    ['--button-secondary-fg', '--button-secondary-bg'],
+  ])('%s sobre %s continua ≥ 4,5:1 com o escurecimento', (foreground, background) => {
+    const value = contrastRatio(
+      dim(parseColor(resolve(theme, foreground))),
+      dim(parseColor(resolve(theme, background))),
+    );
+    expect(
+      value,
+      `${foreground} sobre ${background} em hover (${theme}): ${value.toFixed(2)}:1`,
+    ).toBeGreaterThanOrEqual(TEXT);
+  });
+
+  it('a borda do botão secundário continua ≥ 3:1 sobre a página com o botão escurecido', () => {
+    const value = contrastRatio(
+      dim(parseColor(resolve(theme, '--button-secondary-border'))),
+      parseColor(resolve(theme, '--surface-page')),
+    );
+    expect(value, `borda em hover (${theme}): ${value.toFixed(2)}:1`).toBeGreaterThanOrEqual(UI);
+  });
+});

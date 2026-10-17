@@ -257,7 +257,7 @@ export function EnrollmentsTab({ courseId }: { courseId: string }) {
   }
 
   if (list.error instanceof ForbiddenError) {
-    return <p role="alert">Você não tem permissão para ver os inscritos.</p>;
+    return <p role="alert">Você não tem permissão para ver as pessoas inscritas.</p>;
   }
   const data = list.data;
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
@@ -289,13 +289,13 @@ export function EnrollmentsTab({ courseId }: { courseId: string }) {
 
       <section aria-labelledby="inscritos-titulo" className="grid min-w-0 gap-4">
         <h2 id="inscritos-titulo" className="text-xl font-semibold">
-          Inscritos {data ? `(${data.total})` : ''}
+          Pessoas inscritas {data ? `(${data.total})` : ''}
         </h2>
-        {list.isPending ? <p role="status">Carregando os inscritos…</p> : null}
+        {list.isPending ? <p role="status">Carregando as pessoas inscritas…</p> : null}
         {list.isError && !(list.error instanceof ForbiddenError) ? (
           <>
             <p role="alert" className="font-medium text-[var(--text-danger)]">
-              Não foi possível carregar os inscritos agora.
+              Não foi possível carregar as pessoas inscritas agora.
             </p>
             <div>
               <Button type="button" variant="secondary" onClick={() => void list.refetch()}>
@@ -304,7 +304,7 @@ export function EnrollmentsTab({ courseId }: { courseId: string }) {
             </div>
           </>
         ) : null}
-        {data && data.items.length === 0 ? <p>Ninguém está inscrito neste curso ainda.</p> : null}
+        {data && data.items.length === 0 ? <p>Ninguém se inscreveu neste curso ainda.</p> : null}
         {data && data.items.length > 0 ? (
           <div className="min-w-0 overflow-x-auto">
             <table className="w-full min-w-[40rem] border-collapse text-left">
@@ -348,7 +348,10 @@ export function EnrollmentsTab({ courseId }: { courseId: string }) {
           </div>
         ) : null}
         {data && pages > 1 ? (
-          <nav aria-label="Páginas de inscritos" className="flex flex-wrap items-center gap-3">
+          <nav
+            aria-label="Páginas das pessoas inscritas"
+            className="flex flex-wrap items-center gap-3"
+          >
             <Button
               type="button"
               variant="secondary"

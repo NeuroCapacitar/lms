@@ -15,12 +15,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   terms_required: 'Aceite os Termos de Uso e a Política de Privacidade para continuar.',
 };
 
-/** "Você está inscrito. Acesso até dd/mm/aaaa." (a pessoa já tem acesso válido). */
+/** "Sua inscrição está ativa. Acesso até dd/mm/aaaa." (a pessoa já tem acesso válido). */
 export function AccessStatus({ access, courseId }: { access: AccessDto; courseId: string }) {
   return (
     <div className="grid gap-2">
       <p role="status" className="font-medium text-[var(--text-success)]">
-        Você está inscrito
+        Sua inscrição está ativa
         {access.expiresAt ? `. Acesso até ${formatAccessDate(access.expiresAt)}.` : '.'}
       </p>
       <div>
