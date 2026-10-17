@@ -143,6 +143,18 @@ export function checkArtifact(
       if (!allowedVars.has(name))
         problems.push(`variável não permitida em "${requestedEnvironment}": ${name}`);
     }
+    // Retenção do PDF de certificado revogado (M7-05): vazio = purga desligada (o prazo é decisão jurídica). Preenchido, tem de ser um
+    // número inteiro de dias; um valor que não se entende nunca vai para o ar.
+    const retention = vars.REVOKED_PDF_RETENTION_DAYS;
+    if (
+      typeof retention === 'string' &&
+      retention.trim() !== '' &&
+      !/^[0-9]{1,4}$/.test(retention.trim())
+    ) {
+      problems.push(
+        `REVOKED_PDF_RETENTION_DAYS inválida em "${requestedEnvironment}": vazio (desligada) ou dias inteiros`,
+      );
+    }
     // A origem do app é a única origem confiável do Better Auth: em Staging e Production só https,
     // host exato e sem localhost (ADR 0007, M1-01).
     const baseUrl = vars.APP_BASE_URL;

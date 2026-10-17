@@ -105,6 +105,16 @@ describe('checkArtifact', () => {
     ).toMatch(/variável não permitida/);
   });
 
+  it('REVOKED_PDF_RETENTION_DAYS (M7-05): vazio (purga desligada) e dias inteiros passam; qualquer outra coisa não vai para o ar', () => {
+    const allowed: ExpectedEnvironment = { ...staging, vars: ['REVOKED_PDF_RETENTION_DAYS'] };
+    const withDays = (value: string) =>
+      checkArtifact(artifact({ vars: { REVOKED_PDF_RETENTION_DAYS: value } }), allowed, 'staging');
+    for (const ok of ['', '90', ' 90 ']) expect(withDays(ok)).toEqual([]);
+    for (const bad of ['abc', '90 dias', '-1', '9.5', '12345']) {
+      expect(withDays(bad).join(' | '), bad).toMatch(/REVOKED_PDF_RETENTION_DAYS inválida/);
+    }
+  });
+
   it('rejeita APP_BASE_URL com http, localhost, curinga ou caminho em ambiente publicado', () => {
     const allowed: ExpectedEnvironment = { ...staging, vars: ['APP_BASE_URL'] };
     const withUrl = (url: string) =>

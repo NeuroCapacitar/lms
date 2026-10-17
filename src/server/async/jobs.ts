@@ -11,6 +11,8 @@ import { evaluateAlerts } from '../../features/ops/operations';
 import { createPayerEnricher } from '../commerce/payer-store';
 import { hasReconcileWork, reconcilePending } from '../commerce/reconciler';
 import type { PaymentReader } from '../commerce/payment-reader';
+import { isRetentionMisconfigured, parseRetentionDays } from '../../features/certificate/retention';
+import { hasDueRevokedPdf, purgeRevokedPdfs } from '../certificate/purge-store';
 import { createR2Storage } from '../media/r2-storage';
 import { cleanupMedia, hasMediaWork } from '../media/store';
 import { loadOperationsSnapshot } from '../ops/operations-store';
@@ -27,6 +29,7 @@ export interface JobContext {
       | 'R2_ACCESS_KEY_ID'
       | 'R2_SECRET_ACCESS_KEY'
       | 'R2_PRIVATE_BUCKET_NAME'
+      | 'REVOKED_PDF_RETENTION_DAYS'
     >;
   alert: Alert;
   /** Identifica esta execução do Cron (dono dos leases). */
@@ -141,6 +144,33 @@ const mediaCleanupJob: CronJob = {
 };
 
 /**
+ * Retenção do PDF de certificado REVOGADO (M7-05). O prazo é decisão jurídica: sem `REVOKED_PDF_RETENTION_DAYS` válida o job NEM ACORDA
+ * (a sonda devolve falso), e um valor preenchido que não se entende vira alerta em vez de um prazo assumido. Sem R2, também não há o que apagar.
+ */
+const purgeRevokedPdfJob: CronJob = {
+  name: 'certificate.purge_revoked_pdf',
+  async probe({ db, env, alert }) {
+    const raw = env.REVOKED_PDF_RETENTION_DAYS;
+    if (isRetentionMisconfigured(raw)) {
+      alert({ code: 'revoked_pdf_retention_invalid' });
+      return false;
+    }
+    const days = parseRetentionDays(raw);
+    if (days === null || createR2Storage(env) === undefined) return false;
+    return hasDueRevokedPdf(db, days);
+  },
+  async run({ db, env }) {
+    const days = parseRetentionDays(env.REVOKED_PDF_RETENTION_DAYS);
+    const storage = createR2Storage(env);
+    if (days === null || !storage) return { count: 0 };
+    const result = await purgeRevokedPdfs(db, storage, { days });
+    return result.failed > 0
+      ? { count: result.purged, errorCode: 'purge_failed' }
+      : { count: result.purged };
+  },
+};
+
+/**
  * Reconciliação financeira (M6-04): só pedidos pendentes com sessão ativa há mais de 10 min e pagamentos em estado
  * intermediário, com backoff e teto por execução. 429 do Asaas interrompe o lote SEM erro do job; falha do provider
  * deixa o código `provider_unavailable`. Só existe com o leitor do Asaas configurado.
@@ -171,6 +201,7 @@ export function createCronJobs(
     ...(options.reader ? [reconcileJob(options.reader, options.masterKey)] : []),
     purgeJob,
     mediaCleanupJob,
+    purgeRevokedPdfJob,
     alertsJob,
   ];
 }

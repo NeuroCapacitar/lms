@@ -11,6 +11,8 @@
     "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
     "RESEND_TEMPLATE_REAUTH_LINK": "1b066eb8-2a71-4e41-94b7-15475b1e3d4d",
     "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
+    // Retenção do PDF de certificado REVOGADO (M7-05), em dias. VAZIO = purga desligada: o prazo é decisão jurídica (parecer do advogado).
+    "REVOKED_PDF_RETENTION_DAYS": "",
   },
   "assets": {
     "binding": "ASSETS",
@@ -67,6 +69,8 @@
         "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
         "RESEND_TEMPLATE_REAUTH_LINK": "1b066eb8-2a71-4e41-94b7-15475b1e3d4d",
         "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
+        // M7-05: Staging testa a purga com os 90 dias propostos (dado de teste). Production fica VAZIO até o parecer do advogado.
+        "REVOKED_PDF_RETENTION_DAYS": "90",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea4be9d4370457b93f1feb7469d2ceb" }],
       // Mídia e certificados (M5-07, M7-02): os buckets do Staging e o Browser Run (PDF do certificado). Só os BINDINGS:
@@ -127,6 +131,8 @@
         "RESEND_TEMPLATE_MAGIC_LINK": "bcbd5da9-a043-4014-aba9-8b27c8e55f9d",
         "RESEND_TEMPLATE_REAUTH_LINK": "1b066eb8-2a71-4e41-94b7-15475b1e3d4d",
         "RESEND_TEMPLATE_STAFF_INVITATION": "63dee257-f261-4c40-b4f2-550596c5efcd",
+        // M7-05: VAZIO = purga desligada. O prazo é decisão jurídica (parecer do advogado); sem ele o Go/No-Go (M10-01) bloqueia.
+        "REVOKED_PDF_RETENTION_DAYS": "",
       },
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "f31b83e0d8044d00a9651c81d121bc91" }],
       // Reconciliação do assíncrono (M4-03). Cada execução acorda o Neon Free: NÃO aumentar a frequência.

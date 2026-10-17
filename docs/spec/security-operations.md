@@ -124,7 +124,7 @@ Workers Previews não substituem Staging (Cron, rotas e consumers de Queue não 
 
 | Dado | Regra proposta |
 |---|---|
-| PDF de certificado revogado | 90 dias, **CONDICIONAL** a parecer; o registro mínimo (código, status, hash, data, motivo) permanece para validação |
+| PDF de certificado revogado | 90 dias, **CONDICIONAL** a parecer; o registro mínimo (código, status, hash, data, motivo) permanece para validação | Implementado (M7-05) **desligado por padrão**: `REVOKED_PDF_RETENTION_DAYS` vazio = sem purga; Production só liga com o parecer. A purga apaga o PDF, troca o nome do snapshot por "[removido]" e grava o registro durável no R2 privado (`purge-log/`). |
 | Payload bruto de webhook | 30 dias, depois sanitizado |
 | Logs de acesso/autenticação | Marco Civil art. 15 cita 6 meses (não relido, W3 §5.3): `PENDENTE (advogado)` |
 | Dados fiscais/financeiros | referência de 5 anos; confirmar com contador |
