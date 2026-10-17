@@ -175,9 +175,9 @@ describe('a matriz declarada é a das rotas reais', () => {
   it('só usa capacidades que existem; toda capacidade de Staff aparece na matriz ou está reservada de propósito', () => {
     const used = new Set(STAFF_ENDPOINTS.flatMap((endpoint) => required(endpoint)));
     for (const capability of used) expect(ALL_CAPABILITIES).toContain(capability);
-    // Reservadas (sem endpoint próprio hoje): `audit.view` até o visualizador de auditoria; `certificate.template` e
+    // Reservadas (sem endpoint próprio hoje): `certificate.template` e
     // `certificate.revoke` usam `staff.manage` como "só Admin" (mesmo efeito, ver docs/spec/staff-matrix.md).
-    const reserved = ['audit.view', 'certificate.template', 'certificate.revoke'];
+    const reserved = ['certificate.template', 'certificate.revoke'];
     expect(ALL_CAPABILITIES.filter((c) => !used.has(c)).sort()).toEqual(reserved.sort());
   });
 

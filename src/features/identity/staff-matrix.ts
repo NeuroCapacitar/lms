@@ -110,6 +110,10 @@ export const STAFF_ENDPOINTS: readonly StaffEndpoint[] = [
   // Painel de fatos (as seções de pedidos e denúncias só vão a quem tem finance.view e discussion.moderate).
   row('GET', '/api/staff/panel', cap('staff.read'), '/staff'),
 
+  // Fila operacional (cada tipo só a quem pode vê-lo) e leitura da auditoria (só leitura, por cursor).
+  row('GET', '/api/staff/queue', cap('staff.read'), '/staff/fila'),
+  row('GET', '/api/staff/audit', cap('audit.view'), '/staff/auditoria'),
+
   // Operação.
   row('GET', '/api/staff/operations', cap('staff.read'), OPS),
   row('POST', '/api/staff/operations/outbox/:id/requeue', cap('ops.queue'), OPS, true),

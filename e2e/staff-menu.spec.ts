@@ -41,3 +41,14 @@ test('Admin vê "Certificados" e também "Certificados emitidos"', async ({ page
   await expect(nav.getByRole('link', { name: 'Certificados', exact: true })).toBeVisible();
   await expect(nav.getByRole('link', { name: 'Certificados emitidos' })).toBeVisible();
 });
+
+test('Fila de ações é de toda a Staff; Auditoria só aparece com audit.view', async ({ page }) => {
+  const bare = await openStaff(page, ['student', 'support'], ['staff.read']);
+  await expect(bare.getByRole('link', { name: 'Fila de ações' })).toBeVisible();
+  await expect(bare.getByRole('link', { name: 'Auditoria' })).toHaveCount(0);
+
+  const other = await page.context().newPage();
+  const viewer = await openStaff(other, ['student', 'support'], ['staff.read', 'audit.view']);
+  await expect(viewer.getByRole('link', { name: 'Auditoria' })).toBeVisible();
+  await expect(viewer.getByRole('link', { name: 'Equipe' })).toHaveCount(0);
+});

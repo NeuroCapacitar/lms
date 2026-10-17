@@ -14,6 +14,7 @@ interface NavItem {
   to:
     | '/staff'
     | '/staff/cursos'
+    | '/staff/fila'
     | '/staff/operacao'
     | '/staff/discussoes'
     | '/staff/ajuda'
@@ -22,6 +23,7 @@ interface NavItem {
     | '/staff/certificados/emitidos'
     | '/staff/financeiro'
     | '/staff/videos'
+    | '/staff/auditoria'
     | '/staff/equipe';
   label: string;
   /** Capability que mostra o item. É só conveniência: o servidor protege cada rota. */
@@ -31,6 +33,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/staff', label: 'Início', needs: 'staff.read' },
   { to: '/staff/cursos', label: 'Cursos', needs: 'staff.read' },
+  { to: '/staff/fila', label: 'Fila de ações', needs: 'staff.read' },
   { to: '/staff/operacao', label: 'Operação', needs: 'staff.read' },
   { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
   { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },
@@ -48,6 +51,7 @@ const NAV: NavItem[] = [
     needs: ['finance.view', 'finance.review', 'refund.execute'],
   },
   { to: '/staff/videos', label: 'Vídeo', needs: 'integration.credentials' },
+  { to: '/staff/auditoria', label: 'Auditoria', needs: 'audit.view' },
   { to: '/staff/equipe', label: 'Equipe', needs: 'staff.manage' },
 ];
 

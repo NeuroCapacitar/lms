@@ -53,6 +53,7 @@ import { mediaRoutes } from '../media/routes';
 import type { ObjectStorage } from '../media/storage';
 import { operationsRoutes } from '../ops/routes';
 import { staffPanelRoutes } from '../staff/panel-routes';
+import { staffQueueRoutes } from '../staff/queue-routes';
 import { videoRoutes } from '../video/routes';
 import { emailQuotaExhausted } from '../email/quota-store';
 import { previewRoutes } from '../learning/preview-routes';
@@ -428,6 +429,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   // Operations Center (M4-05): /api/staff/operations (leitura da Staff; ações com grant e reautenticação).
   routes.route('/staff', operationsRoutes({ withDatabase }));
   routes.route('/staff', staffPanelRoutes({ withDatabase }));
+  routes.route('/staff', staffQueueRoutes({ withDatabase }));
 
   // Conexões com providers de vídeo (M5-01): /api/staff/video/* (só Admin; segredo nunca volta).
   routes.route('/staff', videoRoutes({ withDatabase }));
