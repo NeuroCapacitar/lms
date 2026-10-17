@@ -63,6 +63,7 @@ Conta **suspensa** nega tudo, mesmo com papel e grants. Remover um grant vale na
 | `POST /api/staff/courses/:id/publish` | `course.edit` | não | `/staff/cursos/$courseId` |
 | `GET /api/staff/courses/:id/publish-preview` | `staff.read` | não | `/staff/cursos/$courseId` |
 | `GET /api/staff/courses/:id/interests` | `staff.read` | não | `/staff/cursos/$courseId` |
+| `GET /api/staff/panel` | `staff.read` (pedidos só com `finance.view`; denúncias só com `discussion.moderate`) | não | `/staff` |
 | `GET /api/staff/operations` | `staff.read` | não | `/staff/operacao` |
 | `POST /api/staff/operations/outbox/:id/requeue` | `ops.queue` | sim | `/staff/operacao` |
 | `POST /api/staff/operations/queues/:lane/pause` | `system.maintenance` | sim | `/staff/operacao` |

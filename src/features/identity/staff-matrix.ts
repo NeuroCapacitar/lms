@@ -107,6 +107,9 @@ export const STAFF_ENDPOINTS: readonly StaffEndpoint[] = [
   row('GET', '/api/staff/courses/:id/publish-preview', cap('staff.read'), CURSO),
   row('GET', '/api/staff/courses/:id/interests', cap('staff.read'), CURSO),
 
+  // Painel de fatos (as seções de pedidos e denúncias só vão a quem tem finance.view e discussion.moderate).
+  row('GET', '/api/staff/panel', cap('staff.read'), '/staff'),
+
   // Operação.
   row('GET', '/api/staff/operations', cap('staff.read'), OPS),
   row('POST', '/api/staff/operations/outbox/:id/requeue', cap('ops.queue'), OPS, true),

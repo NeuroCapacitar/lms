@@ -12,7 +12,7 @@
 
 ### M9-01 — Staff completo, painel de fatos e fila operacional
 
-**Dependências:** M1-03, M1-10, M2-03, M3-06, M3-07, M4-05, M5-14, M6-04, M6-08, M7-04 · **Estado:** `in_progress` (passo 1, a matriz e a prova, feito; passos 2 a 5 pendentes: ver `docs/implementation/STATUS.md`)
+**Dependências:** M1-03, M1-10, M2-03, M3-06, M3-07, M4-05, M5-14, M6-04, M6-08, M7-04 · **Estado:** `in_progress` (passos 1 e 2, a matriz com a prova e o painel de fatos, feitos; fila unificada, auditoria, ficha da pessoa e manutenção pendentes: ver `docs/implementation/STATUS.md`)
 
 **Objetivo.** Cada pessoa da Staff vê e faz exatamente o que seus grants permitem, e sabe o que precisa de ação.
 
