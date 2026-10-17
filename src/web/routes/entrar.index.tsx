@@ -66,6 +66,7 @@ function SignIn() {
 
   const [email, setEmail] = useState('');
   const [captcha, setCaptcha] = useState<string | null>(null);
+  const [renewCaptcha, setRenewCaptcha] = useState(0);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -86,6 +87,11 @@ function SignIn() {
       return;
     }
     setError(MESSAGES[result]);
+    // O token do Turnstile já foi gasto neste pedido: sem um novo, a nova tentativa falharia igual (e o widget continuaria "verde").
+    if (result !== 'invalid_email') {
+      setCaptcha(null);
+      setRenewCaptcha((n) => n + 1);
+    }
   }
 
   if (sent) {
@@ -122,7 +128,7 @@ function SignIn() {
           onChange={(event) => setEmail(event.target.value)}
           error={error === MESSAGES.invalid_email ? error : undefined}
         />
-        <Turnstile onToken={onToken} />
+        <Turnstile onToken={onToken} renewSignal={renewCaptcha} />
         {error && error !== MESSAGES.invalid_email ? (
           <p role="alert" className="font-medium text-[var(--text-danger)]">
             {error}
