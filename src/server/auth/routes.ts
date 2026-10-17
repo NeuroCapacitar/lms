@@ -52,6 +52,7 @@ import { createR2Storage } from '../media/r2-storage';
 import { mediaRoutes } from '../media/routes';
 import type { ObjectStorage } from '../media/storage';
 import { operationsRoutes } from '../ops/routes';
+import { staffAnalyticsRoutes } from '../staff/analytics-routes';
 import { staffPanelRoutes } from '../staff/panel-routes';
 import { staffQueueRoutes } from '../staff/queue-routes';
 import { videoRoutes } from '../video/routes';
@@ -429,6 +430,7 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
   // Operations Center (M4-05): /api/staff/operations (leitura da Staff; ações com grant e reautenticação).
   routes.route('/staff', operationsRoutes({ withDatabase }));
   routes.route('/staff', staffPanelRoutes({ withDatabase }));
+  routes.route('/staff', staffAnalyticsRoutes({ withDatabase }));
   routes.route('/staff', staffQueueRoutes({ withDatabase }));
 
   // Conexões com providers de vídeo (M5-01): /api/staff/video/* (só Admin; segredo nunca volta).
