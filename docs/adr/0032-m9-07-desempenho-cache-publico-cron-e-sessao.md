@@ -30,6 +30,7 @@ Também aplicado e medido (sem decisão nova): `FOR SHARE` no registro do vídeo
 - Uma página pública pode estar até 60 s defasada depois de publicar; o aviso fica documentado.
 - O Staging (workers.dev) NÃO exercita o cache; só Production (domínio próprio) e os testes do `workerd`.
 - Workers Paid continua sendo custo certo (US$ 5) e pré-requisito de Production; adiar a contratação não muda o teto de US$ 10/mês.
+- **Reforço (2026-10-17, achado na carga do Staging):** o Hyperdrive do plano gratuito tem teto de **100.000 consultas por dia** (acima disso as conexões falham até 00:00 UTC). Com 7 a 20 idas por requisição (heartbeat ≈ 20 idas a cada 20 s por pessoa assistindo), esse teto, e não o de 100 mil requisições do Worker, é o primeiro a estourar. Antes de Production o Go/No-Go precisa conferir o plano do Worker **e** do Hyperdrive; a decisão de contratar segue sendo do responsável.
 - Orçamentos de idas ao banco por rota (`test/pg/hot-path-budget.pg.test.ts`) passam a ser o guarda de regressão: `/me/access` 7, catálogo 13, concluir 18, mapa 18, aula 19, heartbeat 20.
 
 ## Como validar
