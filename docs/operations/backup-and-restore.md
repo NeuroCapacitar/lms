@@ -1,6 +1,6 @@
 # Backup e restauração (M9-05)
 
-> Estado: **código local pronto e testado; nada rodou contra um banco real e nenhum recurso remoto foi criado.** O que falta e depende de autorização ou de decisão do responsável está em "Pendências".
+> Estado: **backup real e ensaio de restauração executados em 2026-10-17 (Staging → PG18 local descartável), com o bucket `hub-staging-backups` criado; falta o token S3, a role somente leitura, o agendamento e a reconciliação pós-restore.** Evidência: `docs/review/evidencias/m9-05/README.md`. Pendências em "Pendências".
 
 Metas a demonstrar no ensaio (não garantias): **RPO ≤ 24 h, RTO ≤ 8 h**. O PITR de 6 h do Neon Free **não** é backup independente.
 
@@ -12,6 +12,7 @@ Metas a demonstrar no ensaio (não garantias): **RPO ≤ 24 h, RTO ≤ 8 h**. O 
 | Travas | `scripts/backup/backup-guards.ts` | só chave **pública** do `age`; dump só por conexão **direta** (nunca pooler nem Hyperdrive); restauração só em banco cujo nome começa por `restore_rehearsal` |
 | Backup | `bun run backup:db -- --kind daily\|release --out <pasta> [--upload]` | `pg_dump -Fc` (cliente PG18), cifra com `age`, grava objeto + manifesto; com `--upload` envia ao bucket S3-compatível (objeto primeiro, manifesto depois) |
 | Ensaio | `bun run backup:rehearsal -- --dump … --manifest … --identity …` | confere o SHA-256 **antes** de decifrar, decifra, `pg_restore` no banco descartável, confere migrations e contagens, mede tempo e idade do dump |
+| Role | `scripts/db/setup-backup-role.ts` (`bun run db:roles:backup <ambiente>`) | cria `hub_backup` SOMENTE LEITURA (`pg_read_all_data` com `inherit true`), sem `neon_superuser`, `BYPASSRLS`, DDL nem DML, e FALHA se sobrar algum privilégio; testada no PG18 local (lê, não escreve, não cria, `pg_dump` funciona) |
 | Testes | `test/unit/backup-core.test.ts`, `test/unit/backup-guards.test.ts` | manifesto, dump corrompido/truncado/trocado, frescor (limite 26 h), retenção, travas, `age` de verdade (ida e volta, chave errada não decifra) |
 
 Variáveis do backup: `BACKUP_DATABASE_URL` (conexão **direta**, role **somente leitura**), `BACKUP_AGE_RECIPIENT` (`age1…`), e para o upload `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (token do R2 com escopo só no bucket de backup, só escrita). Ensaio: `RESTORE_DATABASE_URL`. **Nada disso vai para o repositório, para o Worker nem para o R2 de mídia.**
@@ -45,6 +46,10 @@ Não afirmar restauração atômica de Neon + R2 + providers. Antes de reabrir q
 
 ## Pendências (com dono)
 
-- **Responsável / autorização:** criar o bucket de backup separado e o token S3 de escopo mínimo no R2; gerar o par de chaves `age` (a privada fica com o responsável); definir a role Postgres somente leitura para o dump; escolher o executor do agendamento (GitHub Actions em repositório administrativo isolado, ou outro); aprovar retenção e lifecycle/bucket lock; destino da cópia semanal fora da Cloudflare.
-- **Ambiente:** instalar o cliente PG18 (`pg_dump`, `pg_restore`) onde o backup e o ensaio rodarem (não está instalado nesta máquina; instalar é um download).
-- **Código ainda não feito:** alerta de backup velho no Operations Center (precisa o Worker saber o último backup: tabela `backup_run` por migration ou leitura do manifesto; decisão de desenho), script de reconciliação pós-restore e seus testes (pré-reembolso não reenvia; pré-eliminação reexecuta; revogado volta revogado; nenhum e-mail reenviado), limpeza por retenção no bucket, workflow agendado, medição de egress do Neon.
+- **Token S3 do R2 (você):** o app NEGOU a criação do token pela CLI. Criar no painel (R2 > Gerenciar tokens de API): permissão **Object Read & Write**, escopo **só o bucket `hub-staging-backups`**, sem TTL curto. Guardar Access Key ID e Secret como segredos do executor (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`), mais `BACKUP_S3_ENDPOINT` (`https://<account-id>.r2.cloudflarestorage.com`) e `BACKUP_S3_BUCKET`. Nunca no repositório.
+- **Role somente leitura (você):** o app NEGOU o `GRANT`. Rodar no seu terminal: `HUB_BACKUP_PASSWORD="$(openssl rand -hex 32)"` (guarde), `DATABASE_URL_MIGRATION` da role `neondb_owner` por conexão direta e `bun run db:roles:backup staging`. O script confere no fim que a role só lê. **Não use `neon roles create`** (dá `neon_superuser`); a role que criei assim foi apagada.
+- **Chave `age`:** o par foi gerado em `C:\Users\Junior\.hub-backup\` (`age-key.txt` = PRIVADA, `age-recipient.txt` = pública). **Copie a privada para pelo menos 2 lugares seus (gerenciador de senhas e um disco offline) e apague-a do repositório de trabalho se quiser**; o ensaio usou essa chave. A pública (`BACKUP_AGE_RECIPIENT`) pode ir como variável do executor.
+- **Executor do agendamento:** a decidir (GitHub Actions em repositório administrativo isolado, ou outro). Sem ele não há backup diário nem alerta de frescor.
+- **Retenção e lifecycle/bucket lock:** valores propostos (14 diários + 4 semanais; `release/` sem prazo) precisam da sua aprovação e do parecer jurídico (M9-09); lifecycle e lock do bucket ainda NÃO aplicados.
+- **Cópia semanal fora da Cloudflare:** destino pendente (cliente).
+- **Código ainda não feito:** alerta de backup velho no Operations Center (o Worker precisa saber o último backup: tabela `backup_run` por migration, ou leitura do manifesto; decisão de desenho), script de reconciliação pós-restore e seus testes (pré-reembolso não reenvia; pré-eliminação reexecuta; revogado volta revogado; nenhum e-mail reenviado), limpeza por retenção no bucket, workflow agendado, medição de egress do Neon, o `--upload` (nenhum credencial S3 de escopo mínimo existe ainda).
