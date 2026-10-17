@@ -33,7 +33,7 @@
 
 ### M9-02 — Analytics first-party (fatos derivados)
 
-**Dependências:** M3-04, M5-04, M5-06, M6-06 · **Estado:** `not_started`
+**Dependências:** M3-04, M5-04, M5-06, M6-06 · **Estado:** `in_progress` (passos 1 e 3 feitos; o passo 2, `EXPLAIN` e rollup, pendente: ver `docs/implementation/STATUS.md`)
 
 **Objetivo.** Responder perguntas de curso e oferta com dados que já existem, sem coletar eventos novos.
 
