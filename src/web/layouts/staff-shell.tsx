@@ -19,6 +19,7 @@ interface NavItem {
     | '/staff/ajuda'
     | '/staff/banners'
     | '/staff/certificados'
+    | '/staff/certificados/emitidos'
     | '/staff/financeiro'
     | '/staff/videos'
     | '/staff/equipe';
@@ -35,6 +36,12 @@ const NAV: NavItem[] = [
   { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },
   { to: '/staff/banners', label: 'Banners', needs: 'staff.manage' },
   { to: '/staff/certificados', label: 'Certificados', needs: 'staff.manage' },
+  // A lista de emitidos também serve a quem reemite ou opera a fila (o mesmo que a API aceita, ver docs/spec/staff-matrix.md).
+  {
+    to: '/staff/certificados/emitidos',
+    label: 'Certificados emitidos',
+    needs: ['certificate.reissue', 'ops.queue'],
+  },
   {
     to: '/staff/financeiro',
     label: 'Financeiro',
