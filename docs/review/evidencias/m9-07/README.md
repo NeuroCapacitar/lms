@@ -61,3 +61,68 @@ Já provado: `e2e/curso-publico.spec.ts` responde 502 "erro 9422" nas variantes 
 | **A. Ler a sessão uma vez por requisição** (lembrar o resultado do `getSession` dentro da requisição) | −2 idas em toda rota autenticada (9 → 7 em `/me/access`; 22 → 20 no heartbeat) | Núcleo de autenticação (48 pontos de uso). Mesmo resultado dentro da mesma requisição, mas é código sensível: precisa de revisão e de teste de revogação e renovação de sessão |
 | **B. Heartbeat leve**: não recarregar a árvore do currículo a cada batida | 22 → cerca de 15 idas (−7), a rota mais frequente | Hoje o servidor reverifica acesso, **drip e sequência** a cada envio (decisão do M5-02). Reverificar só o acesso (matrícula, direito, suspensão) e deixar drip e sequência para o início da aula relaxa essa regra |
 | **C. Guardar a árvore do currículo publicado por versão** (`curriculum_state.published_version`) | −6 a −7 idas no mapa, na aula, na conclusão e no heartbeat | Cache novo (memória do Worker não dura entre requisições; seria KV ou similar, com custo e invalidação por publicação); o Hyperdrive fica com cache desligado por decisão (ADR) |
+
+---
+
+# Parte 2 — medido NO STAGING (2026-10-17, autorizado pelo responsável)
+
+> Autorização: "autoirizado prossiga", depois de eu pedir para publicar no Staging e rodar medição e carga leve (só Staging, dados sintéticos, identidade do perfil `neurocapacitar` verificada antes). Publicado o commit `abafe707cab3` (sem migrations). **Nada foi feito em Production.** Carga só com GET, só em rotas públicas (sem conta de teste: não havia como obter uma sessão sem a sua ajuda).
+
+## 7. Configuração real lida (somente leitura)
+
+| Item | Valor |
+| --- | --- |
+| Neon | Free, região `aws-sa-east-1` (São Paulo), PostgreSQL 18, compute **fixo de 0,25 CU**, 12 MB de dados |
+| `max_connections` do Postgres | **112**, 4 reservadas ao sistema (108 úteis) |
+| Hyperdrive de Staging | `origin_connection_limit` **20**, cache **desligado** (como o ADR manda) |
+| Passo 2 da tarefa (soma do `max_size` ≤ conexões úteis) | **Cumprido no Staging:** 20 ≤ 108. Production tem outro Hyperdrive: conferir quando houver |
+| Plano do Worker | A conta tem só a assinatura **"R2 Paid"**; **não há "Workers Paid"**. O Worker roda no plano gratuito (limite de **10 ms de CPU por requisição** e de 100 mil requisições por dia) |
+
+## 8. Cold start do Neon (banco ocioso por ~7 min, depois a primeira requisição que usa o banco)
+
+| Requisição | Tempo total |
+| --- | --- |
+| `GET /api/health/live` (sem banco), 1ª e 2ª | 0,49 s e 0,43 s |
+| `GET /api/health/ready` (usa o banco) **1ª, com o banco frio** | **1,10 s** |
+| `GET /api/health/ready`, 2ª a 6ª (banco acordado) | 0,32 a 0,64 s |
+
+Estes tempos incluem a conexão desta máquina até a borda (~80 ms de ida, ~0,35 s só de rede e TLS). **O banco frio acrescentou cerca de 0,7 s** à primeira requisição.
+
+## 9. Consumo do Neon e orçamento de acordar
+
+- **Retrato antes da carga** (2026-10-17 14:48 UTC): `compute_time_seconds` = 21.674 e `active_time_seconds` = 85.236 desde a criação do projeto (2026-10-10 08:09 UTC, 7,3 dias). Como 21.674 ≈ 85.236 × 0,25, o primeiro valor já é em **CU-segundos: ≈ 6,0 CU-h**, ou **0,83 CU-h por dia, 25 CU-h por 30 dias** (inclui o desenvolvimento e os testes).
+- **O Cron de 30 em 30 minutos sozinho** (48 acordadas por dia, cada uma mantém o compute ligado ~5 min até a suspensão): ≈ 4,2 h ligado por dia × 0,25 CU = **≈ 1,05 CU-h/dia, ≈ 32 CU-h por 30 dias**. É o piso: quase todo o consumo observado.
+- Contra os números do projeto (free tier de 100 CU-h e gatilho de 70): o Cron deixa ~38 CU-h de folga até o gatilho, ou seja, **cerca de 5 horas por dia de compute ligado a mais** por tráfego de gente. Banco ligado o dia inteiro = 6 CU-h/dia = 180 CU-h/mês, **acima do free tier**.
+- **Risco medido:** as rotas públicas que tocam o banco (`/api/public/courses/:slug`, `/api/public/login-media`, `/api/health/ready`) respondem `Cache-Control: no-store`, e a página `/cursos/:slug` é montada pelo Worker com consulta ao banco a cada visita. **Qualquer visitante anônimo, robô de busca ou monitor acorda o Neon.** No pior caso (uma visita a cada 5 min) o banco nunca suspende.
+- **O custo marginal da carga NÃO foi medido:** os contadores do Neon não mudaram nos minutos seguintes à carga (a métrica atualiza com atraso). Fica para uma leitura posterior (ver "não feito").
+
+## 10. Carga leve no Staging (`bun run load:staging`, GET, rotas públicas)
+
+Versionada em `scripts/load-staging.ts`: recusa qualquer endereço que não seja o Worker `hub-staging` (testado em `test/unit/load-staging.test.ts`), no máximo 20 simultâneas (o limite do Hyperdrive) e 300 s, e imprime p50, p95, p99 e erros por rota.
+
+**10 simultâneas, 60 s: 5.027 requisições, 91 por segundo, 0 erros.** p95 de 77 a 205 ms (rotas sem banco 77–79 ms, com banco 98 ms, páginas de curso ~200 ms).
+
+**20 simultâneas, 25 a 60 s: ~190 requisições por segundo, de 1,3% a 4,0% de erros 503 (123 a 166 por rodada), todos nas rotas que usam o banco e, sobretudo, nas páginas de curso** (`/api/public/courses/:slug` ≈ 3% e `/cursos/:slug` ≈ 3% das requisições; `health/ready` e `login-media` ≈ 0,4%; rotas sem banco 0 erro). A latência das que responderam ficou igual à de 10 simultâneas (p95 ≤ 200 ms).
+
+## 11. ACHADO: Cloudflare Error 1102 "Worker exceeded resource limits" (`exceededCpu`)
+
+- **O que é:** os 503 NÃO vêm do código do produto (não têm `x-request-id`): são a página de erro da própria Cloudflare, **Error 1102, "Worker exceeded CPU time limit"**. Confirmado com `wrangler tail`: `outcome: "exceededCpu"` (17 de 327 invocações amostradas durante 25 s de carga a 20 simultâneas), com `cpuTime: 10` ms.
+- **Causa provável (não 100% provada):** a conta está no **plano gratuito do Workers (10 ms de CPU por requisição)**. A CPU por requisição medida no tail (amostra, com o tail ligado, então os valores absolutos são indicativos): rotas sem banco ~2 ms (p50); `login-media` 6 ms; `health/ready` 7 ms; páginas de curso 14–15 ms (p50), com picos de 40–120 ms. Esses picos parecem ser o início de um isolado novo do Worker (carregar o pacote: Hono, zod, drizzle, pg, Better Auth), que só aparece quando a carga força a Cloudflare a abrir mais isolados (por isso 10 simultâneas não erram e 20 erram). **Não distingui "isolado novo" de "página de curso pesada"**, nem testei com o plano pago.
+- **Consequência:** **a v1 NÃO cabe no plano gratuito do Workers** (nem a rota mais simples de quem estuda tem folga: sessão + acesso). O ADR 0003 já prevê o **Workers Paid (US$ 5/mês)** como único custo certo; ele ainda **não está contratado**. Com o plano pago o limite de CPU sobe (padrão 30 s) e o teto de 100 mil requisições por dia some. Contratar é decisão e despesa do responsável: **não fiz**.
+- **Medição do próprio dia:** a carga gastou cerca de 33 mil das 100 mil requisições diárias do plano gratuito.
+
+## 12. O que continua NÃO feito
+
+1. **Rotas de quem está logado em Staging** (sessão, mapa, aula, concluir, heartbeat): não havia sessão disponível (nenhum navegador conectado). O script aceita o cookie de uma conta de teste em `LOAD_COOKIE` (nunca na linha de comando) e então inclui `/api/me/access` e `/api/catalog/courses`; o heartbeat de vídeo não pode ser medido no Staging (o curso de demonstração não tem vídeo e nenhum provedor de vídeo foi verificado).
+2. **Custo marginal da carga no Neon** (os contadores atrasam): ler de novo mais tarde.
+3. **CPU-ms limpa** (sem o tail ligado) e **por isolado novo versus morno**: precisa do plano pago para a carga não ser cortada, ou de métricas de CPU do Worker por consulta (a API de telemetria devolveu 400 na primeira tentativa e não insisti).
+4. Browser Run (horas), Queues (operações), Workers Logs (volume), R2 e o contador de 5.000 transformações do Images: não medidos.
+5. **Orçamento final das rotas quentes** ("nenhuma acima do orçamento"): continua PENDENTE até o plano do Worker ser decidido.
+
+## 13. Decisões do responsável, medidas (acrescenta à tabela da seção 6)
+
+| Opção | Evidência | O que muda |
+| --- | --- | --- |
+| **D. Contratar o Workers Paid (US$ 5/mês)** | O Error 1102 sob 20 simultâneas (1,3% a 4%) e o limite de 100 mil requisições por dia | Despesa recorrente prevista no ADR 0003. Sem isso a v1 não é estável |
+| **E. Cache de borda curto nas rotas públicas** (`/api/public/courses/:slug`, `/cursos/:slug`, `login-media`) | Hoje `no-store` e cada visita acorda o banco | Menos acordadas do Neon e menos CPU; o dado é público (o M2-04 já fala em "cache curto"); precisa decidir o prazo e a invalidação ao publicar |
+| **F. Cron de 60 em 60 minutos em vez de 30** | O Cron de 30 min custa ≈ 32 CU-h/mês; de 60 min seria ≈ 16 | Mais latência na emissão de certificados e na republicação do outbox (M7-02, M4-03) |
