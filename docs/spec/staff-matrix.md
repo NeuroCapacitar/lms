@@ -66,6 +66,8 @@ Conta **suspensa** nega tudo, mesmo com papel e grants. Remover um grant vale na
 | `GET /api/staff/panel` | `staff.read` (pedidos só com `finance.view`; denúncias só com `discussion.moderate`) | não | `/staff` |
 | `GET /api/staff/queue` | `staff.read` (cada tipo só a quem pode vê-lo; a ação só a quem tem o grant) | não | `/staff/fila` |
 | `GET /api/staff/audit` | `audit.view` | não | `/staff/auditoria` |
+| `GET /api/staff/analytics/courses/:courseId` | `staff.read` | não | `/staff/analise` |
+| `GET /api/staff/analytics/offers` | `finance.view` | não | `/staff/analise` |
 | `GET /api/staff/operations` | `staff.read` | não | `/staff/operacao` |
 | `POST /api/staff/operations/outbox/:id/requeue` | `ops.queue` | sim | `/staff/operacao` |
 | `POST /api/staff/operations/queues/:lane/pause` | `system.maintenance` | sim | `/staff/operacao` |

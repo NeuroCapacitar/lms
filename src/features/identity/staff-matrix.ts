@@ -114,6 +114,10 @@ export const STAFF_ENDPOINTS: readonly StaffEndpoint[] = [
   row('GET', '/api/staff/queue', cap('staff.read'), '/staff/fila'),
   row('GET', '/api/staff/audit', cap('audit.view'), '/staff/auditoria'),
 
+  // Analytics first-party (só leitura, só contagens): aprendizagem de um curso e funil das ofertas.
+  row('GET', '/api/staff/analytics/courses/:courseId', cap('staff.read'), '/staff/analise'),
+  row('GET', '/api/staff/analytics/offers', cap('finance.view'), '/staff/analise'),
+
   // Operação.
   row('GET', '/api/staff/operations', cap('staff.read'), OPS),
   row('POST', '/api/staff/operations/outbox/:id/requeue', cap('ops.queue'), OPS, true),

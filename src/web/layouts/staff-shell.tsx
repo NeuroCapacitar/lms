@@ -24,6 +24,7 @@ interface NavItem {
     | '/staff/financeiro'
     | '/staff/videos'
     | '/staff/auditoria'
+    | '/staff/analise'
     | '/staff/equipe';
   label: string;
   /** Capability que mostra o item. É só conveniência: o servidor protege cada rota. */
@@ -34,6 +35,7 @@ const NAV: NavItem[] = [
   { to: '/staff', label: 'Início', needs: 'staff.read' },
   { to: '/staff/cursos', label: 'Cursos', needs: 'staff.read' },
   { to: '/staff/fila', label: 'Fila de ações', needs: 'staff.read' },
+  { to: '/staff/analise', label: 'Análise', needs: 'staff.read' },
   { to: '/staff/operacao', label: 'Operação', needs: 'staff.read' },
   { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
   { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },

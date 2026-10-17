@@ -27,6 +27,7 @@ import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
 import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffAjudaRouteImport } from './routes/staff.ajuda'
+import { Route as StaffAnaliseRouteImport } from './routes/staff.analise'
 import { Route as StaffAuditoriaRouteImport } from './routes/staff.auditoria'
 import { Route as StaffBannersRouteImport } from './routes/staff.banners'
 import { Route as StaffDiscussoesRouteImport } from './routes/staff.discussoes'
@@ -135,6 +136,11 @@ const StaffAjudaRoute = StaffAjudaRouteImport.update({
   path: '/ajuda',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffAnaliseRoute = StaffAnaliseRouteImport.update({
+  id: '/analise',
+  path: '/analise',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffAuditoriaRoute = StaffAuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
+  '/staff/analise': typeof StaffAnaliseRoute
   '/staff/auditoria': typeof StaffAuditoriaRoute
   '/staff/banners': typeof StaffBannersRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
+  '/staff/analise': typeof StaffAnaliseRoute
   '/staff/auditoria': typeof StaffAuditoriaRoute
   '/staff/banners': typeof StaffBannersRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
@@ -315,6 +323,7 @@ export interface FileRoutesById {
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
+  '/staff/analise': typeof StaffAnaliseRoute
   '/staff/auditoria': typeof StaffAuditoriaRoute
   '/staff/banners': typeof StaffBannersRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/cursos/$slug'
     | '/entrar/confirmar'
     | '/staff/ajuda'
+    | '/staff/analise'
     | '/staff/auditoria'
     | '/staff/banners'
     | '/staff/discussoes'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/cursos/$slug'
     | '/entrar/confirmar'
     | '/staff/ajuda'
+    | '/staff/analise'
     | '/staff/auditoria'
     | '/staff/banners'
     | '/staff/discussoes'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/cursos/$slug'
     | '/entrar/confirmar'
     | '/staff/ajuda'
+    | '/staff/analise'
     | '/staff/auditoria'
     | '/staff/banners'
     | '/staff/discussoes'
@@ -599,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffAjudaRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/analise': {
+      id: '/staff/analise'
+      path: '/analise'
+      fullPath: '/staff/analise'
+      preLoaderRoute: typeof StaffAnaliseRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/auditoria': {
       id: '/staff/auditoria'
       path: '/auditoria'
@@ -723,6 +742,7 @@ declare module '@tanstack/react-router' {
 
 interface StaffRouteChildren {
   StaffAjudaRoute: typeof StaffAjudaRoute
+  StaffAnaliseRoute: typeof StaffAnaliseRoute
   StaffAuditoriaRoute: typeof StaffAuditoriaRoute
   StaffBannersRoute: typeof StaffBannersRoute
   StaffDiscussoesRoute: typeof StaffDiscussoesRoute
@@ -743,6 +763,7 @@ interface StaffRouteChildren {
 
 const StaffRouteChildren: StaffRouteChildren = {
   StaffAjudaRoute: StaffAjudaRoute,
+  StaffAnaliseRoute: StaffAnaliseRoute,
   StaffAuditoriaRoute: StaffAuditoriaRoute,
   StaffBannersRoute: StaffBannersRoute,
   StaffDiscussoesRoute: StaffDiscussoesRoute,
