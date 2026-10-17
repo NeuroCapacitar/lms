@@ -1,0 +1,353 @@
+[explain] GET /me/access | 0.068 ms | seq: - | select "id", "expires_at", "token", "ip_address", "user_agent", "user_id", "created_at", "
+[explain] GET /me/access | 0.035 ms | seq: - | select "id", "name", "email", "email_verified", "image", "created_at", "updated_at" from "
+[explain] GET /me/access | 0.054 ms | seq: legal_document_version(0 linhas) | select distinct on ("legal_document_version"."kind") "id", "kind", "version", "body", "eff
+[explain] GET /me/access | 0.021 ms | seq: - | select "role" from "user_role" where ("user_role"."user_id" = $1 and "user_role"."revoked_
+[explain] GET /me/access | 0.023 ms | seq: - | select "capability" from "staff_grant" where ("staff_grant"."user_id" = $1 and "staff_gran
+[explain] GET /me/access | 0.021 ms | seq: - | select "id" from "user_suspension" where ("user_suspension"."user_id" = $1 and "user_suspe
+[explain] GET /me/access | 0.017 ms | seq: - | select "session_id" from "reauth_proof" where ("reauth_proof"."session_id" = $1 and "reaut
+[explain] GET /courses/:id/outline | 0.069 ms | seq: - | select "id", "expires_at", "token", "ip_address", "user_agent", "user_id", "created_at", "
+[explain] GET /courses/:id/outline | 0.037 ms | seq: - | select "id", "name", "email", "email_verified", "image", "created_at", "updated_at" from "
+[explain] GET /courses/:id/outline | 0.050 ms | seq: legal_document_version(0 linhas) | select distinct on ("legal_document_version"."kind") "id", "kind", "version", "body", "eff
+[explain] GET /courses/:id/outline | 0.023 ms | seq: - | select "id" from "user_suspension" where ("user_suspension"."user_id" = $1 and "user_suspe
+[explain] GET /courses/:id/outline | 0.038 ms | seq: - | select "anchor_at", "suspended_at" from "enrollment" where ("enrollment"."user_id" = $1 an
+[explain] GET /courses/:id/outline | 0.037 ms | seq: - | select "starts_at", "expires_at", "revoked_at" from "entitlement" where ("entitlement"."us
+[explain] GET /courses/:id/outline | 0.028 ms | seq: - | select "sequence_mode" from "course" where "course"."id" = $1
+[explain] GET /courses/:id/outline | 0.032 ms | seq: - | select "course_id", "draft_rev", "published_version", "published_at", "created_at", "updat
+[explain] GET /courses/:id/outline | 0.031 ms | seq: - | select "course_id", "display_title", "description", "workload_hours", "cover_media_id", "b
+[explain] GET /courses/:id/outline | 0.056 ms | seq: - | select "id", "course_id", "title", "position", "drip_days", "retired_at", "created_at", "u
+[explain] GET /courses/:id/outline | 0.042 ms | seq: lesson(6 linhas) | select "id", "course_id", "module_id", "title", "position", "kind", "video_asset_id", "qui
+[explain] GET /courses/:id/outline | 0.035 ms | seq: - | select "display_title" from "course_content" where "course_content"."course_id" = $1
+[explain] GET /courses/:id/outline | 0.028 ms | seq: - | select "lesson_id" from "lesson_completion" where ("lesson_completion"."user_id" = $1 and
+[explain] GET /courses/:id/outline | 0.021 ms | seq: - | select "completed_at" from "course_completion" where ("course_completion"."user_id" = $1 a
+[explain] GET /lessons/:id | 0.074 ms | seq: - | select "id", "expires_at", "token", "ip_address", "user_agent", "user_id", "created_at", "
+[explain] GET /lessons/:id | 0.038 ms | seq: - | select "id", "name", "email", "email_verified", "image", "created_at", "updated_at" from "
+[explain] GET /lessons/:id | 0.042 ms | seq: legal_document_version(0 linhas) | select distinct on ("legal_document_version"."kind") "id", "kind", "version", "body", "eff
+[explain] GET /lessons/:id | 0.031 ms | seq: - | select "course_id", "retired_at" from "lesson" where "lesson"."id" = $1
+[explain] GET /lessons/:id | 0.025 ms | seq: - | select "id" from "user_suspension" where ("user_suspension"."user_id" = $1 and "user_suspe
+[explain] GET /lessons/:id | 0.041 ms | seq: - | select "anchor_at", "suspended_at" from "enrollment" where ("enrollment"."user_id" = $1 an
+[explain] GET /lessons/:id | 0.039 ms | seq: - | select "starts_at", "expires_at", "revoked_at" from "entitlement" where ("entitlement"."us
+[explain] GET /lessons/:id | 0.026 ms | seq: - | select "sequence_mode" from "course" where "course"."id" = $1
+[explain] GET /lessons/:id | 0.030 ms | seq: - | select "course_id", "draft_rev", "published_version", "published_at", "created_at", "updat
+[explain] GET /lessons/:id | 0.031 ms | seq: - | select "course_id", "display_title", "description", "workload_hours", "cover_media_id", "b
+[explain] GET /lessons/:id | 0.052 ms | seq: - | select "id", "course_id", "title", "position", "drip_days", "retired_at", "created_at", "u
+[explain] GET /lessons/:id | 0.076 ms | seq: lesson(6 linhas) | select "id", "course_id", "module_id", "title", "position", "kind", "video_asset_id", "qui
+[explain] GET /lessons/:id | 0.047 ms | seq: - | select "display_title" from "course_content" where "course_content"."course_id" = $1
+[explain] GET /lessons/:id | 0.025 ms | seq: - | select "lesson_id" from "lesson_completion" where ("lesson_completion"."user_id" = $1 and
+[explain] GET /lessons/:id | 0.022 ms | seq: - | select "completed_at" from "course_completion" where ("course_completion"."user_id" = $1 a
+[explain] GET /catalog/courses | 0.067 ms | seq: - | select "id", "expires_at", "token", "ip_address", "user_agent", "user_id", "created_at", "
+[explain] GET /catalog/courses | 0.036 ms | seq: - | select "id", "name", "email", "email_verified", "image", "created_at", "updated_at" from "
+[explain] GET /catalog/courses | 0.046 ms | seq: legal_document_version(0 linhas) | select distinct on ("legal_document_version"."kind") "id", "kind", "version", "body", "eff
+[explain] GET /catalog/courses | 0.036 ms | seq: course(1 linhas) | select "id", "slug", "title", "sequence_mode", "video_completion_percent", "status", "firs
+[explain] GET /catalog/courses | 0.045 ms | seq: - | select "id", "course_id", "name", "kind", "price_cents", "currency", "access_months", "max
+[explain] GET /catalog/courses | 0.032 ms | seq: - | select "course_id", "published_version" from "curriculum_state" where "curriculum_state"."
+[explain] GET /catalog/courses | 0.031 ms | seq: - | select "course_id", "display_title", "description", "workload_hours", "cover_media_id", "b
+[explain] GET /catalog/courses | 0.093 ms | seq: course(1 linhas) | select "course"."id", "course"."slug", "course"."title", "course_content"."display_title",
+[explain] GET /catalog/courses | 0.023 ms | seq: - | select "id" from "user_suspension" where ("user_suspension"."user_id" = $1 and "user_suspe
+[explain] GET /catalog/courses | 0.040 ms | seq: - | select "anchor_at", "suspended_at" from "enrollment" where ("enrollment"."user_id" = $1 an
+[explain] GET /catalog/courses | 0.039 ms | seq: - | select "starts_at", "expires_at", "revoked_at" from "entitlement" where ("entitlement"."us
+[explain] POST /lessons/:id/video-progress | 0.073 ms | seq: - | select "id", "expires_at", "token", "ip_address", "user_agent", "user_id", "created_at", "
+[explain] POST /lessons/:id/video-progress | 0.036 ms | seq: - | select "id", "name", "email", "email_verified", "image", "created_at", "updated_at" from "
+[explain] POST /lessons/:id/video-progress | 0.047 ms | seq: legal_document_version(0 linhas) | select distinct on ("legal_document_version"."kind") "id", "kind", "version", "body", "eff
+[explain] POST /lessons/:id/video-progress | 0.032 ms | seq: - | select "course_id", "retired_at", "kind" from "lesson" where "lesson"."id" = $1
+[explain] POST /lessons/:id/video-progress | 0.071 ms | seq: - | select "user_id" from "enrollment" where ("enrollment"."user_id" = $1 and "enrollment"."co
+[explain] POST /lessons/:id/video-progress | 0.025 ms | seq: - | select "id" from "user_suspension" where ("user_suspension"."user_id" = $1 and "user_suspe
+[explain] POST /lessons/:id/video-progress | 0.044 ms | seq: - | select "anchor_at", "suspended_at" from "enrollment" where ("enrollment"."user_id" = $1 an
+[explain] POST /lessons/:id/video-progress | 0.040 ms | seq: - | select "starts_at", "expires_at", "revoked_at" from "entitlement" where ("entitlement"."us
+[explain] POST /lessons/:id/video-progress | 0.030 ms | seq: - | select "published_version" from "curriculum_state" where "curriculum_state"."course_id" =
+[explain] POST /lessons/:id/video-progress | 0.025 ms | seq: - | select "sequence_mode" from "course" where "course"."id" = $1
+[explain] POST /lessons/:id/video-progress | 0.031 ms | seq: - | select "course_id", "display_title", "description", "workload_hours", "cover_media_id", "b
+[explain] POST /lessons/:id/video-progress | 0.054 ms | seq: - | select "id", "course_id", "title", "position", "drip_days", "retired_at", "created_at", "u
+[explain] POST /lessons/:id/video-progress | 0.055 ms | seq: lesson(6 linhas) | select "id", "course_id", "module_id", "title", "position", "kind", "video_asset_id", "qui
+[explain] POST /lessons/:id/video-progress | 0.028 ms | seq: - | select "lesson_id" from "lesson_completion" where ("lesson_completion"."user_id" = $1 and
+[explain] POST /lessons/:id/video-progress | 0.048 ms | seq: - | select "lesson"."video_asset_id", "course"."video_completion_percent" from "lesson" inner
+[explain] POST /lessons/:id/video-progress | 0.047 ms | seq: - | select "id", "provider", "state", "duration_seconds" from "video_asset" where "video_asset
+[explain] POST /lessons/:id/video-progress | 0.053 ms | seq: - | select "user_id", "lesson_id", "course_id", "video_asset_id", "max_position", "duration_se
+[explain] painel (M9-01) | 32.897 ms | seq: course(1 linhas), enrollment(10001 linhas) | with current_access as ( select e.user_id, e.course_id, max(e.expires_at) as ends_at from
+      HashAggregate (actual time=32.683..32.687 rows=1.00 loops=1)
+        Group Key: c.id
+        Batches: 1  Memory Usage: 48kB
+        Buffers: shared hit=50116
+        ->  Hash Left Join (actual time=29.744..30.788 rows=10001.00 loops=1)
+              Hash Cond: (c.id = a.course_id)
+              Buffers: shared hit=50116
+              ->  Seq Scan on course c (actual time=0.013..0.017 rows=1.00 loops=1)
+                    Buffers: shared hit=1
+              ->  Hash (actual time=29.722..29.724 rows=10001.00 loops=1)
+                    Buckets: 16384 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 754kB
+                    Buffers: shared hit=50115
+                    ->  Subquery Scan on a (actual time=24.165..28.450 rows=10001.00 loops=1)
+                          Buffers: shared hit=50115
+                          ->  GroupAggregate (actual time=24.164..27.576 rows=10001.00 loops=1)
+                                Group Key: e.user_id, e.course_id
+                                Filter: bool_or(((e.starts_at <= now()) AND (e.expires_at > now())))
+                                Buffers: shared hit=50115
+                                ->  Sort (actual time=24.154..24.602 rows=10001.00 loops=1)
+                                      Sort Key: e.user_id, e.course_id
+                                      Sort Method: quicksort  Memory: 931kB
+                                      Buffers: shared hit=50115
+                                      ->  Nested Loop Anti Join (actual time=0.025..22.073 rows=10001.00 loops=1)
+                                            Buffers: shared hit=50109
+                                            ->  Nested Loop (actual time=0.020..15.908 rows=10001.00 loops=1)
+                                                  Buffers: shared hit=30107
+                                                  ->  Seq Scan on enrollment en (actual time=0.008..1.026 rows=10001.00 loops=1)
+                                                        Filter: (suspended_at IS NULL)
+                                                        Buffers: shared hit=104
+                                                  ->  Index Scan using entitlement_person_course_idx on entitlement e (actual time=0.001..0.001 rows=1.00 loops=10001)
+                                                        Index Cond: ((user_id = en.user_id) AND (course_id = en.course_id))
+                                                        Filter: (revoked_at IS NULL)
+                                                        Index Searches: 10001
+                                                        Buffers: shared hit=30003
+                                            ->  Index Only Scan using user_suspension_active_idx on user_suspension s (actual time=0.000..0.000 rows=0.00 loops=10001)
+                                                  Index Cond: (user_id = e.user_id)
+                                                  Heap Fetches: 0
+                                                  Index Searches: 10001
+                                                  Buffers: shared hit=20002
+      Planning:
+        Buffers: shared hit=371
+      Planning Time: 0.701 ms
+      Execution Time: 32.897 ms
+[explain] painel (M9-01) | 0.036 ms | seq: course_completion(0 linhas) | select course_id, count(*)::int as total, (count(*) filter (where completed_at >= now() -
+[explain] painel (M9-01) | 0.052 ms | seq: - | select course_id, count(*)::int as total from course_interest where status = 'active' grou
+[explain] painel (M9-01) | 0.039 ms | seq: - | select status, count(*)::int as total from certificate where status in ('ready', 'failed',
+[explain] painel (M9-01) | 0.036 ms | seq: - | select status, count(*)::int as total from purchase_order where created_at >= now() - inte
+[explain] painel (M9-01) | 0.045 ms | seq: - | select count(distinct post_id)::int as total from discussion_report where resolved_at is n
+[explain] painel (M9-01) | 0.023 ms | seq: - | select now() as now
+[explain] fila (M9-01) | 0.095 ms | seq: - | select id::text as id, type as detail, floor(extract(epoch from (now() - created_at)))::in
+[explain] fila (M9-01) | 0.060 ms | seq: - | select id::text as id, state as detail, floor(extract(epoch from (now() - created_at)))::i
+[explain] fila (M9-01) | 0.048 ms | seq: - | select id::text as id, state as detail, floor(extract(epoch from (now() - created_at)))::i
+[explain] fila (M9-01) | 0.040 ms | seq: - | select id::text as id, failure_code as detail, floor(extract(epoch from (now() - updated_a
+[explain] fila (M9-01) | 0.044 ms | seq: - | select id::text as id, failure_code as detail, floor(extract(epoch from (now() - updated_a
+[explain] fila (M9-01) | 0.038 ms | seq: - | select id::text as id, null::text as detail, floor(extract(epoch from (now() - updated_at)
+[explain] fila (M9-01) | 0.038 ms | seq: email_message(0 linhas) | select id::text as id, template || ' / ' || state as detail, floor(extract(epoch from (now
+[explain] fila (M9-01) | 0.049 ms | seq: outbox_message(0 linhas) | select id::text as id, kind || ' / ' || coalesce(last_error_code, state) as detail, floor(
+[explain] fila (M9-01) | 0.112 ms | seq: - | select post_id::text as id, null::text as detail, floor(extract(epoch from (now() - first_
+[explain] fila (M9-01) | 0.026 ms | seq: - | select now() as now
+[explain] análise do curso (M9-02) | 0.072 ms | seq: - | select id::text as id, title from course where id = $1::uuid
+[explain] análise do curso (M9-02) | 101.731 ms | seq: lesson_completion(10000 linhas), video_progress(10001 linhas), quiz_attempt(0 linhas), lesson(5 linhas) | with access_now as ( select e.user_id from entitlement e join enrollment en on en.user_id
+      Result (actual time=101.303..101.320 rows=1.00 loops=1)
+        Buffers: shared hit=100494
+        CTE people
+          ->  Merge Left Join (actual time=31.457..54.702 rows=10001.00 loops=1)
+                Merge Cond: (e.user_id = lesson_completion.user_id)
+                Buffers: shared hit=70378
+                ->  Nested Loop (actual time=24.113..40.384 rows=10001.00 loops=1)
+                      Buffers: shared hit=70120
+                      ->  GroupAggregate (actual time=24.103..27.471 rows=10001.00 loops=1)
+                            Group Key: e.user_id
+                            Filter: bool_or(((e.starts_at <= now()) AND (e.expires_at > now())))
+                            Buffers: shared hit=40117
+                            ->  Sort (actual time=24.094..24.587 rows=10001.00 loops=1)
+                                  Sort Key: e.user_id
+                                  Sort Method: quicksort  Memory: 775kB
+                                  Buffers: shared hit=40117
+                                  ->  Nested Loop Anti Join (actual time=0.157..22.114 rows=10001.00 loops=1)
+                                        Join Filter: (s.user_id = e.user_id)
+                                        Buffers: shared hit=40117
+                                        ->  Nested Loop (actual time=0.151..15.863 rows=10001.00 loops=1)
+                                              Buffers: shared hit=30116
+                                              ->  Bitmap Heap Scan on enrollment en_1 (actual time=0.137..1.230 rows=10001.00 loops=1)
+                                                    Recheck Cond: (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid)
+                                                    Filter: (suspended_at IS NULL)
+                                                    Heap Blocks: exact=104
+                                                    Buffers: shared hit=113
+                                                    ->  Bitmap Index Scan on enrollment_course_idx (actual time=0.123..0.124 rows=10001.00 loops=1)
+                                                          Index Cond: (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid)
+                                                          Index Searches: 1
+                                                          Buffers: shared hit=9
+                                              ->  Index Scan using entitlement_person_course_idx on entitlement e (actual time=0.001..0.001 rows=1.00 loops=10001)
+                                                    Index Cond: ((user_id = en_1.user_id) AND (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid))
+                                                    Filter: (revoked_at IS NULL)
+                                                    Index Searches: 10001
+                                                    Buffers: shared hit=30003
+                                        ->  Bitmap Heap Scan on user_suspension s (actual time=0.000..0.000 rows=0.00 loops=10001)
+                                              Recheck Cond: (lifted_at IS NULL)
+                                              Buffers: shared hit=10001
+                                              ->  Bitmap Index Scan on user_suspension_active_idx (actual time=0.000..0.000 rows=0.00 loops=10001)
+                                                    Index Searches: 10001
+                                                    Buffers: shared hit=10001
+                      ->  Index Scan using enrollment_pk on enrollment en (actual time=0.001..0.001 rows=1.00 loops=10001)
+                            Index Cond: ((user_id = e.user_id) AND (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid))
+                            Index Searches: 10001
+                            Buffers: shared hit=30003
+                ->  GroupAggregate (actual time=7.339..11.951 rows=10001.00 loops=1)
+                      Group Key: lesson_completion.user_id
+                      Buffers: shared hit=258
+                      ->  Sort (actual time=7.330..8.316 rows=20001.00 loops=1)
+                            Sort Key: lesson_completion.user_id
+                            Sort Method: quicksort  Memory: 1394kB
+                            Buffers: shared hit=258
+                            ->  Append (actual time=0.011..3.990 rows=20001.00 loops=1)
+                                  Buffers: shared hit=258
+                                  ->  Seq Scan on lesson_completion (actual time=0.010..1.083 rows=10000.00 loops=1)
+                                        Filter: (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid)
+                                        Buffers: shared hit=104
+                                  ->  Seq Scan on video_progress (actual time=0.010..1.276 rows=10001.00 loops=1)
+                                        Filter: (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid)
+                                        Buffers: shared hit=154
+                                  ->  Seq Scan on quiz_attempt (actual time=0.005..0.005 rows=0.00 loops=1)
+                                        Filter: (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid)
+        CTE required
+          ->  Seq Scan on lesson (actual time=0.024..0.025 rows=5.00 loops=1)
+                Filter: ((retired_at IS NULL) AND (NOT is_optional) AND (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid))
+                Rows Removed by Filter: 1
+                Buffers: shared hit=1
+        CTE done
+          ->  GroupAggregate (actual time=24.261..26.946 rows=10001.00 loops=1)
+                Group Key: p.user_id
+                Buffers: shared hit=30002
+                ->  Sort (actual time=24.254..24.685 rows=10001.00 loops=1)
+                      Sort Key: p.user_id
+                      Sort Method: quicksort  Memory: 775kB
+                      Buffers: shared hit=30002
+                      ->  Nested Loop Left Join (actual time=0.014..22.701 rows=10001.00 loops=1)
+                            Join Filter: (r.id = lc.lesson_id)
+                            Rows Removed by Join Filter: 40005
+                            Buffers: shared hit=30002
+                            ->  Nested Loop Left Join (actual time=0.012..14.508 rows=10001.00 loops=1)
+                                  Buffers: shared hit=30002
+                                  ->  CTE Scan on people p (actual time=0.000..0.690 rows=10001.00 loops=1)
+                                        Storage: Memory  Maximum Storage: 519kB
+                                  ->  Index Scan using lesson_completion_course_idx on lesson_completion lc (actual time=0.001..0.001 rows=1.00 loops=10001)
+                                        Index Cond: ((user_id = p.user_id) AND (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid))
+                                        Index Searches: 10001
+                                        Buffers: shared hit=30002
+                            ->  CTE Scan on required r (actual time=0.000..0.000 rows=5.00 loops=10001)
+                                  Storage: Memory  Maximum Storage: 17kB
+        CTE totals
+          ->  Aggregate (actual time=0.028..0.028 rows=1.00 loops=1)
+                Buffers: shared hit=1
+                ->  CTE Scan on required (actual time=0.024..0.026 rows=5.00 loops=1)
+                      Storage: Memory  Maximum Storage: 17kB
+                      Buffers: shared hit=1
+        InitPlan 5
+          ->  Aggregate (actual time=1.518..1.519 rows=1.00 loops=1)
+                Buffers: shared hit=113
+                ->  Bitmap Heap Scan on enrollment (actual time=0.182..1.017 rows=10001.00 loops=1)
+                      Recheck Cond: (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid)
+                      Heap Blocks: exact=104
+                      Buffers: shared hit=113
+                      ->  Bitmap Index Scan on enrollment_course_idx (actual time=0.160..0.160 rows=10001.00 loops=1)
+                            Index Cond: (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid)
+                            Index Searches: 1
+                            Buffers: shared hit=9
+        InitPlan 6
+          ->  Aggregate (actual time=57.060..57.060 rows=1.00 loops=1)
+                Buffers: shared hit=70378
+                ->  CTE Scan on people (actual time=31.460..56.504 rows=10001.00 loops=1)
+                      Storage: Memory  Maximum Storage: 519kB
+                      Buffers: shared hit=70378
+        InitPlan 7
+          ->  Aggregate (actual time=1.751..1.752 rows=1.00 loops=1)
+                ->  CTE Scan on people people_1 (actual time=0.005..1.431 rows=6500.00 loops=1)
+                      Filter: (last_at <= (now() - '14 days'::interval))
+                      Rows Removed by Filter: 3501
+                      Storage: Memory  Maximum Storage: 519kB
+        InitPlan 8
+          ->  Aggregate (actual time=1.402..1.402 rows=1.00 loops=1)
+                ->  CTE Scan on people people_2 (actual time=0.005..1.277 rows=2500.00 loops=1)
+                      Filter: (last_at <= (now() - '30 days'::interval))
+                      Rows Removed by Filter: 7501
+                      Storage: Memory  Maximum Storage: 519kB
+        InitPlan 9
+          ->  CTE Scan on totals (actual time=0.028..0.029 rows=1.00 loops=1)
+                Storage: Memory  Maximum Storage: 17kB
+                Buffers: shared hit=1
+        InitPlan 10
+          ->  Aggregate (actual time=28.392..28.393 rows=1.00 loops=1)
+                Buffers: shared hit=30002
+                ->  CTE Scan on done (actual time=24.263..28.390 rows=1.00 loops=1)
+                      Filter: (n = 0)
+                      Rows Removed by Filter: 10000
+                      Storage: Memory  Maximum Storage: 519kB
+                      Buffers: shared hit=30002
+        InitPlan 11
+          ->  Aggregate (actual time=4.372..4.372 rows=1.00 loops=1)
+                ->  Nested Loop (actual time=0.002..3.872 rows=10000.00 loops=1)
+                      Join Filter: ((2 * done_1.n) < totals_1.total)
+                      ->  CTE Scan on done done_1 (actual time=0.001..0.761 rows=10000.00 loops=1)
+                            Filter: (n > 0)
+                            Rows Removed by Filter: 1
+                            Storage: Memory  Maximum Storage: 519kB
+                      ->  CTE Scan on totals totals_1 (actual time=0.000..0.000 rows=1.00 loops=10000)
+                            Storage: Memory  Maximum Storage: 17kB
+        InitPlan 12
+          ->  Aggregate (actual time=3.398..3.399 rows=1.00 loops=1)
+                ->  Nested Loop (actual time=3.397..3.397 rows=0.00 loops=1)
+                      Join Filter: ((done_2.n < totals_2.total) AND ((2 * done_2.n) >= totals_2.total))
+                      Rows Removed by Join Filter: 10001
+                      ->  CTE Scan on done done_2 (actual time=0.000..0.598 rows=10001.00 loops=1)
+                            Storage: Memory  Maximum Storage: 519kB
+                      ->  CTE Scan on totals totals_2 (actual time=0.000..0.000 rows=1.00 loops=10001)
+                            Storage: Memory  Maximum Storage: 17kB
+        InitPlan 13
+          ->  Aggregate (actual time=3.371..3.371 rows=1.00 loops=1)
+                ->  Nested Loop (actual time=3.370..3.370 rows=0.00 loops=1)
+                      Join Filter: (done_3.n = totals_3.total)
+                      Rows Removed by Join Filter: 10001
+                      ->  CTE Scan on done done_3 (actual time=0.000..0.594 rows=10001.00 loops=1)
+                            Storage: Memory  Maximum Storage: 519kB
+                      ->  CTE Scan on totals totals_3 (actual time=0.000..0.000 rows=1.00 loops=10001)
+                            Filter: (total > 0)
+                            Storage: Memory  Maximum Storage: 17kB
+      Planning:
+        Buffers: shared hit=668
+      Planning Time: 1.258 ms
+      Execution Time: 101.731 ms
+[explain] análise do curso (M9-02) | 8.841 ms | seq: lesson(6 linhas), video_progress(1666 linhas), lesson_completion(1666 linhas) | select l.id::text as id, l.title, l.kind, l.is_optional, (select count(*) from lesson_comp
+      Sort (actual time=8.764..8.767 rows=6.00 loops=1)
+        Sort Key: m."position", l."position"
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=1572
+        ->  Nested Loop Left Join (actual time=1.980..8.745 rows=6.00 loops=1)
+              Join Filter: (l.kind = 'quiz'::text)
+              Rows Removed by Join Filter: 6
+              Buffers: shared hit=1569
+              ->  Nested Loop Left Join (actual time=0.578..5.031 rows=6.00 loops=1)
+                    Join Filter: (l.kind = 'video'::text)
+                    Rows Removed by Join Filter: 5
+                    Buffers: shared hit=937
+                    ->  Nested Loop (actual time=0.013..0.031 rows=6.00 loops=1)
+                          Buffers: shared hit=13
+                          ->  Seq Scan on lesson l (actual time=0.008..0.013 rows=6.00 loops=1)
+                                Filter: ((retired_at IS NULL) AND (course_id = '9a4d857d-1f99-49fe-867a-a52384e37009'::uuid))
+                                Buffers: shared hit=1
+                          ->  Index Scan using module_id_course_unique on module m (actual time=0.002..0.002 rows=1.00 loops=6)
+                                Index Cond: (id = l.module_id)
+                                Filter: (retired_at IS NULL)
+                                Index Searches: 6
+                                Buffers: shared hit=12
+                    ->  Aggregate (actual time=0.832..0.832 rows=1.00 loops=6)
+                          Buffers: shared hit=924
+                          ->  Seq Scan on video_progress v (actual time=0.429..0.575 rows=1666.83 loops=6)
+                                Filter: (lesson_id = l.id)
+                                Rows Removed by Filter: 8334
+                                Buffers: shared hit=924
+              ->  Aggregate (actual time=0.009..0.009 rows=1.00 loops=6)
+                    Buffers: shared hit=8
+                    ->  Sort (actual time=0.008..0.008 rows=0.00 loops=6)
+                          Sort Key: q.user_id
+                          Sort Method: quicksort  Memory: 25kB
+                          Buffers: shared hit=8
+                          ->  Bitmap Heap Scan on quiz_attempt q (actual time=0.005..0.005 rows=0.00 loops=6)
+                                Recheck Cond: (lesson_id = l.id)
+                                Buffers: shared hit=8
+                                ->  Bitmap Index Scan on quiz_attempt_number_unique (actual time=0.003..0.003 rows=0.00 loops=6)
+                                      Index Cond: (lesson_id = l.id)
+                                      Index Searches: 6
+                                      Buffers: shared hit=8
+              SubPlan 1
+                ->  Aggregate (actual time=0.607..0.607 rows=1.00 loops=6)
+                      Buffers: shared hit=624
+                      ->  Seq Scan on lesson_completion lc (actual time=0.378..0.520 rows=1666.67 loops=6)
+                            Filter: (lesson_id = l.id)
+                            Rows Removed by Filter: 8333
+                            Buffers: shared hit=624
+      Planning:
+        Buffers: shared hit=99
+      Planning Time: 0.378 ms
+      Execution Time: 8.841 ms
+[explain] análise do curso (M9-02) | 0.018 ms | seq: - | select now() as now
+[explain] análise das ofertas (M9-02) | 0.142 ms | seq: offer(0 linhas) | select o.id::text as id, o.name, o.course_id::text as course_id, c.title as course_title,
+[explain] análise das ofertas (M9-02) | 0.053 ms | seq: course_interest(0 linhas) | select c.id::text as id, c.title, count(*)::int as total, (count(*) filter (where ci.statu
+[explain] análise das ofertas (M9-02) | 0.020 ms | seq: - | select now() as now
+      Tests  1 passed (1)

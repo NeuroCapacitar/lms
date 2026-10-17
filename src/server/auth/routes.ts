@@ -22,6 +22,7 @@ import { acceptLegalSchema, type LegalStatusDto } from '../../features/identity/
 import { profilePatchSchema } from '../../features/identity/profile';
 import { sha256Hex } from '../crypto';
 import { createEmailSender } from '../email/factory';
+import { withSessionOnce } from './session-once';
 import { createAuth, type Auth } from './create-auth';
 import { getProfile, updateProfile } from './profile-store';
 import {
@@ -152,16 +153,19 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
     const opened = await openDatabase(c.env.HYPERDRIVE.connectionString);
     const pending: Promise<unknown>[] = [];
     const defer: Vars['defer'] = (job) => void pending.push(job);
-    const auth = createAuth(
-      opened.db,
-      { baseUrl: c.env.APP_BASE_URL, secret: c.env.BETTER_AUTH_SECRET },
-      {
-        emailSender: overrides.emailSender ?? createEmailSender(c.env),
-        isStaffEmail: overrides.isStaffEmail ?? ((email) => lookupStaffEmail(opened.db, email)),
-        isSuspended: overrides.isSuspended ?? ((userId) => isSuspended(opened.db, userId)),
-        isStaffUser: overrides.isStaffUser ?? ((userId) => hasStaffRole(opened.db, userId)),
-        ...(googleOf(c.env) ? { google: googleOf(c.env)! } : {}),
-      },
+    // `withSessionOnce` (M9-07): a sessão é lida uma vez por requisição, não duas (o `Auth` já nasce por requisição).
+    const auth = withSessionOnce(
+      createAuth(
+        opened.db,
+        { baseUrl: c.env.APP_BASE_URL, secret: c.env.BETTER_AUTH_SECRET },
+        {
+          emailSender: overrides.emailSender ?? createEmailSender(c.env),
+          isStaffEmail: overrides.isStaffEmail ?? ((email) => lookupStaffEmail(opened.db, email)),
+          isSuspended: overrides.isSuspended ?? ((userId) => isSuspended(opened.db, userId)),
+          isStaffUser: overrides.isStaffUser ?? ((userId) => hasStaffRole(opened.db, userId)),
+          ...(googleOf(c.env) ? { google: googleOf(c.env)! } : {}),
+        },
+      ),
     );
     let result: T;
     try {

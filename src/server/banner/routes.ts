@@ -10,6 +10,7 @@ import {
 } from '../../features/banner/banner';
 import { requireCapability } from '../auth/authorization';
 import type { AuthVars } from '../auth/types';
+import { PUBLIC_CACHE_TTL, servePublicCached, waitUntilOf } from '../http/public-cache';
 import {
   MediaNotPublishedError,
   MediaNotReadyError,
@@ -249,12 +250,19 @@ export function bannerRoutes(deps: {
  */
 export function publicLoginMediaRoutes() {
   const routes = new Hono<{ Bindings: Env }>();
-  routes.get('/login-media', async (c) => {
-    const items = await openDatabase(c.env.HYPERDRIVE, (db) =>
-      listPublishedLoginMedia(db, { baseUrl: c.env.MEDIA_PUBLIC_BASE_URL }),
-    );
-    c.header('Cache-Control', 'no-store');
-    return c.json({ items });
-  });
+  // Cache de borda curto (M9-07): as imagens do login são públicas e iguais para todos.
+  routes.get('/login-media', (c) =>
+    servePublicCached({
+      request: c.req.raw,
+      waitUntil: waitUntilOf(c),
+      produce: async () => {
+        const items = await openDatabase(c.env.HYPERDRIVE, (db) =>
+          listPublishedLoginMedia(db, { baseUrl: c.env.MEDIA_PUBLIC_BASE_URL }),
+        );
+        c.header('Cache-Control', 'no-store');
+        return { response: c.json({ items }), ttl: PUBLIC_CACHE_TTL.found };
+      },
+    }),
+  );
   return routes;
 }

@@ -35,6 +35,7 @@
 | [0029](adr/0029-spike-m0-10-better-auth-magic-link.md) | Spike M0-10 passou: Better Auth 1.7.7, link com token no fragmento e confirmação por POST, Workers Paid indispensável | valida 0007 |
 | [0030](adr/0030-spike-m0-15-browser-run-pdf.md) | Spike M0-15 passou: PDF A4 fiel pelo Browser Run; JavaScript da página executa, então escape + CSP + bloqueio de rede são obrigatórios; hash é do arquivo guardado | valida 0017 |
 | [0031](adr/0031-spike-m0-17-htmlrewriter-meta-tags.md) | Spike M0-17: HTMLRewriter com placeholders e atributos escapados funciona; aceite depende de LinkedIn e Meta (pendente) | condicional |
+| [0032](adr/0032-m9-07-desempenho-cache-publico-cron-e-sessao.md) | M9-07: cache curto (60 s) nas rotas públicas, sessão lida uma vez por requisição, Cron mantido em 30 min com regra de saída em 55 CU-h, Workers Paid adiado para o fim do desenvolvimento; heartbeat leve e cache do currículo não adotados | refina 0027 e 0003 |
 
 ## Convenção
 

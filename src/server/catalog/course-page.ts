@@ -8,6 +8,7 @@ import {
 } from '../../features/catalog/course-meta';
 import type { PublicCoursePageDto } from '../../features/catalog/public-course';
 import { summarize } from '../../features/catalog/student-catalog';
+import { PUBLIC_CACHE_TTL, type Produced } from '../http/public-cache';
 
 /**
  * Troca as meta tags do `index.html` com HTMLRewriter (M2-06): sem SSR, só `<head>`. O `<title>` vira
@@ -63,9 +64,21 @@ export async function serveCoursePage(
   env: Env,
   deps: CoursePageDeps,
 ): Promise<Response> {
+  return (await resolveCoursePage(request, env, deps)).response;
+}
+
+/**
+ * O mesmo que `serveCoursePage`, dizendo também por quanto tempo a resposta pode ficar no cache de borda (M9-07): só quando a leitura do
+ * banco deu certo (curso encontrado ou "não existe"). A SPA pura (caminho sem slug) e a falha de banco NUNCA são guardadas.
+ */
+export async function resolveCoursePage(
+  request: Request,
+  env: Env,
+  deps: CoursePageDeps,
+): Promise<Produced> {
   const shell = await loadShell(env, request.url);
   const slug = slugFromPath(new URL(request.url).pathname);
-  if (slug === null) return shell;
+  if (slug === null) return { response: shell, ttl: null };
   try {
     const page = await deps.loadCourse(env, slug);
     if (page) {
@@ -75,11 +88,17 @@ export async function serveCoursePage(
         title: page.title,
         summary: summarize(page.description, DESCRIPTION_MAX),
       });
-      return deps.inject(shell, meta, 200);
+      return { response: deps.inject(shell, meta, 200), ttl: PUBLIC_CACHE_TTL.found };
     }
-    return deps.inject(shell, genericMeta(env.APP_BASE_URL), 404);
+    return {
+      response: deps.inject(shell, genericMeta(env.APP_BASE_URL), 404),
+      ttl: PUBLIC_CACHE_TTL.missing,
+    };
   } catch (error) {
     deps.onError(error);
-    return deps.inject(await loadShell(env, request.url), genericMeta(env.APP_BASE_URL), 200);
+    return {
+      response: deps.inject(await loadShell(env, request.url), genericMeta(env.APP_BASE_URL), 200),
+      ttl: null,
+    };
   }
 }

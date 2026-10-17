@@ -81,7 +81,10 @@ export async function reportVideoProgress(
       })
       .from(videoAsset)
       .where(eq(videoAsset.id, row.videoAssetId))
-      .for('update');
+      // FOR SHARE (M9-07): todas as pessoas no MESMO vídeo leem este registro; com FOR UPDATE elas entravam em fila uma atrás da outra
+      // (20 heartbeats simultâneos levavam 2,9 vezes um sozinho, só pelo travamento). SHARE ainda protege contra mudança concorrente do
+      // registro (estado, duração); quem congela a duração faz um UPDATE condicional, que espera os SHARE e segue seguro.
+      .for('share');
     if (!asset) throw new LessonNotFoundError();
     if (asset.state !== 'ready') throw new VideoNotMeasurableError('not_ready');
 
