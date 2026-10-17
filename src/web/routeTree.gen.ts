@@ -27,9 +27,11 @@ import { Route as EntrarIndexRouteImport } from './routes/entrar.index'
 import { Route as EntrarConfirmarRouteImport } from './routes/entrar.confirmar'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffAjudaRouteImport } from './routes/staff.ajuda'
+import { Route as StaffAuditoriaRouteImport } from './routes/staff.auditoria'
 import { Route as StaffBannersRouteImport } from './routes/staff.banners'
 import { Route as StaffDiscussoesRouteImport } from './routes/staff.discussoes'
 import { Route as StaffEquipeRouteImport } from './routes/staff.equipe'
+import { Route as StaffFilaRouteImport } from './routes/staff.fila'
 import { Route as StaffFinanceiroRouteImport } from './routes/staff.financeiro'
 import { Route as StaffOperacaoRouteImport } from './routes/staff.operacao'
 import { Route as StaffVideosRouteImport } from './routes/staff.videos'
@@ -133,6 +135,11 @@ const StaffAjudaRoute = StaffAjudaRouteImport.update({
   path: '/ajuda',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffAuditoriaRoute = StaffAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffBannersRoute = StaffBannersRouteImport.update({
   id: '/banners',
   path: '/banners',
@@ -146,6 +153,11 @@ const StaffDiscussoesRoute = StaffDiscussoesRouteImport.update({
 const StaffEquipeRoute = StaffEquipeRouteImport.update({
   id: '/equipe',
   path: '/equipe',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffFilaRoute = StaffFilaRouteImport.update({
+  id: '/fila',
+  path: '/fila',
   getParentRoute: () => StaffRoute,
 } as any)
 const StaffFinanceiroRoute = StaffFinanceiroRouteImport.update({
@@ -229,9 +241,11 @@ export interface FileRoutesByFullPath {
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
+  '/staff/auditoria': typeof StaffAuditoriaRoute
   '/staff/banners': typeof StaffBannersRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
+  '/staff/fila': typeof StaffFilaRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
   '/staff/operacao': typeof StaffOperacaoRoute
   '/staff/videos': typeof StaffVideosRoute
@@ -263,9 +277,11 @@ export interface FileRoutesByTo {
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
+  '/staff/auditoria': typeof StaffAuditoriaRoute
   '/staff/banners': typeof StaffBannersRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
+  '/staff/fila': typeof StaffFilaRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
   '/staff/operacao': typeof StaffOperacaoRoute
   '/staff/videos': typeof StaffVideosRoute
@@ -299,9 +315,11 @@ export interface FileRoutesById {
   '/cursos/$slug': typeof CursosSlugRoute
   '/entrar/confirmar': typeof EntrarConfirmarRoute
   '/staff/ajuda': typeof StaffAjudaRoute
+  '/staff/auditoria': typeof StaffAuditoriaRoute
   '/staff/banners': typeof StaffBannersRoute
   '/staff/discussoes': typeof StaffDiscussoesRoute
   '/staff/equipe': typeof StaffEquipeRoute
+  '/staff/fila': typeof StaffFilaRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
   '/staff/operacao': typeof StaffOperacaoRoute
   '/staff/videos': typeof StaffVideosRoute
@@ -336,9 +354,11 @@ export interface FileRouteTypes {
     | '/cursos/$slug'
     | '/entrar/confirmar'
     | '/staff/ajuda'
+    | '/staff/auditoria'
     | '/staff/banners'
     | '/staff/discussoes'
     | '/staff/equipe'
+    | '/staff/fila'
     | '/staff/financeiro'
     | '/staff/operacao'
     | '/staff/videos'
@@ -370,9 +390,11 @@ export interface FileRouteTypes {
     | '/cursos/$slug'
     | '/entrar/confirmar'
     | '/staff/ajuda'
+    | '/staff/auditoria'
     | '/staff/banners'
     | '/staff/discussoes'
     | '/staff/equipe'
+    | '/staff/fila'
     | '/staff/financeiro'
     | '/staff/operacao'
     | '/staff/videos'
@@ -405,9 +427,11 @@ export interface FileRouteTypes {
     | '/cursos/$slug'
     | '/entrar/confirmar'
     | '/staff/ajuda'
+    | '/staff/auditoria'
     | '/staff/banners'
     | '/staff/discussoes'
     | '/staff/equipe'
+    | '/staff/fila'
     | '/staff/financeiro'
     | '/staff/operacao'
     | '/staff/videos'
@@ -575,6 +599,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffAjudaRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/auditoria': {
+      id: '/staff/auditoria'
+      path: '/auditoria'
+      fullPath: '/staff/auditoria'
+      preLoaderRoute: typeof StaffAuditoriaRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/banners': {
       id: '/staff/banners'
       path: '/banners'
@@ -594,6 +625,13 @@ declare module '@tanstack/react-router' {
       path: '/equipe'
       fullPath: '/staff/equipe'
       preLoaderRoute: typeof StaffEquipeRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff/fila': {
+      id: '/staff/fila'
+      path: '/fila'
+      fullPath: '/staff/fila'
+      preLoaderRoute: typeof StaffFilaRouteImport
       parentRoute: typeof StaffRoute
     }
     '/staff/financeiro': {
@@ -685,9 +723,11 @@ declare module '@tanstack/react-router' {
 
 interface StaffRouteChildren {
   StaffAjudaRoute: typeof StaffAjudaRoute
+  StaffAuditoriaRoute: typeof StaffAuditoriaRoute
   StaffBannersRoute: typeof StaffBannersRoute
   StaffDiscussoesRoute: typeof StaffDiscussoesRoute
   StaffEquipeRoute: typeof StaffEquipeRoute
+  StaffFilaRoute: typeof StaffFilaRoute
   StaffFinanceiroRoute: typeof StaffFinanceiroRoute
   StaffOperacaoRoute: typeof StaffOperacaoRoute
   StaffVideosRoute: typeof StaffVideosRoute
@@ -703,9 +743,11 @@ interface StaffRouteChildren {
 
 const StaffRouteChildren: StaffRouteChildren = {
   StaffAjudaRoute: StaffAjudaRoute,
+  StaffAuditoriaRoute: StaffAuditoriaRoute,
   StaffBannersRoute: StaffBannersRoute,
   StaffDiscussoesRoute: StaffDiscussoesRoute,
   StaffEquipeRoute: StaffEquipeRoute,
+  StaffFilaRoute: StaffFilaRoute,
   StaffFinanceiroRoute: StaffFinanceiroRoute,
   StaffOperacaoRoute: StaffOperacaoRoute,
   StaffVideosRoute: StaffVideosRoute,

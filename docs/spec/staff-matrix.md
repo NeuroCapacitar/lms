@@ -23,7 +23,7 @@ Conta **suspensa** nega tudo, mesmo com papel e grants. Remover um grant vale na
 
 ## Reservadas e atalhos conhecidos
 
-- `audit.view`: **sem endpoint hoje**. É reservada para o visualizador de auditoria (M9-01, passo 5). A auditoria já é gravada (`audit_log`, só de acréscimo); falta a leitura.
+- `audit.view`: protege `GET /api/staff/audit` (leitura da auditoria, paginada por cursor, só IDs). A auditoria é gravada em `audit_log`, só de acréscimo.
 - `certificate.template` e `certificate.revoke`: as rotas de emitente, signatário, modelo e revogação usam `staff.manage` como "só Admin" (mesmo efeito, pois nenhuma das três é delegável). Os nomes ficam reservados para quando houver diferença.
 - `system.maintenance`: protege hoje só a **pausa de fila** por lane. Não existe um "modo de manutenção" do produto (decisão pendente).
 - Menu: **"Certificados"** (emitente, signatário e modelo) aparece só para `staff.manage`; **"Certificados emitidos"** aparece para `certificate.reissue` ou `ops.queue` (e para o Admin), como a lista `GET /api/staff/certificates` aceita.
@@ -64,6 +64,8 @@ Conta **suspensa** nega tudo, mesmo com papel e grants. Remover um grant vale na
 | `GET /api/staff/courses/:id/publish-preview` | `staff.read` | não | `/staff/cursos/$courseId` |
 | `GET /api/staff/courses/:id/interests` | `staff.read` | não | `/staff/cursos/$courseId` |
 | `GET /api/staff/panel` | `staff.read` (pedidos só com `finance.view`; denúncias só com `discussion.moderate`) | não | `/staff` |
+| `GET /api/staff/queue` | `staff.read` (cada tipo só a quem pode vê-lo; a ação só a quem tem o grant) | não | `/staff/fila` |
+| `GET /api/staff/audit` | `audit.view` | não | `/staff/auditoria` |
 | `GET /api/staff/operations` | `staff.read` | não | `/staff/operacao` |
 | `POST /api/staff/operations/outbox/:id/requeue` | `ops.queue` | sim | `/staff/operacao` |
 | `POST /api/staff/operations/queues/:lane/pause` | `system.maintenance` | sim | `/staff/operacao` |
