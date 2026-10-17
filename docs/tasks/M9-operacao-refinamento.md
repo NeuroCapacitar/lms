@@ -136,7 +136,7 @@
 
 ### M9-07 — Performance e orçamento de custo (Neon, Workers, acordar)
 
-**Dependências:** M0-12 (spike de latência/acordar), M9-01, M9-02, M7-08 · **Estado:** `not_started`
+**Dependências:** M0-12 (spike de latência/acordar), M9-01, M9-02, M7-08 · **Estado:** `in_progress` (feito o que roda sem o Staging: o passo 4, idas ao banco e EXPLAIN, e uma otimização medida; os passos 1, 2, 3, 5 e 6 pendentes da medição no Staging e da autorização do responsável: ver `docs/implementation/STATUS.md` e `docs/review/evidencias/m9-07/README.md`)
 
 **Objetivo.** Provar, por medição, que a v1 cabe no free tier e no teto de US$ 10/mês (só Workers Paid é custo certo).
 
