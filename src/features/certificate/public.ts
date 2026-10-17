@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { canonicalOrigin, type PageMeta } from '../catalog/course-meta';
 import { CERTIFICATE_CODE_PATTERN, type CertificateStatus } from './certificate';
+import { SCRUBBED_HOLDER_NAME } from './retention';
 
 /**
  * Validação PÚBLICA do certificado (M7-08), parte pura. Quem tem o código vê SÓ o estado, o curso, a carga horária, a
@@ -72,8 +73,11 @@ export function toPublicDto(
     issuedAt: input.issuedAt.toISOString(),
     issuerName: input.issuerName,
   };
-  if (mode === 'full') dto.holderName = input.holderName;
-  if (mode === 'masked') dto.holderName = maskName(input.holderName);
+  // Nome já eliminado pela retenção (M7-05): nunca aparece, qualquer que seja o modo.
+  if (input.holderName !== SCRUBBED_HOLDER_NAME) {
+    if (mode === 'full') dto.holderName = input.holderName;
+    if (mode === 'masked') dto.holderName = maskName(input.holderName);
+  }
   return dto;
 }
 

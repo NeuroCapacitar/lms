@@ -281,6 +281,13 @@
       "when": 1792069860865,
       "tag": "0039_offline_operation",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792254002828,
+      "tag": "0040_certificate_pdf_purge",
+      "breakpoints": true
     }
   ]
 }

@@ -100,7 +100,7 @@ Ordem sugerida: M7-01 → M7-06 → M7-02 → M7-07 → M7-03 → M7-09 → M7-0
 
 ### M7-05 — Retenção de 90 dias do PDF revogado (CONDICIONAL) e purge com tombstone
 
-**Dependências:** M7-04, M4-03 (cron/reconciler), parecer do advogado do cliente · **Estado:** `not_started`
+**Dependências:** M7-04, M4-03 (cron/reconciler), parecer do advogado do cliente · **Estado:** `in_progress` (mecanismo pronto e DESLIGADO por padrão; falta o parecer do advogado, o lifecycle/lock do R2 e a prova em Staging: ver `docs/implementation/STATUS.md`)
 
 **Objetivo.** Eliminar o PDF revogado depois do prazo aprovado, mantendo só o mínimo para a página pública continuar respondendo "revogado".
 

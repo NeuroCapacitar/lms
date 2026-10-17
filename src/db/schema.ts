@@ -854,6 +854,8 @@ export const certificate = pgTable(
     revokedBy: text().references(() => user.id, { onDelete: 'set null' }),
     revocationCategory: text(),
     revocationNote: text(),
+    /** M7-05: quando o PDF de um certificado REVOGADO foi eliminado (o tombstone fica: código, estado, `revoked_at` e o SHA-256). */
+    pdfPurgedAt: timestamp({ withTimezone: true }),
     ...stamps,
   },
   (table) => [
@@ -887,7 +889,7 @@ export const certificate = pgTable(
     check('certificate_code_check', sql`${table.code} ~ '^[A-Za-z0-9_-]{22}$'`),
     check(
       'certificate_pdf_check',
-      sql`(${table.pdfKey} is null) = (${table.pdfSha256} is null) and (${table.status} <> 'ready' or ${table.pdfKey} is not null)`,
+      sql`((${table.pdfKey} is null) = (${table.pdfSha256} is null) or (${table.status} = 'revoked' and ${table.pdfPurgedAt} is not null and ${table.pdfKey} is null and ${table.pdfSha256} is not null)) and (${table.status} <> 'ready' or ${table.pdfKey} is not null) and (${table.pdfPurgedAt} is null or (${table.status} = 'revoked' and ${table.pdfKey} is null))`,
     ),
   ],
 );
