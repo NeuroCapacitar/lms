@@ -71,6 +71,9 @@ Conta **suspensa** nega tudo, mesmo com papel e grants. Remover um grant vale na
 | `GET /api/staff/operations` | `staff.read` | não | `/staff/operacao` |
 | `POST /api/staff/operations/outbox/:id/requeue` | `ops.queue` | sim | `/staff/operacao` |
 | `POST /api/staff/operations/queues/:lane/pause` | `system.maintenance` | sim | `/staff/operacao` |
+| `GET /api/staff/privacy/incidents` | `staff.manage` | não | `/staff/incidentes` |
+| `POST /api/staff/privacy/incidents` | `staff.manage` | sim | `/staff/incidentes` |
+| `PATCH /api/staff/privacy/incidents/:id` | `staff.manage` | sim | `/staff/incidentes` |
 | `GET /api/staff/video/connections` | `integration.credentials` | não | `/staff/videos` |
 | `GET /api/staff/video/providers` | `integration.credentials` | não | `/staff/videos` |
 | `POST /api/staff/video/connections` | `integration.credentials` | sim | `/staff/videos` |

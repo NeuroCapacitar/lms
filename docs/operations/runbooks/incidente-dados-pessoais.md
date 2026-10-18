@@ -26,7 +26,7 @@ Responda por escrito, no registro do incidente:
 
 ## 4. Registrar e corrigir
 
-- **Todo incidente é registrado, também os que não foram comunicados**, e o registro é guardado por **pelo menos 5 anos** (referência a confirmar com o advogado). Onde guardar: a decidir (não existe tabela de incidentes ainda; **pendência**).
+- **Todo incidente é registrado, também os que não foram comunicados**, e o registro é guardado por **pelo menos 5 anos** (referência a confirmar com o advogado). **Onde:** a tela **Incidentes** da Staff (`/staff/incidentes`, só o Admin, escrever pede reautenticação; tabela `privacy_incident`, ADR 0033). O registro guarda o que houve, o tipo, os tipos de dado atingidos, a estimativa de pessoas, o risco avaliado e **a decisão sobre comunicar** (comunicado com data, ou "comunicação não exigida"); **encerrar exige essas duas decisões** e encerrado não muda mais. **Nada se apaga** (gatilho no banco). A API **recusa** e-mail, CPF, CNPJ, telefone e link de acesso no texto: descreva sem identificar ninguém.
 - Causa raiz, correção, teste de regressão e, se couber, atualização deste runbook e do `docs/spec/security-operations.md`.
 
 ## Não faça

@@ -43,4 +43,5 @@ Estado do projeto: `observability.enabled` com `invocation_logs: false` (um log 
 - **Entrega ativa dos alertas:** pronta no código (Sentry, no máximo um evento por código a cada 24 h); **só passa a valer depois da migration 0042 e de um deploy** do Worker no ambiente, e depende de a regra de alerta do Sentry estar ativa.
 - **Alerta de backup velho:** pronto (`backup_stale` e `backup_never`, tabela `backup_run`); só passa a ter dado quando o workflow de backup rodar (ver o runbook de backup).
 - **Exercícios de falha em Staging com uma pessoa** (reconhecer o alerta e executar o passo): ainda não feitos; os runbooks nunca foram seguidos por quem não os escreveu. Sem isso o aceite do M9-06 não está cumprido.
+- **Registro de incidentes:** pronto (tela `/staff/incidentes`, tabela `privacy_incident`, migration 0043; ADR 0033); **só passa a valer depois da migration e de um deploy**.
 - **Texto de privacidade e prazo de comunicação à ANPD** nos runbooks vêm de fonte secundária: o advogado precisa confirmar.
