@@ -16,6 +16,7 @@ interface NavItem {
     | '/staff/cursos'
     | '/staff/fila'
     | '/staff/operacao'
+    | '/staff/incidentes'
     | '/staff/discussoes'
     | '/staff/ajuda'
     | '/staff/banners'
@@ -37,6 +38,7 @@ const NAV: NavItem[] = [
   { to: '/staff/fila', label: 'Fila de ações', needs: 'staff.read' },
   { to: '/staff/analise', label: 'Análise', needs: 'staff.read' },
   { to: '/staff/operacao', label: 'Operação', needs: 'staff.read' },
+  { to: '/staff/incidentes', label: 'Incidentes', needs: 'staff.manage' },
   { to: '/staff/discussoes', label: 'Discussões', needs: 'discussion.moderate' },
   { to: '/staff/ajuda', label: 'Ajuda', needs: 'staff.read' },
   { to: '/staff/banners', label: 'Banners', needs: 'staff.manage' },

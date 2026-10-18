@@ -35,6 +35,7 @@ import { Route as StaffDiscussoesRouteImport } from './routes/staff.discussoes'
 import { Route as StaffEquipeRouteImport } from './routes/staff.equipe'
 import { Route as StaffFilaRouteImport } from './routes/staff.fila'
 import { Route as StaffFinanceiroRouteImport } from './routes/staff.financeiro'
+import { Route as StaffIncidentesRouteImport } from './routes/staff.incidentes'
 import { Route as StaffOperacaoRouteImport } from './routes/staff.operacao'
 import { Route as StaffVideosRouteImport } from './routes/staff.videos'
 import { Route as EstudarCourseIdIndexRouteImport } from './routes/estudar.$courseId.index'
@@ -177,6 +178,11 @@ const StaffFinanceiroRoute = StaffFinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffIncidentesRoute = StaffIncidentesRouteImport.update({
+  id: '/incidentes',
+  path: '/incidentes',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffOperacaoRoute = StaffOperacaoRouteImport.update({
   id: '/operacao',
   path: '/operacao',
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/fila': typeof StaffFilaRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
+  '/staff/incidentes': typeof StaffIncidentesRoute
   '/staff/operacao': typeof StaffOperacaoRoute
   '/staff/videos': typeof StaffVideosRoute
   '/conta/': typeof ContaIndexRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/fila': typeof StaffFilaRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
+  '/staff/incidentes': typeof StaffIncidentesRoute
   '/staff/operacao': typeof StaffOperacaoRoute
   '/staff/videos': typeof StaffVideosRoute
   '/conta': typeof ContaIndexRoute
@@ -339,6 +347,7 @@ export interface FileRoutesById {
   '/staff/equipe': typeof StaffEquipeRoute
   '/staff/fila': typeof StaffFilaRoute
   '/staff/financeiro': typeof StaffFinanceiroRoute
+  '/staff/incidentes': typeof StaffIncidentesRoute
   '/staff/operacao': typeof StaffOperacaoRoute
   '/staff/videos': typeof StaffVideosRoute
   '/conta/': typeof ContaIndexRoute
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/staff/equipe'
     | '/staff/fila'
     | '/staff/financeiro'
+    | '/staff/incidentes'
     | '/staff/operacao'
     | '/staff/videos'
     | '/conta/'
@@ -418,6 +428,7 @@ export interface FileRouteTypes {
     | '/staff/equipe'
     | '/staff/fila'
     | '/staff/financeiro'
+    | '/staff/incidentes'
     | '/staff/operacao'
     | '/staff/videos'
     | '/conta'
@@ -457,6 +468,7 @@ export interface FileRouteTypes {
     | '/staff/equipe'
     | '/staff/fila'
     | '/staff/financeiro'
+    | '/staff/incidentes'
     | '/staff/operacao'
     | '/staff/videos'
     | '/conta/'
@@ -680,6 +692,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffFinanceiroRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/incidentes': {
+      id: '/staff/incidentes'
+      path: '/incidentes'
+      fullPath: '/staff/incidentes'
+      preLoaderRoute: typeof StaffIncidentesRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/operacao': {
       id: '/staff/operacao'
       path: '/operacao'
@@ -769,6 +788,7 @@ interface StaffRouteChildren {
   StaffEquipeRoute: typeof StaffEquipeRoute
   StaffFilaRoute: typeof StaffFilaRoute
   StaffFinanceiroRoute: typeof StaffFinanceiroRoute
+  StaffIncidentesRoute: typeof StaffIncidentesRoute
   StaffOperacaoRoute: typeof StaffOperacaoRoute
   StaffVideosRoute: typeof StaffVideosRoute
   StaffIndexRoute: typeof StaffIndexRoute
@@ -790,6 +810,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffEquipeRoute: StaffEquipeRoute,
   StaffFilaRoute: StaffFilaRoute,
   StaffFinanceiroRoute: StaffFinanceiroRoute,
+  StaffIncidentesRoute: StaffIncidentesRoute,
   StaffOperacaoRoute: StaffOperacaoRoute,
   StaffVideosRoute: StaffVideosRoute,
   StaffIndexRoute: StaffIndexRoute,

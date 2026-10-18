@@ -49,6 +49,7 @@ import type { RefundProvider } from '../commerce/refund-provider';
 import { financeStaffRoutes } from '../commerce/finance-routes';
 import { commerceRoutes } from '../commerce/routes';
 import { helpRoutes, helpStaffRoutes } from '../help/routes';
+import { privacyIncidentRoutes } from '../privacy/incident-routes';
 import { createR2Storage } from '../media/r2-storage';
 import { mediaRoutes } from '../media/routes';
 import type { ObjectStorage } from '../media/storage';
@@ -456,6 +457,9 @@ export function authRoutes(overrides: AuthRouteOverrides = {}) {
 
   // Ajuda da Staff (M5-14): /api/staff/help (FAQ com help.edit; pedidos com staff.read).
   routes.route('/staff', helpStaffRoutes({ withDatabase }));
+
+  // Registro de incidentes com dados pessoais (M9-06, ADR 0033): /api/staff/privacy/incidents (só Admin; escrita com reautenticação).
+  routes.route('/staff', privacyIncidentRoutes({ withDatabase }));
 
   // Banners do painel e imagens do login (M5-15): /api/staff/banners (só Admin; R2 do ambiente para publicar).
   routes.route(

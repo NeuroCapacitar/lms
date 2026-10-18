@@ -46,6 +46,7 @@ const BANNERS = '/staff/banners';
 const VIDEOS = '/staff/videos';
 const FINANCE = '/staff/financeiro';
 const OPS = '/staff/operacao';
+const INCIDENTES = '/staff/incidentes';
 
 export const STAFF_ENDPOINTS: readonly StaffEndpoint[] = [
   // Equipe: convites, papéis e grants (só Admin; escritas com reautenticação).
@@ -122,6 +123,11 @@ export const STAFF_ENDPOINTS: readonly StaffEndpoint[] = [
   row('GET', '/api/staff/operations', cap('staff.read'), OPS),
   row('POST', '/api/staff/operations/outbox/:id/requeue', cap('ops.queue'), OPS, true),
   row('POST', '/api/staff/operations/queues/:lane/pause', cap('system.maintenance'), OPS, true),
+
+  // Registro de incidentes com dados pessoais (só Admin; escrita com reautenticação).
+  row('GET', '/api/staff/privacy/incidents', cap('staff.manage'), INCIDENTES),
+  row('POST', '/api/staff/privacy/incidents', cap('staff.manage'), INCIDENTES, true),
+  row('PATCH', '/api/staff/privacy/incidents/:id', cap('staff.manage'), INCIDENTES, true),
 
   // Vídeo (credenciais de integração; só Admin).
   row('GET', '/api/staff/video/connections', cap('integration.credentials'), VIDEOS),

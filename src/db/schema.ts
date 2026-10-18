@@ -233,6 +233,79 @@ export const auditLog = pgTable(
 );
 
 /**
+ * Registro de incidentes com dados pessoais (M9-06, ADR 0033). Só o REGISTRO: o que houve, o que foi avaliado e decidido.
+ * **Nunca guarda dado pessoal de quem foi afetado** (a API recusa e-mail, CPF, CNPJ, telefone e link de acesso no texto).
+ * Não se apaga (gatilho): todo incidente fica, comunicado ou não, por pelo menos 5 anos (a confirmar com o advogado).
+ * Encerrado é definitivo. Quem registra e altera é só o Admin, com reautenticação e auditoria.
+ */
+export const privacyIncident = pgTable(
+  'privacy_incident',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    title: text().notNull(),
+    description: text().notNull(),
+    category: text().notNull(),
+    dataKinds: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    affectedCount: integer(),
+    detectedAt: timestamp({ withTimezone: true }).notNull(),
+    occurredAt: timestamp({ withTimezone: true }),
+    status: text().notNull().default('open'),
+    riskAssessment: text().notNull().default('not_assessed'),
+    communication: text().notNull().default('pending'),
+    communicatedAt: timestamp({ withTimezone: true }),
+    actionsTaken: text(),
+    containedAt: timestamp({ withTimezone: true }),
+    closedAt: timestamp({ withTimezone: true }),
+    createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+    ...stamps,
+  },
+  (table) => [
+    index('privacy_incident_detected_idx').on(table.detectedAt),
+    check('privacy_incident_title_check', sql`char_length(${table.title}) between 3 and 120`),
+    check(
+      'privacy_incident_description_check',
+      sql`char_length(${table.description}) between 10 and 2000`,
+    ),
+    check(
+      'privacy_incident_category_check',
+      sql`${table.category} in ('exposure', 'unauthorized_access', 'loss', 'alteration', 'misdelivery', 'other')`,
+    ),
+    check(
+      'privacy_incident_data_kinds_check',
+      sql`${table.dataKinds} <@ array['name', 'email', 'payer_document', 'progress', 'certificate', 'discussion', 'credentials', 'other']::text[]`,
+    ),
+    check('privacy_incident_status_check', sql`${table.status} in ('open', 'contained', 'closed')`),
+    check(
+      'privacy_incident_risk_check',
+      sql`${table.riskAssessment} in ('not_assessed', 'low', 'relevant')`,
+    ),
+    check(
+      'privacy_incident_communication_check',
+      sql`${table.communication} in ('pending', 'not_required', 'communicated')`,
+    ),
+    check(
+      'privacy_incident_communicated_check',
+      sql`(${table.communication} = 'communicated') = (${table.communicatedAt} is not null)`,
+    ),
+    check(
+      'privacy_incident_closed_check',
+      sql`(${table.status} = 'closed') = (${table.closedAt} is not null)`,
+    ),
+    check(
+      'privacy_incident_close_decision_check',
+      sql`${table.status} <> 'closed' or (${table.riskAssessment} <> 'not_assessed' and ${table.communication} <> 'pending')`,
+    ),
+    check(
+      'privacy_incident_affected_check',
+      sql`${table.affectedCount} is null or ${table.affectedCount} >= 0`,
+    ),
+  ],
+);
+
+/**
  * Estado da ENTREGA dos alertas do Operations Center (M9-06, ADR 0033): uma linha por alerta ATIVO, para o Cron
  * não repetir a notificação a cada ciclo (30 min). Apagada quando o alerta some, então a volta do problema
  * notifica na hora. Só código, severidade e instantes: nada de dado pessoal nem de texto de erro.
