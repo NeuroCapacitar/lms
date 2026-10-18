@@ -1,9 +1,9 @@
 import { eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as schema from '../../src/db/schema.ts';
-import { evaluateAlerts } from '../../src/features/ops/operations.ts';
+import { evaluateAlerts, type OpsAlert } from '../../src/features/ops/operations.ts';
 import type { AlertEvent } from '../../src/server/async/alerts.ts';
 import { pauseFlagKey } from '../../src/server/async/flags.ts';
 import { alertsJob, runCycle, type JobContext } from '../../src/server/async/jobs.ts';
@@ -15,6 +15,7 @@ import type { MailRequest, MailResult, Mailer } from '../../src/server/email/mai
 import { createQuotaGate } from '../../src/server/email/quota-store.ts';
 import { createEmailHandler } from '../../src/server/email/send-handler.ts';
 import { createFakeEmailSender } from '../../src/server/email/fake.ts';
+import { deliverAlerts } from '../../src/server/ops/alert-state-store.ts';
 import { loadOperationsSnapshot } from '../../src/server/ops/operations-store.ts';
 import { apiApp } from '../helpers/api-app.ts';
 import { SimQueue, enqueueDemo, uuid } from '../helpers/async-harness.ts';
@@ -44,7 +45,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await tools.db.execute(
-    sql`truncate table email_send_ledger, email_recipient_state, email_message, outbox_message, inbox_event, system_flag, job_run`,
+    sql`truncate table email_send_ledger, email_recipient_state, email_message, outbox_message, inbox_event, system_flag, job_run, alert_state`,
   );
   await tools.db.delete(schema.userSuspension);
   await tools.db.delete(schema.session);
@@ -520,6 +521,151 @@ describe('alertas no Cron', () => {
       .from(schema.jobRun)
       .where(eq(schema.jobRun.name, 'ops.alerts'));
     expect(run).toMatchObject({ lastStatus: 'ok' });
+  });
+});
+
+describe('entrega dos alertas sem repetir (M9-06, ADR 0033)', () => {
+  const alert = (code: string, severity: OpsAlert['severity'] = 'P1'): OpsAlert => ({
+    code,
+    severity,
+    message: `mensagem de ${code}`,
+  });
+  const recorder = (ok = true) => {
+    const sent: string[] = [];
+    return {
+      sent,
+      send: async (item: OpsAlert) => {
+        sent.push(item.code);
+        return ok;
+      },
+    };
+  };
+  const ageNotification = (code: string, hours: number) =>
+    tools.db.execute(
+      sql`update alert_state set last_notified_at = now() - make_interval(hours => ${hours}) where code = ${code}`,
+    );
+
+  it('notifica na primeira vez, NÃO repete no ciclo seguinte e repete depois de 24 h', async () => {
+    const one = recorder();
+    expect(
+      await deliverAlerts(
+        tools.db,
+        [alert('backup_stale'), alert('queue_slow:general', 'P2')],
+        one.send,
+      ),
+    ).toBe(2);
+    expect(one.sent.sort()).toEqual(['backup_stale', 'queue_slow:general']);
+
+    const two = recorder();
+    expect(
+      await deliverAlerts(
+        tools.db,
+        [alert('backup_stale'), alert('queue_slow:general', 'P2')],
+        two.send,
+      ),
+    ).toBe(0);
+    expect(two.sent).toEqual([]);
+
+    await ageNotification('backup_stale', 25);
+    const three = recorder();
+    expect(
+      await deliverAlerts(
+        tools.db,
+        [alert('backup_stale'), alert('queue_slow:general', 'P2')],
+        three.send,
+      ),
+    ).toBe(1);
+    expect(three.sent).toEqual(['backup_stale']);
+  });
+
+  it('alerta que sumiu perde o estado e, se voltar, notifica na hora', async () => {
+    await deliverAlerts(tools.db, [alert('backup_stale')], recorder().send);
+    expect(await tools.db.select().from(schema.alertState)).toHaveLength(1);
+
+    await deliverAlerts(tools.db, [], recorder().send);
+    expect(await tools.db.select().from(schema.alertState)).toHaveLength(0);
+
+    const back = recorder();
+    expect(await deliverAlerts(tools.db, [alert('backup_stale')], back.send)).toBe(1);
+  });
+
+  it('envio que falhou NÃO marca como notificado: o próximo ciclo tenta de novo', async () => {
+    const failing = recorder(false);
+    expect(await deliverAlerts(tools.db, [alert('backup_stale')], failing.send)).toBe(0);
+    const [row] = await tools.db.select().from(schema.alertState);
+    expect(row).toMatchObject({ code: 'backup_stale', lastNotifiedAt: null });
+
+    const retry = recorder(true);
+    expect(await deliverAlerts(tools.db, [alert('backup_stale')], retry.send)).toBe(1);
+    expect(retry.sent).toEqual(['backup_stale']);
+  });
+
+  it('o banco só aceita código e severidade bem formados', async () => {
+    const insert = (code: string, severity: string) =>
+      tools.db.execute(sql`insert into alert_state (code, severity) values (${code}, ${severity})`);
+    await expect(insert('Maiúscula', 'P1')).rejects.toThrow();
+    await expect(insert('com espaço', 'P1')).rejects.toThrow();
+    await expect(insert('ok_code', 'P9')).rejects.toThrow();
+    await insert('ok_code', 'P3');
+  });
+});
+
+describe('job ops.alerts com o Sentry configurado', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('envia UM evento por alerta ativo ao Sentry, só com código e severidade, e não repete no ciclo seguinte', async () => {
+    await deadItem();
+    const calls: { url: string; body: string }[] = [];
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+      calls.push({ url, body: String(init.body) });
+      return new Response('{}', { status: 200 });
+    });
+    const queue = new SimQueue();
+    const context = (): JobContext => ({
+      db: tools.db,
+      env: {
+        QUEUE_FINANCE: queue.bindings,
+        QUEUE_GENERAL: queue.bindings,
+        SENTRY_DSN: 'https://chave@o1.ingest.sentry.io/42',
+      } as unknown as Env,
+      alert: () => {},
+      owner: `cron:${uuid()}`,
+    });
+
+    expect(await runCycle(context(), [alertsJob])).toEqual({ ran: 1, skipped: 0, failed: 0 });
+    expect(calls.length).toBeGreaterThanOrEqual(2);
+    expect(calls.every((call) => call.url === 'https://o1.ingest.sentry.io/api/42/envelope/')).toBe(
+      true,
+    );
+    const events = calls.map(
+      (call) => JSON.parse(call.body.split('\n')[2]!) as { fingerprint: string[] },
+    );
+    expect(events.map((event) => event.fingerprint[0])).toEqual(
+      expect.arrayContaining(['dead_letter:general', 'cron_never_ran']),
+    );
+    expect(calls.map((call) => call.body).join('')).not.toMatch(/@example|payload/);
+
+    const firstRound = calls.length;
+    await runCycle(context(), [alertsJob]);
+    expect(calls.length).toBe(firstRound);
+  });
+
+  it('sem SENTRY_DSN nada é enviado e nenhum estado é gravado', async () => {
+    await deadItem();
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    const queue = new SimQueue();
+    await runCycle(
+      {
+        db: tools.db,
+        env: { QUEUE_FINANCE: queue.bindings, QUEUE_GENERAL: queue.bindings } as unknown as Env,
+        alert: () => {},
+        owner: `cron:${uuid()}`,
+      },
+      [alertsJob],
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(await tools.db.select().from(schema.alertState)).toHaveLength(0);
   });
 });
 

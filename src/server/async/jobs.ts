@@ -15,7 +15,10 @@ import { isRetentionMisconfigured, parseRetentionDays } from '../../features/cer
 import { hasDueRevokedPdf, purgeRevokedPdfs } from '../certificate/purge-store';
 import { createR2Storage } from '../media/r2-storage';
 import { cleanupMedia, hasMediaWork } from '../media/store';
+import { deliverAlerts } from '../ops/alert-state-store';
 import { loadOperationsSnapshot } from '../ops/operations-store';
+import { sendAlertToSentry } from '../ops/sentry-alert';
+import { APP_ENV, RELEASE_ID } from '../release';
 import { publishIntents, type PublishableIntent } from './publisher';
 
 export interface JobContext {
@@ -30,6 +33,7 @@ export interface JobContext {
       | 'R2_SECRET_ACCESS_KEY'
       | 'R2_PRIVATE_BUCKET_NAME'
       | 'REVOKED_PDF_RETENTION_DAYS'
+      | 'SENTRY_DSN'
     >;
   alert: Alert;
   /** Identifica esta execução do Cron (dono dos leases). */
@@ -116,10 +120,20 @@ export const purgeJob: CronJob = {
  */
 export const alertsJob: CronJob = {
   name: 'ops.alerts',
-  async run({ db, alert }) {
+  async run({ db, env, alert }) {
     const alerts = evaluateAlerts(await loadOperationsSnapshot(db));
     for (const item of alerts)
       alert({ code: 'ops_alert', reason: `${item.severity}:${item.code}` });
+    // Entrega ativa (ADR 0033): só com o Sentry configurado, e no máximo uma notificação por alerta a cada 24 h
+    // (P3: 7 dias). Falha do Sentry não derruba o job: o alerta segue no log e a entrega é tentada no próximo ciclo.
+    if (env.SENTRY_DSN)
+      await deliverAlerts(db, alerts, (item) =>
+        sendAlertToSentry(item, {
+          dsn: env.SENTRY_DSN!,
+          environment: APP_ENV,
+          release: RELEASE_ID,
+        }),
+      );
     return { count: alerts.length };
   },
 };

@@ -44,7 +44,8 @@
 - Backup diário de Staging automático depois que o responsável criar os segredos e variáveis do workflow (lista no cabeçalho do arquivo e no runbook) e **aplicar a migration 0041 no Staging ANTES de rodar `db:roles:backup`** (o `GRANT INSERT` falha sem a tabela).
 - O alerta `backup_never` aparece no Staging até o primeiro backup agendado rodar: é correto, hoje não há backup agendado.
 - Cada backup é um objeto do R2 contado nos 10 GB gratuitos; a retenção por ciclo de vida elimina a necessidade de script de limpeza (o `planRetention` de `scripts/backup/backup-core.ts` fica como referência e teste da política).
-- **Fica para os próximos PRs:** `alert_state` e envio ao Sentry com no máximo um evento por código a cada 24 h (B3); `privacy_incident` (B4); eventual Cron Monitor (B2).
+- **B3 (PR seguinte, feito):** tabela `alert_state` (migration 0042) e envio de **um evento por alerta ativo** ao Sentry, pelo endpoint de envelopes (o `scheduled` não passa pelo middleware do SDK), com `fingerprint` pelo código, o mesmo `scrubEvent` dos erros e no máximo **uma notificação por alerta a cada 24 h** (P3: 7 dias). O e-mail para o responsável é a regra de alerta do Sentry, não código nosso.
+- **Ainda por fazer:** `privacy_incident` (B4) e o eventual Cron Monitor/Uptime Monitor (B2), este sujeito ao plano do Sentry.
 
 ## Como validar
 
