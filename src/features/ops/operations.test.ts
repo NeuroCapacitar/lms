@@ -31,6 +31,7 @@ const healthy = (): OperationsSnapshot => ({
   paused: { finance: false, general: false },
   certificatesFailed: 0,
   databaseSizeBytes: 50 * 1024 * 1024,
+  backup: { count: 3, lastAgeSeconds: 6 * 3600 },
 });
 
 const codes = (snapshot: OperationsSnapshot) =>
@@ -173,6 +174,25 @@ describe('alertas do M9-06: certificado failed e tamanho do banco', () => {
 
   it('tamanho desconhecido (null) não alerta', () => {
     expect(codes({ ...healthy(), databaseSizeBytes: null })).toEqual([]);
+  });
+});
+
+describe('alerta de backup velho (M9-05)', () => {
+  const H = 3600;
+
+  it('até 26 h não alerta; acima, P1; sem nenhum backup, P2', () => {
+    expect(codes({ ...healthy(), backup: { count: 1, lastAgeSeconds: 26 * H } })).toEqual([]);
+    expect(codes({ ...healthy(), backup: { count: 1, lastAgeSeconds: 26 * H + 1 } })).toEqual([
+      'P1:backup_stale',
+    ]);
+    expect(codes({ ...healthy(), backup: { count: 0, lastAgeSeconds: null } })).toEqual([
+      'P2:backup_never',
+    ]);
+  });
+
+  it('o limite é 26 h e não 24 h (o agendador do GitHub atrasa)', () => {
+    expect(OPS_THRESHOLDS.backupStaleSeconds).toBe(26 * H);
+    expect(codes({ ...healthy(), backup: { count: 1, lastAgeSeconds: 25 * H } })).toEqual([]);
   });
 });
 

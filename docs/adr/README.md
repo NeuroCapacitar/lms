@@ -38,5 +38,6 @@ Crie uma ADR **somente** para decisão arquitetural relevante e cara de reverter
 | 0030 | Spike M0-15: Browser Run gera o PDF do certificado (A4, Lexend Deca, CSP obrigatória) |
 | 0031 | Spike M0-17: meta tags por HTMLRewriter (aceite pendente dos validadores) |
 | 0032 | M9-07: cache curto nas rotas públicas, sessão lida uma vez, Cron em 30 min, Workers Paid no fim |
+| 0033 | M9-05 e M9-06: backup agendado no próprio repositório, retenção por ciclo de vida do R2, `backup_run`, alertas pelo Sentry, registro de incidentes no banco |
 
 Cada spike do M0 que concluir terá sua ADR (numeração seguinte, 0032 em diante) com o resultado "passou" ou "reabrir decisão".

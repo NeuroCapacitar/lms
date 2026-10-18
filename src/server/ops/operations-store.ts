@@ -137,6 +137,13 @@ export async function loadOperationsSnapshot(
              pg_database_size(current_database())::text as database_size`),
   )[0];
 
+  const backupRow = rowsOf(
+    await db.execute(sql`
+      select count(*)::int as count,
+             floor(extract(epoch from (now() - max(created_at))))::int as age
+        from backup_run`),
+  )[0];
+
   const flags = await db
     .select({ key: systemFlag.key, enabled: systemFlag.enabled })
     .from(systemFlag);
@@ -164,6 +171,10 @@ export async function loadOperationsSnapshot(
     certificatesFailed: (healthRow?.certificates_failed as number | undefined) ?? 0,
     databaseSizeBytes:
       healthRow?.database_size === undefined ? null : Number(healthRow.database_size as string),
+    backup: {
+      count: (backupRow?.count as number | undefined) ?? 0,
+      lastAgeSeconds: (backupRow?.age as number | null | undefined) ?? null,
+    },
   };
 }
 

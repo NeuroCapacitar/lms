@@ -13,8 +13,8 @@ Tempo de resposta esperado: **horário comercial** (dias úteis), sem plantão. 
 | Sev. | Significado | Resposta esperada | Alertas de hoje (código) | Ainda sem alerta |
 | --- | --- | --- | --- | --- |
 | **P0** | site, checkout ou webhook inoperante; banco inacessível; dinheiro ou segurança em risco | no mesmo dia útil, assim que visto | (nenhum no Cron: **o Cron não roda se o banco ou o Worker caem**) | monitor sintético de `/api/health/ready`; pagamento sem reconciliar por dia; vazamento |
-| **P1** | disponibilidade, auth ou dinheiro degradados | no mesmo dia útil | `cron_silent` (Cron sem rodar há mais de 90 min), `queue_stuck:<fila>` (item aberto há mais de 3 h), `dead_letter:finance`, `email_quota_exhausted`, `finance_orders_stuck` (pedido pendente há mais de 2 h), `finance_review_open` com a mais antiga há mais de 24 h, `database_size_critical` (banco acima de 900 MB) | backup velho (mais de 26 h), Hyperdrive perto de 100 mil consultas/dia |
-| **P2** | degradação | até 2 dias úteis | `cron_never_ran`, `job_failed:<job>`, `queue_slow:<fila>` (mais de 1 h), `dead_letter:general`, `queue_paused:<fila>`, `webhook_silent:resend`, `finance_review_open`, **`certificate_failed`** (M9-06) | erros novos no Sentry |
+| **P1** | disponibilidade, auth ou dinheiro degradados | no mesmo dia útil | `backup_stale` (último backup há mais de 26 h; M9-05), `cron_silent` (Cron sem rodar há mais de 90 min), `queue_stuck:<fila>` (item aberto há mais de 3 h), `dead_letter:finance`, `email_quota_exhausted`, `finance_orders_stuck` (pedido pendente há mais de 2 h), `finance_review_open` com a mais antiga há mais de 24 h, `database_size_critical` (banco acima de 900 MB) | Hyperdrive perto de 100 mil consultas/dia |
+| **P2** | degradação | até 2 dias úteis | `backup_never` (nenhum backup registrado), `cron_never_ran`, `job_failed:<job>`, `queue_slow:<fila>` (mais de 1 h), `dead_letter:general`, `queue_paused:<fila>`, `webhook_silent:resend`, `finance_review_open`, **`certificate_failed`** (M9-06) | erros novos no Sentry |
 | **P3** | informativo | rotina semanal | `failed_items`, `email_quota_upgrade` (60% em 7 dias), `webhook_silent:asaas`, **`database_size_upgrade`** (banco acima de 600 MB, M9-06) | custo e CU-h do Neon |
 
 Limites iniciais: `OPS_THRESHOLDS` em `src/features/ops/operations.ts`. **Não são SLO**: o que está lá é o que o desenho de recuperação já implica. **SLOs só depois de uma linha de base com tráfego real** (a spec). SLIs a medir então: disponibilidade, sucesso do link de acesso, registro de progresso, checkout, idade da operação financeira pendente e tempo de emissão do certificado.
@@ -39,8 +39,8 @@ Estado do projeto: `observability.enabled` com `invocation_logs: false` (um log 
 
 ## Pendências (com dono)
 
-- **Monitor sintético** de `/api/health/ready`: ferramenta **a escolher dentro do free tier** (a tarefa a deixa em aberto); sem ele não há alerta P0 de "site fora".
-- **Entrega ativa dos alertas** (e-mail ao responsável ou Sentry): hoje só log e tela.
-- **Alerta de backup velho (mais de 26 h):** depende do M9-05 (o Worker precisa saber o último backup).
+- **Monitor de "site fora":** decidido usar o **Sentry** (Uptime Monitor e/ou Cron Monitor; [ADR 0033](../adr/0033-m9-05-m9-06-backup-agendado-alertas-e-registro-de-incidentes.md)), **sujeito ao que o plano gratuito inclui** (a conferir no faturamento do Sentry; monitor a mais custa por monitor). **Monitorar `/api/health/live`**, não `ready` a cada poucos minutos (mantém o Neon acordado o mês todo).
+- **Entrega ativa dos alertas:** decidido **Sentry**, com no máximo um evento por código a cada 24 h; fica para o próximo PR (hoje só log e tela).
+- **Alerta de backup velho:** pronto (`backup_stale` e `backup_never`, tabela `backup_run`); só passa a ter dado quando o workflow de backup rodar (ver o runbook de backup).
 - **Exercícios de falha em Staging com uma pessoa** (reconhecer o alerta e executar o passo): ainda não feitos; os runbooks nunca foram seguidos por quem não os escreveu. Sem isso o aceite do M9-06 não está cumprido.
 - **Texto de privacidade e prazo de comunicação à ANPD** nos runbooks vêm de fonte secundária: o advogado precisa confirmar.

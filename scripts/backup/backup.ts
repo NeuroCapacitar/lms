@@ -1,7 +1,8 @@
 /**
  * Backup do banco (M9-05): `pg_dump -Fc` (cliente PG18, conexão DIRETA, role somente leitura), cifra com `age` (só a
  * chave PÚBLICA) e manifesto com SHA-256. Grava em uma pasta; `--upload` envia ao bucket S3-compatível de backup
- * (R2, bucket SEPARADO da mídia) com o `aws` CLI e um token de escopo mínimo.
+ * (R2, bucket SEPARADO da mídia) com o `aws` CLI e um token de escopo mínimo; `--record` (só com `--upload`)
+ * registra o backup em `backup_run`, de onde o alerta de backup velho do Worker lê (ADR 0033).
  *
  *   BACKUP_DATABASE_URL=… BACKUP_AGE_RECIPIENT=age1… bun scripts/backup/backup.ts --kind daily --out ./backups
  *
@@ -15,7 +16,7 @@ import { dirname, join } from 'node:path';
 
 import pg from 'pg';
 
-import { buildManifest, manifestKey, type BackupKind } from './backup-core.ts';
+import { buildManifest, manifestKey, type BackupKind, type BackupManifest } from './backup-core.ts';
 import { assertAgeRecipient, assertDirectConnection } from './backup-guards.ts';
 
 function arg(name: string): string | undefined {
@@ -46,7 +47,32 @@ async function databaseFacts(url: string): Promise<{ migrations: number; pgVersi
   }
 }
 
+/** Registra o backup JÁ ENVIADO em `backup_run` (a role do dump tem INSERT só nesta tabela). */
+async function recordBackup(url: string, manifest: BackupManifest): Promise<void> {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    await client.query(
+      `insert into backup_run (kind, object_key, sha256, size_bytes, migrations, pg_version, created_at)
+       values ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        manifest.kind,
+        manifest.object,
+        manifest.sha256,
+        manifest.size,
+        manifest.migrations,
+        manifest.pgVersion,
+        manifest.createdAt,
+      ],
+    );
+  } finally {
+    await client.end();
+  }
+}
+
 async function main(): Promise<void> {
+  if (process.argv.includes('--record') && !process.argv.includes('--upload'))
+    throw new Error('--record só com --upload (não registre um backup que não está no bucket)');
   const kind = (arg('kind') ?? 'daily') as BackupKind;
   if (kind !== 'daily' && kind !== 'release') throw new Error('--kind deve ser daily ou release');
   const out = arg('out');
@@ -107,6 +133,10 @@ async function main(): Promise<void> {
           },
         );
       console.log(`enviado: s3://${bucket}/${manifest.object}`);
+      if (process.argv.includes('--record')) {
+        await recordBackup(url, manifest);
+        console.log('registrado em backup_run');
+      }
     }
   } finally {
     rmSync(work, { recursive: true, force: true });
