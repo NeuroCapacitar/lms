@@ -115,7 +115,7 @@
 
 ### M9-06 — Alertas, SLOs e runbooks
 
-**Dependências:** M4-05, M4-06, M4-08, M9-01, M9-05 · **Estado:** `not_started`
+**Dependências:** M4-05, M4-06, M4-08, M9-01, M9-05 · **Estado:** `in_progress` (taxonomia, alertas novos e 9 runbooks escritos; faltam monitor sintético, entrega ativa dos alertas, alerta de backup velho e os exercícios com uma pessoa: ver `docs/implementation/STATUS.md`)
 
 **Objetivo.** Saber quando algo quebra e ter um passo a passo escrito, sem plantão 24/7.
 

@@ -68,6 +68,10 @@ export interface OperationsSnapshot {
   paused: Record<LaneName, boolean>;
   /** Dinheiro (M6-04): pedidos que não andam e revisões que esperam a Staff. Só contagens e idades. */
   finance: FinanceSnapshot;
+  /** Certificados em `failed` (a renderização esgotou as tentativas): esperam a Staff reenfileirar (M9-06). */
+  certificatesFailed: number;
+  /** Tamanho do banco em bytes (`pg_database_size`), para os gatilhos de upgrade do Neon (M9-06). */
+  databaseSizeBytes: number | null;
 }
 
 interface FinanceSnapshot {
@@ -106,6 +110,10 @@ export const OPS_THRESHOLDS = {
   asaasSilenceSeconds: 6 * 60 * 60,
   /** Revisão financeira aberta há mais de 24 h sobe de P2 para P1 (é dinheiro de cliente parado). */
   reviewStaleSeconds: 24 * 60 * 60,
+  /** Gatilho de upgrade do Neon (spec de segurança e operação, §5): banco acima de 600 MB (limite do Free: 1 GB). */
+  databaseUpgradeBytes: 600 * 1024 * 1024,
+  /** Perto do limite: 900 MB. Acima disto o banco pode parar de aceitar gravação. */
+  databaseCriticalBytes: 900 * 1024 * 1024,
 } as const;
 
 const SEVERITY_ORDER: Record<Severity, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
@@ -251,6 +259,31 @@ export function evaluateAlerts(
       severity: 'P3',
       message:
         'Há pedido pendente há mais de 30 minutos e o webhook do Asaas não entrega evento há mais de 6 horas (ou nunca entregou): confira o endpoint e o token.',
+    });
+  }
+
+  if (snapshot.certificatesFailed > 0) {
+    alerts.push({
+      code: 'certificate_failed',
+      severity: 'P2',
+      message: `${snapshot.certificatesFailed} certificado(s) em "failed": a emissão esgotou as tentativas e a pessoa ainda não recebeu o PDF.`,
+    });
+  }
+
+  const size = snapshot.databaseSizeBytes;
+  if (size !== null && size > OPS_THRESHOLDS.databaseCriticalBytes) {
+    alerts.push({
+      code: 'database_size_critical',
+      severity: 'P1',
+      message:
+        'O banco passou de 900 MB (limite do plano gratuito do Neon: 1 GB): decida o upgrade já.',
+    });
+  } else if (size !== null && size > OPS_THRESHOLDS.databaseUpgradeBytes) {
+    alerts.push({
+      code: 'database_size_upgrade',
+      severity: 'P3',
+      message:
+        'O banco passou de 600 MB: é o gatilho de upgrade do Neon. Reabra a decisão de custo (nunca automática).',
     });
   }
 

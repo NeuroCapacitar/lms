@@ -29,6 +29,8 @@ const healthy = (): OperationsSnapshot => ({
     oldestOpenReviewAgeSeconds: null,
   },
   paused: { finance: false, general: false },
+  certificatesFailed: 0,
+  databaseSizeBytes: 50 * 1024 * 1024,
 });
 
 const codes = (snapshot: OperationsSnapshot) =>
@@ -144,6 +146,33 @@ describe('alertas do Operations Center', () => {
   it('os alertas só trazem código, severidade e mensagem (nada de dado pessoal)', () => {
     const [alert] = evaluateAlerts({ ...healthy(), cronAgeSeconds: null }, NOW);
     expect(Object.keys(alert!).sort()).toEqual(['code', 'message', 'severity']);
+  });
+});
+
+describe('alertas do M9-06: certificado failed e tamanho do banco', () => {
+  const MB = 1024 * 1024;
+
+  it('certificado em failed é P2 e diz quantos', () => {
+    const snapshot = { ...healthy(), certificatesFailed: 2 };
+    expect(codes(snapshot)).toEqual(['P2:certificate_failed']);
+    expect(evaluateAlerts(snapshot, NOW)[0]?.message).toContain('2 certificado(s)');
+  });
+
+  it('banco: até 600 MB não alerta; acima, P3 (gatilho de upgrade); acima de 900 MB, P1', () => {
+    expect(codes({ ...healthy(), databaseSizeBytes: 600 * MB })).toEqual([]);
+    expect(codes({ ...healthy(), databaseSizeBytes: 600 * MB + 1 })).toEqual([
+      'P3:database_size_upgrade',
+    ]);
+    expect(codes({ ...healthy(), databaseSizeBytes: 900 * MB })).toEqual([
+      'P3:database_size_upgrade',
+    ]);
+    expect(codes({ ...healthy(), databaseSizeBytes: 900 * MB + 1 })).toEqual([
+      'P1:database_size_critical',
+    ]);
+  });
+
+  it('tamanho desconhecido (null) não alerta', () => {
+    expect(codes({ ...healthy(), databaseSizeBytes: null })).toEqual([]);
   });
 });
 

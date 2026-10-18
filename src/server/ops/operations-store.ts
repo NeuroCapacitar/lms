@@ -131,6 +131,12 @@ export async function loadOperationsSnapshot(
                 from financial_review where state = 'open') as oldest_review`),
   )[0];
 
+  const healthRow = rowsOf(
+    await db.execute(sql`
+      select (select count(*) from certificate where status = 'failed')::int as certificates_failed,
+             pg_database_size(current_database())::text as database_size`),
+  )[0];
+
   const flags = await db
     .select({ key: systemFlag.key, enabled: systemFlag.enabled })
     .from(systemFlag);
@@ -155,6 +161,9 @@ export async function loadOperationsSnapshot(
       openReviews: (financeRow?.open_reviews as number | undefined) ?? 0,
       oldestOpenReviewAgeSeconds: (financeRow?.oldest_review as number | null | undefined) ?? null,
     },
+    certificatesFailed: (healthRow?.certificates_failed as number | undefined) ?? 0,
+    databaseSizeBytes:
+      healthRow?.database_size === undefined ? null : Number(healthRow.database_size as string),
   };
 }
 

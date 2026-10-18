@@ -19,6 +19,7 @@ import { loadOperationsSnapshot } from '../../src/server/ops/operations-store.ts
 import { apiApp } from '../helpers/api-app.ts';
 import { SimQueue, enqueueDemo, uuid } from '../helpers/async-harness.ts';
 import { createTestAuth } from '../helpers/auth.ts';
+import { createDemoCourse } from '../helpers/demo-course.ts';
 import { createTestSchema, type TestSchema } from '../helpers/pg-schema.ts';
 
 /**
@@ -201,6 +202,58 @@ describe('foto do estado (somente leitura, sem payload)', () => {
       values ('outbox.republish', 'w', now() + interval '5 minutes', 1, now())`);
     const [job] = (await loadOperationsSnapshot(tools.db)).jobs;
     expect(job).toMatchObject({ name: 'outbox.republish', running: true });
+  });
+});
+
+describe('saúde do banco e dos certificados (M9-06)', () => {
+  it('conta os certificados em failed e lê o tamanho real do banco; sem failed o alerta some', async () => {
+    const demo = await createDemoCourse(tools.db);
+    const userId = uuid();
+    await tools.db
+      .insert(schema.user)
+      .values({ id: userId, name: 'Pessoa Saúde', email: 'saude@saude.example.test' });
+    await tools.db
+      .insert(schema.enrollment)
+      .values({ userId, courseId: demo.courseId, anchorAt: new Date(Date.now() - 86_400_000) });
+    await tools.db
+      .insert(schema.courseCompletion)
+      .values({ userId, courseId: demo.courseId, requiredTotal: 5 });
+    try {
+      const before = await loadOperationsSnapshot(tools.db);
+      expect(before.certificatesFailed).toBe(0);
+      expect(before.databaseSizeBytes).toBeGreaterThan(1024 * 1024);
+      expect(evaluateAlerts(before).map((a) => a.code)).not.toContain('certificate_failed');
+
+      await tools.db.insert(schema.certificate).values({
+        userId,
+        courseId: demo.courseId,
+        code: 'f'.repeat(22),
+        status: 'failed',
+        failureCode: 'render_timeout',
+        snapshot: {
+          version: 1,
+          holderName: 'Pessoa Saúde',
+          courseTitle: 'Curso Demonstrativo',
+          workloadHours: 20,
+          completedAt: '2026-06-01T12:00:00.000Z',
+          requiredTotal: 5,
+          issuer: { legalName: 'NeuroCapacitar Ltda', cnpj: '12345678000199' },
+          signatory: null,
+          layout: null,
+          backgroundMediaId: null,
+        },
+      });
+      const after = await loadOperationsSnapshot(tools.db);
+      expect(after.certificatesFailed).toBe(1);
+      expect(evaluateAlerts(after).map((a) => `${a.severity}:${a.code}`)).toContain(
+        'P2:certificate_failed',
+      );
+    } finally {
+      // TRUNCATE não passa pelos gatilhos de DELETE (a conclusão e o certificado não são apagáveis por desenho).
+      await tools.db.execute(
+        sql`truncate table certificate, course_completion, enrollment cascade`,
+      );
+    }
   });
 });
 
