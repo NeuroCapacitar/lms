@@ -4,7 +4,7 @@
 
 ## Como os alertas funcionam hoje
 
-O job `ops.alerts` do Cron (a cada 30 min) lê o estado, avalia `evaluateAlerts` (`src/features/ops/operations.ts`, pura e testada) e **registra um evento por alerta no log do Worker** (`ops_alert`, só `P?:codigo`, sem dado pessoal). A tela **Operação** da Staff (`/staff/operacao`) mostra os mesmos alertas e o estado. Enquanto o problema existir o alerta se repete a cada ciclo (de propósito: não há estado de "já avisei"). **Não existe ainda entrega ativa** (e-mail ou Sentry): hoje alguém precisa abrir a tela ou o log. Ver "Pendências".
+O job `ops.alerts` do Cron (a cada 30 min) lê o estado, avalia `evaluateAlerts` (`src/features/ops/operations.ts`, pura e testada) e **registra um evento por alerta no log do Worker** (`ops_alert`, só `P?:codigo`, sem dado pessoal). A tela **Operação** da Staff (`/staff/operacao`) mostra os mesmos alertas e o estado. Enquanto o problema existir o alerta se repete a cada ciclo (de propósito: não há estado de "já avisei"). **Entrega ativa pelo Sentry** (M9-06, ADR 0033): com `SENTRY_DSN` configurado, o mesmo job envia ao Sentry **um evento por alerta ativo** (agrupado por código; `fingerprint = [código]`; só código, severidade e a mensagem fixa, passando pelo mesmo scrub dos erros) e **não repete** a notificação do mesmo alerta antes de **24 h** (P3: 7 dias). Alerta que some perde o estado, então se voltar notifica na hora; envio que falha é tentado no ciclo seguinte. O estado fica na tabela `alert_state` (migration 0042). **Quem recebe o e-mail é a regra de alerta do próprio Sentry** (a padrão avisa o dono da organização quando surge um problema novo): confira em Sentry > Alerts que ela está ativa para o projeto `hub-vnext-worker`.
 
 ## Taxonomia P0 a P3
 
@@ -40,7 +40,7 @@ Estado do projeto: `observability.enabled` com `invocation_logs: false` (um log 
 ## Pendências (com dono)
 
 - **Monitor de "site fora":** decidido usar o **Sentry** (Uptime Monitor e/ou Cron Monitor; [ADR 0033](../adr/0033-m9-05-m9-06-backup-agendado-alertas-e-registro-de-incidentes.md)), **sujeito ao que o plano gratuito inclui** (a conferir no faturamento do Sentry; monitor a mais custa por monitor). **Monitorar `/api/health/live`**, não `ready` a cada poucos minutos (mantém o Neon acordado o mês todo).
-- **Entrega ativa dos alertas:** decidido **Sentry**, com no máximo um evento por código a cada 24 h; fica para o próximo PR (hoje só log e tela).
+- **Entrega ativa dos alertas:** pronta no código (Sentry, no máximo um evento por código a cada 24 h); **só passa a valer depois da migration 0042 e de um deploy** do Worker no ambiente, e depende de a regra de alerta do Sentry estar ativa.
 - **Alerta de backup velho:** pronto (`backup_stale` e `backup_never`, tabela `backup_run`); só passa a ter dado quando o workflow de backup rodar (ver o runbook de backup).
 - **Exercícios de falha em Staging com uma pessoa** (reconhecer o alerta e executar o passo): ainda não feitos; os runbooks nunca foram seguidos por quem não os escreveu. Sem isso o aceite do M9-06 não está cumprido.
 - **Texto de privacidade e prazo de comunicação à ANPD** nos runbooks vêm de fonte secundária: o advogado precisa confirmar.

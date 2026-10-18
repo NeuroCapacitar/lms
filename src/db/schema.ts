@@ -233,6 +233,26 @@ export const auditLog = pgTable(
 );
 
 /**
+ * Estado da ENTREGA dos alertas do Operations Center (M9-06, ADR 0033): uma linha por alerta ATIVO, para o Cron
+ * não repetir a notificação a cada ciclo (30 min). Apagada quando o alerta some, então a volta do problema
+ * notifica na hora. Só código, severidade e instantes: nada de dado pessoal nem de texto de erro.
+ */
+export const alertState = pgTable(
+  'alert_state',
+  {
+    code: text().primaryKey(),
+    severity: text().notNull(),
+    firstSeenAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    lastNotifiedAt: timestamp({ withTimezone: true }),
+  },
+  (table) => [
+    check('alert_state_code_check', sql`${table.code} ~ '^[a-z][a-z0-9_:.-]{0,99}$'`),
+    check('alert_state_severity_check', sql`${table.severity} in ('P0', 'P1', 'P2', 'P3')`),
+  ],
+);
+
+/**
  * Backups do banco já feitos (M9-05, ADR 0033): UMA linha por backup concluído e enviado, gravada pelo
  * executor (`bun run backup:db -- --record`, role `hub_backup` com INSERT só nesta tabela). O Worker só LÊ:
  * é assim que o alerta de backup velho (mais de 26 h) sabe do último, sem o Worker tocar o bucket de backup.
