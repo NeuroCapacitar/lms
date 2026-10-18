@@ -72,6 +72,8 @@ export interface OperationsSnapshot {
   certificatesFailed: number;
   /** Tamanho do banco em bytes (`pg_database_size`), para os gatilhos de upgrade do Neon (M9-06). */
   databaseSizeBytes: number | null;
+  /** Backups registrados (`backup_run`) e a idade (s) do mais recente pelo relógio do BANCO (M9-05). */
+  backup: { count: number; lastAgeSeconds: number | null };
 }
 
 interface FinanceSnapshot {
@@ -112,6 +114,8 @@ export const OPS_THRESHOLDS = {
   reviewStaleSeconds: 24 * 60 * 60,
   /** Gatilho de upgrade do Neon (spec de segurança e operação, §5): banco acima de 600 MB (limite do Free: 1 GB). */
   databaseUpgradeBytes: 600 * 1024 * 1024,
+  /** Backup velho: mais de 26 h (o agendador do GitHub atrasa horas; o RPO de 24 h é a meta, o alerta é para o que NÃO veio). */
+  backupStaleSeconds: 26 * 60 * 60,
   /** Perto do limite: 900 MB. Acima disto o banco pode parar de aceitar gravação. */
   databaseCriticalBytes: 900 * 1024 * 1024,
 } as const;
@@ -267,6 +271,21 @@ export function evaluateAlerts(
       code: 'certificate_failed',
       severity: 'P2',
       message: `${snapshot.certificatesFailed} certificado(s) em "failed": a emissão esgotou as tentativas e a pessoa ainda não recebeu o PDF.`,
+    });
+  }
+
+  if (snapshot.backup.lastAgeSeconds === null) {
+    alerts.push({
+      code: 'backup_never',
+      severity: 'P2',
+      message:
+        'Nenhum backup do banco foi registrado: o agendamento ainda não rodou ou não está ligado.',
+    });
+  } else if (snapshot.backup.lastAgeSeconds > OPS_THRESHOLDS.backupStaleSeconds) {
+    alerts.push({
+      code: 'backup_stale',
+      severity: 'P1',
+      message: 'O último backup do banco tem mais de 26 horas: confira o workflow de backup.',
     });
   }
 

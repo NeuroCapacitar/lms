@@ -257,6 +257,63 @@ describe('saúde do banco e dos certificados (M9-06)', () => {
   });
 });
 
+describe('backup_run e o alerta de backup velho (M9-05)', () => {
+  const insertBackup = (hoursAgo: number, key: string) =>
+    tools.db.execute(sql`
+      insert into backup_run (kind, object_key, sha256, size_bytes, migrations, pg_version, created_at)
+      values ('daily', ${key}, ${'a'.repeat(64)}, 221019, 41, '18.1', now() - make_interval(hours => ${hoursAgo}))`);
+
+  it('sem backup: P2; com o último há 25 h: sem alerta; há 27 h: P1; vale o MAIS RECENTE', async () => {
+    await tools.db.execute(sql`truncate table backup_run`);
+    try {
+      const none = await loadOperationsSnapshot(tools.db);
+      expect(none.backup).toEqual({ count: 0, lastAgeSeconds: null });
+      expect(evaluateAlerts(none).map((a) => `${a.severity}:${a.code}`)).toContain(
+        'P2:backup_never',
+      );
+
+      await insertBackup(60, 'daily/2026-10-15/hub-a.dump.age');
+      await insertBackup(27, 'daily/2026-10-17/hub-b.dump.age');
+      const stale = await loadOperationsSnapshot(tools.db);
+      expect(stale.backup.count).toBe(2);
+      expect(stale.backup.lastAgeSeconds).toBeGreaterThan(26 * 3600);
+      expect(stale.backup.lastAgeSeconds).toBeLessThan(28 * 3600);
+      expect(evaluateAlerts(stale).map((a) => `${a.severity}:${a.code}`)).toContain(
+        'P1:backup_stale',
+      );
+
+      await insertBackup(25, 'daily/2026-10-17/hub-c.dump.age');
+      const fresh = await loadOperationsSnapshot(tools.db);
+      expect(fresh.backup.lastAgeSeconds).toBeLessThan(26 * 3600);
+      expect(
+        evaluateAlerts(fresh)
+          .map((a) => a.code)
+          .filter((c) => c.startsWith('backup_')),
+      ).toEqual([]);
+    } finally {
+      await tools.db.execute(sql`truncate table backup_run`);
+    }
+  });
+
+  it('o banco recusa backup com hash, tipo ou tamanho inválido e objeto repetido', async () => {
+    await tools.db.execute(sql`truncate table backup_run`);
+    try {
+      const bad = (kind: string, sha: string, size: number, key: string) =>
+        tools.db.execute(sql`
+          insert into backup_run (kind, object_key, sha256, size_bytes, migrations, pg_version, created_at)
+          values (${kind}, ${key}, ${sha}, ${size}, 1, '18.1', now())`);
+      await expect(bad('weekly', 'a'.repeat(64), 10, 'k1')).rejects.toThrow();
+      await expect(bad('daily', 'xyz', 10, 'k2')).rejects.toThrow();
+      await expect(bad('daily', 'A'.repeat(64), 10, 'k3')).rejects.toThrow();
+      await expect(bad('daily', 'a'.repeat(64), 0, 'k4')).rejects.toThrow();
+      await bad('daily', 'a'.repeat(64), 10, 'k5');
+      await expect(bad('daily', 'b'.repeat(64), 10, 'k5')).rejects.toThrow();
+    } finally {
+      await tools.db.execute(sql`truncate table backup_run`);
+    }
+  });
+});
+
 describe('GET /api/staff/operations (autorização)', () => {
   it('sem sessão 401; aluno comum 403; Suporte SEM grant e Admin 200', async () => {
     const student = await newPerson();

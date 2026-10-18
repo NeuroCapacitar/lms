@@ -233,6 +233,36 @@ export const auditLog = pgTable(
 );
 
 /**
+ * Backups do banco já feitos (M9-05, ADR 0033): UMA linha por backup concluído e enviado, gravada pelo
+ * executor (`bun run backup:db -- --record`, role `hub_backup` com INSERT só nesta tabela). O Worker só LÊ:
+ * é assim que o alerta de backup velho (mais de 26 h) sabe do último, sem o Worker tocar o bucket de backup.
+ * Sem nome de pessoa nem dado de negócio: só o objeto, o hash, o tamanho e a versão.
+ */
+export const backupRun = pgTable(
+  'backup_run',
+  {
+    id: bigint({ mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    kind: text().notNull(),
+    /** Chave do objeto cifrado no bucket (`daily/AAAA-MM-DD/hub-….dump.age`). */
+    objectKey: text().notNull().unique(),
+    sha256: text().notNull(),
+    sizeBytes: bigint({ mode: 'number' }).notNull(),
+    /** Migrations aplicadas quando o dump foi feito. */
+    migrations: integer().notNull(),
+    pgVersion: text().notNull(),
+    /** Instante em que o backup começou (do manifesto). */
+    createdAt: timestamp({ withTimezone: true }).notNull(),
+    recordedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('backup_run_created_idx').on(table.createdAt),
+    check('backup_run_kind_check', sql`${table.kind} in ('daily', 'release')`),
+    check('backup_run_sha256_check', sql`${table.sha256} ~ '^[0-9a-f]{64}$'`),
+    check('backup_run_size_check', sql`${table.sizeBytes} > 0 and ${table.migrations} >= 0`),
+  ],
+);
+
+/**
  * Reautenticação recente (M1-05): prova de posse do e-mail numa AÇÃO SENSÍVEL. O desafio nasce
  * ligado a UMA sessão, é de uso único e guarda só o hash do token. Não confundir com sessão
  * recente: entrar há pouco não vale como prova.

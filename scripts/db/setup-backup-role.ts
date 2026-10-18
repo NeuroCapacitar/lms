@@ -1,6 +1,7 @@
 /**
- * Cria (ou atualiza a senha de) a role de BACKUP do ambiente (M9-05): `hub_backup`, SOMENTE LEITURA
- * (`pg_read_all_data`), sem DDL, sem DML, sem `neon_superuser`, sem `BYPASSRLS`. É a role do `pg_dump`.
+ * Cria (ou atualiza a senha de) a role de BACKUP do ambiente (M9-05): `hub_backup`, que LÊ tudo
+ * (`pg_read_all_data`) e só ESCREVE (INSERT) em `backup_run`; sem DDL, sem outro DML, sem `neon_superuser`, sem
+ * `BYPASSRLS`. É a role do `pg_dump` e do registro do backup.
  *
  * Uso (a senha vem do ambiente; nunca é impressa nem gravada):
  *   DATABASE_URL_MIGRATION=... HUB_BACKUP_PASSWORD=... bun scripts/db/setup-backup-role.ts <dev|staging|production>
@@ -40,6 +41,9 @@ async function main() {
     const q = (identifier: string) => client.escapeIdentifier(identifier);
     await client.query(`grant connect on database ${q(database)} to ${q(BACKUP_ROLE)}`);
     await client.query(`grant pg_read_all_data to ${q(BACKUP_ROLE)} with inherit true`);
+    // A ÚNICA escrita: registrar o backup concluído em backup_run (INSERT, sem UPDATE nem DELETE). A tabela vem da
+    // migration 0041; aplique-a ANTES. Sem a tabela o script falha de propósito (o alerta de backup velho dependeria dela).
+    await client.query(`grant insert on table backup_run to ${q(BACKUP_ROLE)}`);
 
     // Conferência: a role NÃO pode ter nada além de ler.
     const attrs = (
@@ -70,7 +74,7 @@ async function main() {
         `a role "${BACKUP_ROLE}" deve ser membro só de pg_read_all_data (é: ${memberships.join(', ')})`,
       );
     console.log(
-      `role de backup "${BACKUP_ROLE}" (somente leitura) configurada em "${target.environment}"`,
+      `role de backup "${BACKUP_ROLE}" (lê tudo; escreve só em backup_run) configurada em "${target.environment}"`,
     );
   } finally {
     await client.end();

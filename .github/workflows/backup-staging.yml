@@ -1,0 +1,101 @@
+name: Backup Staging
+
+# Backup diário do banco de STAGING (M9-05, ADR 0033): pg_dump -Fc (cliente PG18, conexão direta, role hub_backup),
+# cifra com age (só a chave PÚBLICA), envia ao bucket R2 de backup e registra em backup_run (de onde o alerta de
+# backup velho do Worker lê). NUNCA Production: nenhuma credencial de Production existe no GitHub (AGENTS.md §3,
+# ADR 0021); o executor de Production é decisão do M10.
+#
+# Requer, em Settings > Secrets and variables > Actions (ver docs/operations/backup-and-restore.md):
+#   secret   STAGING_BACKUP_DATABASE_URL   URL DIRETA (não pooler) do Neon de Staging, role hub_backup
+#   secret   STAGING_BACKUP_S3_ACCESS_KEY_ID e STAGING_BACKUP_S3_SECRET_ACCESS_KEY   token do R2, só o bucket de backup
+#   variable STAGING_BACKUP_S3_ENDPOINT    https://<account-id>.r2.cloudflarestorage.com
+#   variable STAGING_BACKUP_S3_BUCKET      hub-staging-backups
+#   variable BACKUP_AGE_RECIPIENT          chave PÚBLICA do age (age1...); a privada NUNCA entra no GitHub
+# O cron do GitHub atrasa horas (o legado viu de 3 h 34 a 5 h 8): o alerta de backup velho é 26 h, não 24 h.
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: 'daily ou release (release: antes de publicar uma versão; vai para release/ e fica 90 dias)'
+        type: choice
+        options: [daily, release]
+        default: daily
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-staging
+  cancel-in-progress: false
+
+env:
+  BUN_VERSION: 1.4.2
+  BUN_SHA256: 36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913
+
+jobs:
+  backup:
+    name: backup-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Só da branch principal: o segredo do banco não é lido por um workflow de branch de feature (um workflow alterado
+    # numa branch ignoraria esta linha: risco aceito e registrado na ADR 0033).
+    if: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Instalar Bun (binário oficial, checksum conferido)
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/bun.zip" "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-linux-x64.zip"
+          echo "${BUN_SHA256}  $RUNNER_TEMP/bun.zip" | sha256sum --check -
+          unzip -q "$RUNNER_TEMP/bun.zip" -d "$RUNNER_TEMP/bun-dist"
+          echo "$RUNNER_TEMP/bun-dist/bun-linux-x64" >> "$GITHUB_PATH"
+      - name: Instalar cliente PostgreSQL 18 e age
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -sSfL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-18 age
+          pg_dump --version
+          age --version
+      - name: Instalar dependências (lockfile congelado)
+        run: bun install --frozen-lockfile
+      - name: Backup, envio e registro
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.STAGING_BACKUP_DATABASE_URL }}
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          BACKUP_S3_ENDPOINT: ${{ vars.STAGING_BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_BUCKET: ${{ vars.STAGING_BACKUP_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.STAGING_BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.STAGING_BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          KIND: ${{ inputs.kind || 'daily' }}
+        run: |
+          bun scripts/backup/backup.ts --kind "$KIND" --out "$RUNNER_TEMP/backups" --upload --record
+          echo "OBJECT=$(cd "$RUNNER_TEMP/backups" && find . -name '*.dump.age' | head -1 | sed 's#^\./##')" >> "$GITHUB_ENV"
+      - name: Cópia semanal (domingo, UTC) para weekly/
+        if: ${{ (inputs.kind || 'daily') == 'daily' }}
+        env:
+          BACKUP_S3_ENDPOINT: ${{ vars.STAGING_BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_BUCKET: ${{ vars.STAGING_BACKUP_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.STAGING_BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.STAGING_BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          if [ "$(date -u +%u)" = "7" ]; then
+            MANIFEST="${OBJECT%.dump.age}.manifest.json"
+            for key in "$OBJECT" "$MANIFEST"; do
+              aws s3 cp "s3://${BACKUP_S3_BUCKET}/${key}" "s3://${BACKUP_S3_BUCKET}/weekly/${key#*/}" --endpoint-url "$BACKUP_S3_ENDPOINT" --only-show-errors
+            done
+            echo "cópia semanal: weekly/${OBJECT#*/}"
+          else
+            echo "não é domingo: sem cópia semanal"
+          fi

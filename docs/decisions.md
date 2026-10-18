@@ -36,6 +36,7 @@
 | [0030](adr/0030-spike-m0-15-browser-run-pdf.md) | Spike M0-15 passou: PDF A4 fiel pelo Browser Run; JavaScript da página executa, então escape + CSP + bloqueio de rede são obrigatórios; hash é do arquivo guardado | valida 0017 |
 | [0031](adr/0031-spike-m0-17-htmlrewriter-meta-tags.md) | Spike M0-17: HTMLRewriter com placeholders e atributos escapados funciona; aceite depende de LinkedIn e Meta (pendente) | condicional |
 | [0032](adr/0032-m9-07-desempenho-cache-publico-cron-e-sessao.md) | M9-07: cache curto (60 s) nas rotas públicas, sessão lida uma vez por requisição, Cron mantido em 30 min com regra de saída em 55 CU-h, Workers Paid adiado para o fim do desenvolvimento; heartbeat leve e cache do currículo não adotados | refina 0027 e 0003 |
+| [0033](adr/0033-m9-05-m9-06-backup-agendado-alertas-e-registro-de-incidentes.md) | M9-05 e M9-06: backup diário de Staging por workflow no próprio repositório (Production fica para o M10), retenção por ciclo de vida do R2 (14, 35 e 90 dias), sem bucket lock e sem cópia fora da Cloudflare no início, tabela `backup_run` e alerta de backup velho, alertas pelo Sentry, registro de incidentes em tabela | refina 0023 e o §5 da spec de segurança e operação |
 
 ## Convenção
 
