@@ -40,8 +40,8 @@ Estado do projeto: `observability.enabled` com `invocation_logs: false` (um log 
 ## Pendências (com dono)
 
 - **Monitor de "site fora":** decidido usar o **Sentry** (Uptime Monitor e/ou Cron Monitor; [ADR 0033](../adr/0033-m9-05-m9-06-backup-agendado-alertas-e-registro-de-incidentes.md)), **sujeito ao que o plano gratuito inclui** (a conferir no faturamento do Sentry; monitor a mais custa por monitor). **Monitorar `/api/health/live`**, não `ready` a cada poucos minutos (mantém o Neon acordado o mês todo).
-- **Entrega ativa dos alertas:** pronta no código (Sentry, no máximo um evento por código a cada 24 h); **só passa a valer depois da migration 0042 e de um deploy** do Worker no ambiente, e depende de a regra de alerta do Sentry estar ativa.
+- **Entrega ativa dos alertas:** pronta no código (Sentry, no máximo um evento por código a cada 24 h); **no Staging já vale (migration 0042 e Worker `2ddfd34`, 2026-10-19; o primeiro evento real chegou ao Sentry)**; em Production dependerá do deploy do M10, e depende de a regra de alerta do Sentry estar ativa.
 - **Alerta de backup velho:** pronto (`backup_stale` e `backup_never`, tabela `backup_run`); só passa a ter dado quando o workflow de backup rodar (ver o runbook de backup).
 - **Exercícios de falha em Staging com uma pessoa** (reconhecer o alerta e executar o passo): ainda não feitos; os runbooks nunca foram seguidos por quem não os escreveu. Sem isso o aceite do M9-06 não está cumprido.
-- **Registro de incidentes:** pronto (tela `/staff/incidentes`, tabela `privacy_incident`, migration 0043; ADR 0033); **só passa a valer depois da migration e de um deploy**.
+- **Registro de incidentes:** pronto (tela `/staff/incidentes`, tabela `privacy_incident`, migration 0043; ADR 0033); **no Staging já vale (migration 0043 e Worker `2ddfd34`, 2026-10-19)**.
 - **Texto de privacidade e prazo de comunicação à ANPD** nos runbooks vêm de fonte secundária: o advogado precisa confirmar.
