@@ -33,16 +33,52 @@ Variáveis do backup: `BACKUP_DATABASE_URL` (conexão **direta**, role **somente
 4. Registrar em `docs/review/evidencias/m9-05/`: data, duração (decifrar, restaurar, total), idade do dump, contagens, falhas. **Sem esse registro o ensaio não conta.**
 5. Apagar o banco descartável e o arquivo decifrado.
 
-## Depois de uma restauração REAL (reconciliação; ainda sem script)
+## Depois de uma restauração REAL (reconciliação, `bun run restore:reconcile`)
 
-Não afirmar restauração atômica de Neon + R2 + providers. Antes de reabrir qualquer efeito externo:
+Não afirmar restauração atômica de Neon + R2 + providers. **Nunca restaure direto em Production sem revisão.** O banco restaurado está atrasado em relação ao mundo; antes de reabrir qualquer efeito externo, na ordem (sem `--execute` o script só mostra o que faria; `status` é sempre só leitura):
 
-1. **Quarentena:** ligar o kill switch (`system_flag`, M4-02) para o outbox não enviar nada.
-2. **Asaas:** conferir pagamentos e reembolsos desde a data do dump (o reconciliador do M6-04 lê o provedor; reembolso que já saiu **não** pode sair de novo).
-3. **Revogações:** reaplicar revogações de acesso e de certificado feitas depois do dump.
-4. **Eliminações LGPD:** reexecutar as do registro **fora do banco** (`purge-log/` do M7-05 e o log do M9-10).
-5. **E-mail e mídia:** conferir o Resend (o que já foi enviado não reenvia) e o R2 (objetos × linhas).
-6. Só então desligar a quarentena.
+```bash
+bun run restore:reconcile <ambiente> status
+```
+
+1. **Quarentena** das duas filas (`finance` e `general`), com o motivo na auditoria:
+
+```bash
+bun run restore:reconcile <ambiente> quarantine --execute --reason "restauração de AAAA-MM-DD"
+```
+
+2. **Pagamentos no Asaas** (precisa de `ASAAS_API_KEY` e `ASAAS_API_BASE_URL` no ambiente): relê cada pagamento de pedido aberto ou concluído e aplica a evidência pelo caminho normal. Um **reembolso feito depois do backup** revoga o acesso e fecha o pedido; um pagamento confirmado depois concede o acesso. O executor de reembolso **não reenvia** um estorno que já existe no Asaas (testado). Falha ou 429 do Asaas **interrompe** e diz quantos faltam: repita antes de seguir.
+
+```bash
+bun run restore:reconcile <ambiente> resync-payments --execute
+```
+
+3. **E-mails que estavam pendentes** no backup saem da fila (podem já ter sido enviados; reabrir a fila os mandaria de novo ou mandaria um link de acesso vencido). O resumo diz quantos por modelo: o que for importante (certificado pronto, acesso liberado) a Staff reenvia à mão.
+
+```bash
+bun run restore:reconcile <ambiente> supersede-emails --execute
+```
+
+4. **Eliminações LGPD** (pessoas que pediram exclusão depois do backup "voltaram"): reaplicar pelo registro fora do banco, primeiro em ensaio:
+
+```bash
+bun run privacy:request <ambiente> reapply --log-dir <pasta-dos-registros> --execute
+```
+
+5. **Conferir à mão o que o script NÃO enxerga** (abaixo) e só então **liberar**:
+
+```bash
+bun run restore:reconcile <ambiente> release --execute --reason "reconciliação concluída"
+```
+
+### O que a reconciliação NÃO recupera (lacunas conhecidas)
+
+- **Pedidos e pagamentos criados DEPOIS do backup** não existem no banco restaurado e o leitor do Asaas não lista por data: conferir no **painel do Asaas** (pagamentos desde a data do backup) e, para cada um, criar a matrícula pela tela de matrícula manual ou pela revisão financeira.
+- **Revogações de acesso e de certificado feitas depois do backup** (feitas pela Staff) **voltam a valer como estavam**: **não existe registro delas fora do banco** (a auditoria também foi restaurada). Reaplique à mão a partir do que a Staff lembrar, ou do registro de chamados. **Decisão pendente:** gravar cada revogação também no R2 (como o `purge-log/` do M7-05), para este passo poder reaplicá-las sozinho.
+- **E-mails** já enviados e retirados da fila não são reenviados (de propósito); **Resend**: conferir no painel o que saiu depois do backup.
+- **Mídia no R2:** objetos enviados depois do backup ficam sem linha (órfãos, a limpeza do M5-07 os trata em 24 h); linhas sem objeto aparecem como erro ao abrir: comparar objetos e linhas.
+- **Certificados:** o PDF e o hash estão no R2; certificado emitido depois do backup não tem linha (a pessoa pede de novo ao concluir; o código é novo).
+- **Sessões e links de acesso:** as sessões restauradas continuam valendo; se o backup for de antes de uma troca de segredo ou de uma suspensão, repita a suspensão.
 
 ## Decisões do responsável (2026-10-18, [ADR 0033](../adr/0033-m9-05-m9-06-backup-agendado-alertas-e-registro-de-incidentes.md))
 
@@ -77,4 +113,4 @@ $env:HUB_BACKUP_PASSWORD = "<a senha gerada>"; $env:DATABASE_URL_MIGRATION = (ne
 - **Primeiro ensaio com o R2 de verdade** (download do bucket, decifrar, restaurar): depois do passo 5.
 - **Production:** executor do backup (M10), segredos fora do GitHub comum.
 - **Parecer jurídico** sobre a retenção (14, 35 e 90 dias) e sobre dado pessoal em backup (M9-09).
-- **Código ainda não feito:** script de reconciliação pós-restore e seus testes (pré-reembolso não reenvia; pré-eliminação reexecuta; revogado volta revogado; nenhum e-mail reenviado), medição de egress do Neon.
+- **Reconciliação pós-restore:** script e testes prontos (quarentena, releitura no Asaas, e-mails retirados, reaplicação das exclusões); **faltam** o registro das revogações fora do banco (decisão) e o ensaio completo com um banco restaurado de verdade (depende dos passos acima). Medição de egress do Neon também pendente.

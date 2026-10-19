@@ -15,6 +15,7 @@
     "load:staging": "bun scripts/load-staging.ts",
     "backup:db": "bun scripts/backup/backup.ts",
     "privacy:request": "bun scripts/privacy/privacy-request.ts",
+    "restore:reconcile": "bun scripts/restore/restore-reconcile.ts",
     "backup:rehearsal": "bun scripts/backup/restore-rehearsal.ts",
     "dns:parity": "bun scripts/dns-parity.ts",
     "preview": "vite preview",
