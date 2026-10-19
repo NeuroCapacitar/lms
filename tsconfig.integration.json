@@ -30,6 +30,7 @@
     "scripts/admin-bootstrap.ts",
     "scripts/gate-account.ts",
     "scripts/privacy/privacy-request.ts",
+    "scripts/restore/restore-reconcile.ts",
     "scripts/seed-demo.ts",
     "scripts/verify-email-templates.ts",
     "scripts/seed-demo-core.ts",

@@ -5,6 +5,7 @@
     "scripts/*.mjs",
     "scripts/backup/*.ts",
     "scripts/privacy/*.ts",
+    "scripts/restore/*.ts",
     "scripts/db/*.ts",
     "scripts/**/*.test.ts",
     "scripts/db/*.integration.ts",

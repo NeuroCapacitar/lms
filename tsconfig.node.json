@@ -32,6 +32,7 @@
     "scripts/seed-demo.ts",
     "scripts/gate-account.ts",
     "scripts/privacy/privacy-request.ts",
+    "scripts/restore/restore-reconcile.ts",
     "scripts/verify-email-templates.ts"
   ]
 }
