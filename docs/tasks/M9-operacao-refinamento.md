@@ -200,7 +200,7 @@
 
 ### M9-10 — Procedimento manual de pedidos por e-mail (Q21)
 
-**Dependências:** M9-09, M5-14 (formulário/Ajuda), M3-06, M6-05, M7-04 · **Estado:** `not_started`
+**Dependências:** M9-09, M5-14 (formulário/Ajuda), M3-06, M6-05, M7-04 · **Estado:** `in_progress` (runbook, política de eliminação e script com `--dry-run` testado em PG real e ensaiado no Staging; faltam a aprovação do advogado e do contador, o ensaio com os 3 Suportes e a dependência M9-09: ver `docs/implementation/STATUS.md`)
 
 **Objetivo.** Desistência, exclusão, dados e troca de e-mail **sem funcionalidade própria**, por e-mail ao suporte, com procedimento escrito e prova de que a Staff o executa.
 

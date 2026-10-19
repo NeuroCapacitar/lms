@@ -14,6 +14,7 @@
     "smoke": "bun scripts/smoke.ts",
     "load:staging": "bun scripts/load-staging.ts",
     "backup:db": "bun scripts/backup/backup.ts",
+    "privacy:request": "bun scripts/privacy/privacy-request.ts",
     "backup:rehearsal": "bun scripts/backup/restore-rehearsal.ts",
     "dns:parity": "bun scripts/dns-parity.ts",
     "preview": "vite preview",
