@@ -72,6 +72,8 @@ export interface OperationsSnapshot {
   certificatesFailed: number;
   /** Tamanho do banco em bytes (`pg_database_size`), para os gatilhos de upgrade do Neon (M9-06). */
   databaseSizeBytes: number | null;
+  /** Diário de revogações ainda NÃO exportado para o R2 e a idade (s) da linha mais antiga (M9-05, ADR 0034). */
+  revocationExport: { pending: number; oldestAgeSeconds: number | null };
   /** Backups registrados (`backup_run`) e a idade (s) do mais recente pelo relógio do BANCO (M9-05). */
   backup: { count: number; lastAgeSeconds: number | null };
 }
@@ -114,6 +116,8 @@ export const OPS_THRESHOLDS = {
   reviewStaleSeconds: 24 * 60 * 60,
   /** Gatilho de upgrade do Neon (spec de segurança e operação, §5): banco acima de 600 MB (limite do Free: 1 GB). */
   databaseUpgradeBytes: 600 * 1024 * 1024,
+  /** Revogação que ainda não foi para o registro fora do banco há mais de 2 h: o Cron ou o R2 está com problema. */
+  revocationExportStaleSeconds: 2 * 60 * 60,
   /** Backup velho: mais de 26 h (o agendador do GitHub atrasa horas; o RPO de 24 h é a meta, o alerta é para o que NÃO veio). */
   backupStaleSeconds: 26 * 60 * 60,
   /** Perto do limite: 900 MB. Acima disto o banco pode parar de aceitar gravação. */
@@ -271,6 +275,15 @@ export function evaluateAlerts(
       code: 'certificate_failed',
       severity: 'P2',
       message: `${snapshot.certificatesFailed} certificado(s) em "failed": a emissão esgotou as tentativas e a pessoa ainda não recebeu o PDF.`,
+    });
+  }
+
+  const exportAge = snapshot.revocationExport.oldestAgeSeconds;
+  if (exportAge !== null && exportAge > OPS_THRESHOLDS.revocationExportStaleSeconds) {
+    alerts.push({
+      code: 'revocation_export_stuck',
+      severity: 'P2',
+      message: `${snapshot.revocationExport.pending} revogação(ões) ainda sem registro fora do banco há mais de 2 horas: se o banco for restaurado agora, elas se perdem.`,
     });
   }
 

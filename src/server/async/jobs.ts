@@ -17,6 +17,7 @@ import { createR2Storage } from '../media/r2-storage';
 import { cleanupMedia, hasMediaWork } from '../media/store';
 import { deliverAlerts } from '../ops/alert-state-store';
 import { loadOperationsSnapshot } from '../ops/operations-store';
+import { exportRevocations, hasPendingRevocationExport } from '../ops/revocation-export';
 import { sendAlertToSentry } from '../ops/sentry-alert';
 import { APP_ENV, RELEASE_ID } from '../release';
 import { publishIntents, type PublishableIntent } from './publisher';
@@ -185,6 +186,26 @@ const purgeRevokedPdfJob: CronJob = {
 };
 
 /**
+ * Registro das revogações fora do banco (M9-05, ADR 0034): exporta o diário `revocation_journal` para o R2 privado
+ * (`revocation-log/`), que sobrevive a uma restauração do Neon. Sem R2 neste ambiente ou sem linha a exportar o job NEM
+ * ACORDA (a sonda devolve falso). Falha do R2 numa linha deixa as outras seguirem; ela fica para o ciclo seguinte.
+ */
+const revocationExportJob: CronJob = {
+  name: 'revocation.export',
+  async probe({ db, env }) {
+    return createR2Storage(env) !== undefined && (await hasPendingRevocationExport(db));
+  },
+  async run({ db, env }) {
+    const storage = createR2Storage(env);
+    if (!storage) return { count: 0 };
+    const result = await exportRevocations(db, storage);
+    return result.failed > 0
+      ? { count: result.exported, errorCode: 'export_failed' }
+      : { count: result.exported };
+  },
+};
+
+/**
  * Reconciliação financeira (M6-04): só pedidos pendentes com sessão ativa há mais de 10 min e pagamentos em estado
  * intermediário, com backoff e teto por execução. 429 do Asaas interrompe o lote SEM erro do job; falha do provider
  * deixa o código `provider_unavailable`. Só existe com o leitor do Asaas configurado.
@@ -216,6 +237,7 @@ export function createCronJobs(
     purgeJob,
     mediaCleanupJob,
     purgeRevokedPdfJob,
+    revocationExportJob,
     alertsJob,
   ];
 }

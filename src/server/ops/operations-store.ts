@@ -144,6 +144,13 @@ export async function loadOperationsSnapshot(
         from backup_run`),
   )[0];
 
+  const exportRow = rowsOf(
+    await db.execute(sql`
+      select count(*)::int as pending,
+             floor(extract(epoch from (now() - min(occurred_at))))::int as age
+        from revocation_journal where exported_at is null`),
+  )[0];
+
   const flags = await db
     .select({ key: systemFlag.key, enabled: systemFlag.enabled })
     .from(systemFlag);
@@ -171,6 +178,10 @@ export async function loadOperationsSnapshot(
     certificatesFailed: (healthRow?.certificates_failed as number | undefined) ?? 0,
     databaseSizeBytes:
       healthRow?.database_size === undefined ? null : Number(healthRow.database_size as string),
+    revocationExport: {
+      pending: (exportRow?.pending as number | undefined) ?? 0,
+      oldestAgeSeconds: (exportRow?.age as number | null | undefined) ?? null,
+    },
     backup: {
       count: (backupRow?.count as number | undefined) ?? 0,
       lastAgeSeconds: (backupRow?.age as number | null | undefined) ?? null,

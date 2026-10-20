@@ -6,6 +6,7 @@
  *   … quarantine --execute --reason "restauração de 2026-10-18"
  *   … resync-payments --execute            (precisa de ASAAS_API_KEY e ASAAS_API_BASE_URL)
  *   … supersede-emails --execute
+ *   … reapply-revocations --log-dir <pasta com o revocation-log baixado do R2> --execute
  *   (reaplicar as exclusões: bun run privacy:request <ambiente> reapply --log-dir <pasta> --execute)
  *   … release --execute --reason "reconciliação concluída"
  *
@@ -22,13 +23,16 @@ import {
   resyncPaymentsFromProvider,
   supersedePendingEmails,
 } from '../../src/server/ops/restore-reconcile.ts';
+import { replayRevocations } from '../../src/server/ops/revocation-replay.ts';
 import { parseTarget } from '../db/guards.ts';
+import { readRevocationLogs } from './restore-core.ts';
 
 const COMMANDS = [
   'status',
   'quarantine',
   'resync-payments',
   'supersede-emails',
+  'reapply-revocations',
   'release',
 ] as const;
 
@@ -94,6 +98,17 @@ async function main(): Promise<void> {
       const input = { actorId, reason: reason! };
       await (command === 'quarantine' ? quarantineQueues(db, input) : releaseQuarantine(db, input));
       console.log(command === 'quarantine' ? 'Filas pausadas.' : 'Filas retomadas.');
+      return;
+    }
+    if (command === 'reapply-revocations') {
+      const dir = option('--log-dir');
+      if (!dir)
+        throw new Error(
+          'reapply-revocations exige --log-dir (a pasta com o revocation-log baixado do R2)',
+        );
+      console.log(
+        JSON.stringify(await replayRevocations(db, readRevocationLogs(dir), { execute })),
+      );
       return;
     }
     if (command === 'supersede-emails') {

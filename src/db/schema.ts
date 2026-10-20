@@ -306,6 +306,41 @@ export const privacyIncident = pgTable(
 );
 
 /**
+ * Diário das REVOGAÇÕES e SUSPENSÕES (M9-05, ADR 0034). Um gatilho em `audit_log` cria UMA linha por ação (revogar
+ * certificado ou direito, suspender e reativar conta ou matrícula), na MESMA transação; o job `revocation.export` do Cron a
+ * grava no R2 privado (`revocation-log/`), que sobrevive a uma restauração do Neon, e marca `exported_at`. Só ids, a ação e o
+ * instante: nunca motivo nem nota (o texto livre fica na auditoria).
+ */
+export const revocationJournal = pgTable(
+  'revocation_journal',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    auditId: bigint({ mode: 'number' }).notNull().unique(),
+    action: text().notNull(),
+    targetId: text().notNull(),
+    userId: text(),
+    courseId: uuid(),
+    category: text(),
+    occurredAt: timestamp({ withTimezone: true }).notNull(),
+    exportedAt: timestamp({ withTimezone: true }),
+    exportKey: text(),
+  },
+  (table) => [
+    index('revocation_journal_pending_idx')
+      .on(table.auditId)
+      .where(sql`${table.exportedAt} is null`),
+    check(
+      'revocation_journal_action_check',
+      sql`${table.action} in ('certificate.revoke', 'entitlement.revoke', 'enrollment.suspend', 'enrollment.reinstate', 'account.suspend', 'account.reactivate')`,
+    ),
+    check(
+      'revocation_journal_export_check',
+      sql`(${table.exportedAt} is null) = (${table.exportKey} is null)`,
+    ),
+  ],
+);
+
+/**
  * Estado da ENTREGA dos alertas do Operations Center (M9-06, ADR 0033): uma linha por alerta ATIVO, para o Cron
  * não repetir a notificação a cada ciclo (30 min). Apagada quando o alerta some, então a volta do problema
  * notifica na hora. Só código, severidade e instantes: nada de dado pessoal nem de texto de erro.
