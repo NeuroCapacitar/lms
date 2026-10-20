@@ -58,7 +58,7 @@ A fonte é `src/features/privacy/erasure-policy.ts`; um teste garante que esta l
 | **Retém** | `enrollment`, `entitlement`, `course_completion`, `lesson_completion`, `quiz_attempt`, `video_progress` | matrículas, acessos e progresso, ligados só ao identificador interno | advogado |
 | **Retém** | `email_message`, `email_recipient_state` | histórico de envios e supressão por hash (sem o endereço em claro) | advogado |
 | **Retém** | `inbox_event`, `outbox_message` | eventos de provedores e fila; **conferir** se o payload do pagamento guarda dado do pagador | contador |
-| **Retém** | `audit_log` | auditoria append-only, só ids e códigos | |
+| **Retém** | `audit_log`, `revocation_journal` | auditoria append-only e diário das revogações (também gravado fora do banco): só ids, ações e instantes | |
 | **Retém** | `course`, `offer`, `media_asset`, `certificate_issuer`, `certificate_signatory`, `certificate_template`, `video_provider_connection`, `staff_invitation`, `privacy_incident` | colunas "criado por": só o id | |
 
 ## Caso C: acesso e portabilidade (exportar os dados)
