@@ -29,6 +29,17 @@ export class MediaRejectedError extends Error {
 }
 
 /** Mídia inexistente, de outra pessoa ou fora do alcance: sempre a mesma resposta (não revela existência). */
+/**
+ * Os bytes do R2 NÃO são mais os que foram verificados na confirmação (M9-04): o PUT pré-assinado vale por alguns minutos e
+ * não é de uso único, então o objeto pode ser trocado depois da confirmação. Quem USA o objeto (publicar, embutir no
+ * certificado) confere o SHA-256 gravado e recusa se divergir.
+ */
+export class MediaIntegrityError extends Error {
+  constructor() {
+    super('media_integrity');
+  }
+}
+
 export class MediaNotFoundError extends Error {
   constructor() {
     super('media_not_found');
@@ -216,6 +227,9 @@ export async function publishPublicMedia(
   const key = publicObjectKey(row.id, kind);
   const bytes = await storage.read('private', row.storageKey);
   if (!bytes) throw new UploadMissingError();
+  // O que vai para o bucket PÚBLICO tem de ser exatamente o que foi verificado na confirmação.
+  if (hex(await crypto.subtle.digest('SHA-256', bytes as BufferSource)) !== row.sha256)
+    throw new MediaIntegrityError();
   await storage.put('public', key, bytes, row.contentType!);
   await db
     .update(mediaAsset)

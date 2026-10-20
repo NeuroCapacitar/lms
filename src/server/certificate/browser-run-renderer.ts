@@ -87,6 +87,8 @@ async function imageDataUri(
   }
   if (!bytes) throw new CertificateRenderRejectedError(code);
   if (bytes.byteLength > MAX_IMAGE_BYTES) throw new CertificateRenderRejectedError(code);
+  // Os bytes têm de ser os verificados na confirmação (o PUT pré-assinado não é de uso único: ver MediaIntegrityError).
+  if ((await sha256Hex(bytes)) !== asset.sha256) throw new CertificateRenderRejectedError(code);
   return `data:${asset.contentType};base64,${base64(bytes)}`;
 }
 

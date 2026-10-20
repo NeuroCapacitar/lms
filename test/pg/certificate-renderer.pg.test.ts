@@ -59,6 +59,12 @@ beforeEach(async () => {
     .values({ id: userId, name: 'Admin', email: `${userId}@example.test` });
 });
 
+/** SHA-256 REAL dos bytes: o renderizador confere o que lê do R2 contra o que foi verificado na confirmação. */
+async function shaOf(bytes: Uint8Array): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes as BufferSource));
+  return [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 async function asset(id: string, purpose = 'certificate_asset', state = 'ready') {
   const bytes = pngBytes(600, 200, 400);
   await main.db.insert(schema.mediaAsset).values({
@@ -73,7 +79,7 @@ async function asset(id: string, purpose = 'certificate_asset', state = 'ready')
     size: bytes.length,
     width: 600,
     height: 200,
-    sha256: 'a'.repeat(64),
+    sha256: await shaOf(bytes),
     confirmedAt: new Date(),
     createdBy: userId,
     expiresAt: new Date(Date.now() + 86_400_000),
@@ -302,6 +308,21 @@ describe('o que não pode ser impresso', () => {
     expect(calls).toHaveLength(0);
   });
 
+  it('assinatura TROCADA no R2 depois da confirmação (PUT pré-assinado reaproveitado) é recusada: o certificado não embute bytes não verificados', async () => {
+    const calls: Call[] = [];
+    const binding = browser(() => new Response(onePagePdf()), calls);
+    await asset(MEDIA);
+    // O objeto é trocado por outro conteúdo (aqui, HTML com cara de imagem) com a mesma chave e o mesmo tipo registrado.
+    await storage.put(
+      'private',
+      `m/${MEDIA}`,
+      new TextEncoder().encode('<script>alert(1)</script>'),
+      'image/png',
+    );
+    expect((await rejected(renderer(binding).render(input())))?.code).toBe('signature_unavailable');
+    expect(calls).toHaveLength(0);
+  });
+
   it('HTML grande demais é recusado sem chamar o serviço', async () => {
     await asset(MEDIA);
     const calls: Call[] = [];
@@ -321,7 +342,7 @@ describe('o que não pode ser impresso', () => {
       size: bytes.length,
       width: 600,
       height: 200,
-      sha256: 'a'.repeat(64),
+      sha256: await shaOf(bytes),
       confirmedAt: new Date(),
       createdBy: userId,
       expiresAt: new Date(Date.now() + 86_400_000),

@@ -73,7 +73,7 @@
 
 ### M9-04 — Hardening transversal (matriz de provas)
 
-**Dependências:** M1-05, M5-07, M6-06, M7-04, M8-04 · **Estado:** `not_started`
+**Dependências:** M1-05, M5-07, M6-06, M7-04, M8-04 · **Estado:** `in_progress` (matriz preenchida e conferida por teste, 3 lacunas viraram testes e 2 achados foram corrigidos; faltam o que só se prova em ambiente real e o aceite do gate M8-04 para as linhas de PWA em WebKit: ver `docs/review/evidencias/m9-04/README.md`)
 
 **Objetivo.** Provar, por teste, os controles de segurança de todos os fluxos antes da homologação.
 

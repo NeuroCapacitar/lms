@@ -35,6 +35,7 @@ function artifact(overrides: Record<string, unknown> = {}) {
     durable_objects: { bindings: [] },
     assets: { directory: '../client' },
     observability: { enabled: true, logs: { invocation_logs: false } },
+    preview_urls: false,
     ...overrides,
   };
 }
@@ -52,6 +53,29 @@ describe('checkArtifact', () => {
     );
     expect(problems).toHaveLength(1);
     expect(problems[0]).toMatch(/recurso não permitido.*hyperdrive/);
+  });
+
+  it('Version URLs e Preview URLs ligadas (ou sem a chave) são recusadas em Staging e Production, e a desligada passa', () => {
+    expect(checkArtifact(artifact({ preview_urls: true }), staging, 'staging').join('\n')).toMatch(
+      /preview_urls precisa ser false/,
+    );
+    const { preview_urls: _omitted, ...without } = artifact();
+    expect(checkArtifact(without, staging, 'staging').join('\n')).toMatch(
+      /preview_urls precisa ser false/,
+    );
+    const production: ExpectedEnvironment = {
+      ...staging,
+      cloudflareEnv: 'production',
+      workerName: 'hub-production',
+    };
+    expect(
+      checkArtifact(
+        artifact({ name: 'hub-production', targetEnvironment: 'production', preview_urls: true }),
+        production,
+        'production',
+      ).join('\n'),
+    ).toMatch(/preview_urls/);
+    expect(checkArtifact(artifact(), staging, 'staging')).toEqual([]);
   });
 
   it('rejeita nome de Worker de outro ambiente', () => {
@@ -145,7 +169,7 @@ describe('runPreflight (artefato em disco)', () => {
       mkdirSync(join(dir, 'client'));
       writeFileSync(
         join(dir, 'hub', 'wrangler.json'),
-        JSON.stringify({ targetEnvironment: 'staging', name: 'hub-staging' }),
+        JSON.stringify({ targetEnvironment: 'staging', name: 'hub-staging', preview_urls: false }),
       );
       expect(runPreflight('staging', dir)).toEqual([]);
       expect(runPreflight('producao', dir).join('\n')).toMatch(/ambiente desconhecido/);
