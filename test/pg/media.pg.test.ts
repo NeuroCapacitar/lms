@@ -9,7 +9,12 @@ import { loadPublicCoursePage } from '../../src/server/catalog/public-page.ts';
 import { createFakeEmailSender } from '../../src/server/email/fake.ts';
 import { createMemoryStorage, type MemoryStorage } from '../../src/server/media/memory-storage.ts';
 import { setReferenceIn } from '../../src/server/media/references.ts';
-import { cleanupMedia, hasMediaWork } from '../../src/server/media/store.ts';
+import {
+  MediaIntegrityError,
+  cleanupMedia,
+  hasMediaWork,
+  publishPublicMedia,
+} from '../../src/server/media/store.ts';
 import { apiApp } from '../helpers/api-app.ts';
 import { createTestAuth } from '../helpers/auth.ts';
 import { createDemoCourse } from '../helpers/demo-course.ts';
@@ -355,6 +360,31 @@ async function draftWith(
     modules: current.modules,
   });
 }
+
+describe('o PUT pré-assinado reaproveitado depois da confirmação (M9-04)', () => {
+  it('o objeto trocado no R2 NÃO é publicado: o SHA-256 gravado na confirmação é conferido antes de copiar para o bucket público', async () => {
+    const admin = await newPerson('admin');
+    const id = await ready(admin, 'course_cover', 'image/png', cover());
+    // O PUT pré-assinado vale por alguns minutos e não é de uso único: o objeto é trocado DEPOIS da confirmação.
+    storage.upload(
+      `m/${id}`,
+      new TextEncoder().encode('<html><script>alert(1)</script></html>'),
+      'image/png',
+    );
+    await expect(publishPublicMedia(tools.db, storage, id)).rejects.toBeInstanceOf(
+      MediaIntegrityError,
+    );
+    expect(storage.keys('public').some((key) => key.includes(id))).toBe(false);
+    expect((await assetRow(id)).publicKey).toBeNull();
+  });
+
+  it('o objeto íntegro continua publicando (a conferência não atrapalha o caminho normal)', async () => {
+    const admin = await newPerson('admin');
+    const id = await ready(admin, 'course_cover', 'image/png', cover(1));
+    const key = await publishPublicMedia(tools.db, storage, id);
+    expect(storage.has('public', key)).toBe(true);
+  });
+});
 
 describe('capa e banner do curso', () => {
   it('o rascunho referencia a mídia PRONTA e do propósito certo; nada vai ao bucket público antes de publicar', async () => {

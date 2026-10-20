@@ -17,7 +17,12 @@ import {
   MediaPurposeMismatchError,
 } from '../media/references';
 import type { ObjectStorage } from '../media/storage';
-import { MediaNotFoundError, UploadMissingError, publishPublicMedia } from '../media/store';
+import {
+  MediaIntegrityError,
+  MediaNotFoundError,
+  UploadMissingError,
+  publishPublicMedia,
+} from '../media/store';
 import {
   BannerNotFoundError,
   TooManyPublishedError,
@@ -62,6 +67,8 @@ function failure(c: BannerContext, error: unknown): Response {
   if (error instanceof MediaPurposeMismatchError) {
     return c.json({ error: { code: 'invalid_media' } }, 422);
   }
+  if (error instanceof MediaIntegrityError)
+    return c.json({ error: { code: 'media_integrity' } }, 409);
   if (error instanceof MediaNotPublishedError || error instanceof UploadMissingError) {
     return c.json({ error: { code: 'media_not_published' } }, 409);
   }

@@ -14,6 +14,7 @@
 
 - **Custo:** o único custo certo é o Workers Paid (US$ 5/mês); teto de infraestrutura US$ 10/mês. Nenhum plano pago extra sem decisão explícita.
 - **GitHub:** Free privado, sem branch protection nem environments garantidos. Staging pode ser publicado por um token limitado; Production exige processo manual fora do workflow comum e comprovação do SHA homologado.
+- **Version URLs e Preview URLs desligadas** (M9-04): são públicas por padrão e deixariam cada versão publicada, inclusive as antigas, alcançável em `<versão>-<worker>.<conta>.workers.dev` com o mesmo banco. O `wrangler.jsonc` traz `preview_urls: false` em Staging e Production e o **preflight barra o build** que as ligar.
 - **Build:** `CLOUDFLARE_ENV` precisa ser selecionado **no build** do Vite Plugin. Todo ambiente tem preflight (bindings, Hyperdrive, R2, filas, DNS, segredos, providers).
 - **Banco:** SQL versionado, forward-only, expand/contract, conexão direta ao Neon (nunca pelo Hyperdrive); **sem `drizzle-kit push` e sem reset remoto genérico** em Staging ou Production. Hyperdrive com cache de query desligado.
 - **Backups:** `pg_dump` cifrado com `age` no R2 privado, diário e antes de cada release, mais cópia semanal fora da Cloudflare; ensaio de restauração semestral e antes do Go-Live. Nunca restaurar e liberar efeitos externos sem conciliar pagamentos, revogações e exclusões posteriores.

@@ -18,7 +18,12 @@ import {
   MediaPurposeMismatchError,
 } from '../media/references';
 import type { ObjectStorage } from '../media/storage';
-import { MediaNotFoundError, UploadMissingError, publishPublicMedia } from '../media/store';
+import {
+  MediaIntegrityError,
+  MediaNotFoundError,
+  UploadMissingError,
+  publishPublicMedia,
+} from '../media/store';
 import {
   CourseArchivedError,
   CourseNotFoundError,
@@ -68,6 +73,10 @@ function domainError(c: CatalogContext, error: unknown): Response {
   }
   if (error instanceof MediaPurposeMismatchError) {
     return c.json({ error: { code: 'media_purpose_mismatch' } }, 400);
+  }
+  // O objeto no R2 não é mais o que foi verificado (PUT pré-assinado reaproveitado): nada é publicado.
+  if (error instanceof MediaIntegrityError) {
+    return c.json({ error: { code: 'media_integrity' } }, 409);
   }
   // Capa ou banner trocados entre a cópia para o bucket público e a publicação: tentar de novo resolve.
   if (error instanceof MediaNotPublishedError) {

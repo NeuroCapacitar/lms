@@ -63,6 +63,9 @@
   "env": {
     "staging": {
       "name": "hub-staging",
+      // M9-04: Version URLs e Preview URLs são PÚBLICAS por padrão (cada versão ficaria alcançável em <versão>-hub-staging.<conta>.workers.dev,
+      // inclusive as antigas, com o mesmo banco). Desligadas; o preflight barra o build que as ligar.
+      "preview_urls": false,
       "vars": {
         "APP_BASE_URL": "https://hub-staging.neurocapacitar-projetos.workers.dev",
         "EMAIL_FROM": "NeuroCapacitar <acesso@neurocapacitar.com.br>",
@@ -125,6 +128,8 @@
     },
     "production": {
       "name": "hub-production",
+      // M9-04: ver o comentário do Staging. Production nunca expõe Version URLs nem Preview URLs.
+      "preview_urls": false,
       "vars": {
         "APP_BASE_URL": "https://hub-production.neurocapacitar-projetos.workers.dev",
         "EMAIL_FROM": "NeuroCapacitar <acesso@neurocapacitar.com.br>",

@@ -114,6 +114,17 @@ export function checkArtifact(
     }
   }
 
+  // M9-04: Version URLs e Preview URLs são PÚBLICAS por padrão (versões antigas ficariam acessíveis, com o mesmo banco).
+  // Staging e Production precisam tê-las DESLIGADAS na configuração.
+  if (
+    (expected.cloudflareEnv === 'staging' || expected.cloudflareEnv === 'production') &&
+    artifact.preview_urls !== false
+  ) {
+    problems.push(
+      `preview_urls precisa ser false em "${requestedEnvironment}" (Version URLs e Preview URLs são públicas por padrão)`,
+    );
+  }
+
   const crons = isRecord(artifact.triggers) ? artifact.triggers.crons : undefined;
   if (Array.isArray(crons)) {
     for (const cron of crons) {
