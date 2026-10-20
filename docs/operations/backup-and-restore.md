@@ -65,7 +65,14 @@ bun run restore:reconcile <ambiente> supersede-emails --execute
 bun run privacy:request <ambiente> reapply --log-dir <pasta-dos-registros> --execute
 ```
 
-5. **Conferir à mão o que o script NÃO enxerga** (abaixo) e só então **liberar**:
+5. **Revogações e suspensões** feitas depois do backup (certificados, direitos, matrículas e contas): reaplicar pelo **registro fora do banco** ([ADR 0034](../adr/0034-registro-das-revogacoes-fora-do-banco.md)). Baixe o `revocation-log/` do bucket de mídia **privada** do ambiente (`aws s3 sync s3://hub-<ambiente>-media-private/revocation-log <pasta> --endpoint-url https://<id da conta>.r2.cloudflarestorage.com`, com um token do R2 de **leitura** desse bucket, que ainda NÃO existe) e reaplique, primeiro em ensaio:
+
+```bash
+bun run restore:reconcile <ambiente> reapply-revocations --log-dir <pasta> --execute
+```
+
+   Vale o **último** evento de cada conta e matrícula (suspensão levantada não volta a bloquear); revogar certificado e direito é definitivo. O resumo diz quantos foram aplicados, já estavam e **não existem na cópia restaurada** (nasceram depois do backup).
+6. **Conferir à mão o que o script NÃO enxerga** (abaixo) e só então **liberar**:
 
 ```bash
 bun run restore:reconcile <ambiente> release --execute --reason "reconciliação concluída"
@@ -74,7 +81,7 @@ bun run restore:reconcile <ambiente> release --execute --reason "reconciliação
 ### O que a reconciliação NÃO recupera (lacunas conhecidas)
 
 - **Pedidos e pagamentos criados DEPOIS do backup** não existem no banco restaurado e o leitor do Asaas não lista por data: conferir no **painel do Asaas** (pagamentos desde a data do backup) e, para cada um, criar a matrícula pela tela de matrícula manual ou pela revisão financeira.
-- **Revogações de acesso e de certificado feitas depois do backup** (feitas pela Staff) **voltam a valer como estavam**: **não existe registro delas fora do banco** (a auditoria também foi restaurada). Reaplique à mão a partir do que a Staff lembrar, ou do registro de chamados. **Decisão pendente:** gravar cada revogação também no R2 (como o `purge-log/` do M7-05), para este passo poder reaplicá-las sozinho.
+- **Revogações feitas nos últimos 30 min antes da restauração** (ou com o R2 fora do ar) podem não ter chegado ao registro: o alerta `revocation_export_stuck` avisa do atraso; confira a auditoria do ambiente de origem, se ainda existir, e reaplique à mão o que faltar.
 - **E-mails** já enviados e retirados da fila não são reenviados (de propósito); **Resend**: conferir no painel o que saiu depois do backup.
 - **Mídia no R2:** objetos enviados depois do backup ficam sem linha (órfãos, a limpeza do M5-07 os trata em 24 h); linhas sem objeto aparecem como erro ao abrir: comparar objetos e linhas.
 - **Certificados:** o PDF e o hash estão no R2; certificado emitido depois do backup não tem linha (a pessoa pede de novo ao concluir; o código é novo).

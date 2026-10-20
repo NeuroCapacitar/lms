@@ -32,6 +32,7 @@ const healthy = (): OperationsSnapshot => ({
   certificatesFailed: 0,
   databaseSizeBytes: 50 * 1024 * 1024,
   backup: { count: 3, lastAgeSeconds: 6 * 3600 },
+  revocationExport: { pending: 0, oldestAgeSeconds: null },
 });
 
 const codes = (snapshot: OperationsSnapshot) =>
@@ -174,6 +175,22 @@ describe('alertas do M9-06: certificado failed e tamanho do banco', () => {
 
   it('tamanho desconhecido (null) não alerta', () => {
     expect(codes({ ...healthy(), databaseSizeBytes: null })).toEqual([]);
+  });
+});
+
+describe('registro das revogações fora do banco (M9-05, ADR 0034)', () => {
+  it('até 2 h de atraso não alerta; acima, P2 dizendo quantas; sem pendência, nada', () => {
+    const at = (pending: number, oldestAgeSeconds: number | null) =>
+      codes({ ...healthy(), revocationExport: { pending, oldestAgeSeconds } });
+    expect(at(0, null)).toEqual([]);
+    expect(at(3, 7200)).toEqual([]);
+    expect(at(3, 7201)).toEqual(['P2:revocation_export_stuck']);
+    expect(
+      evaluateAlerts(
+        { ...healthy(), revocationExport: { pending: 3, oldestAgeSeconds: 9000 } },
+        NOW,
+      )[0]?.message,
+    ).toContain('3 revogação(ões)');
   });
 });
 

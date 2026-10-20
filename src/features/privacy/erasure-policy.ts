@@ -121,9 +121,9 @@ export const ERASURE_POLICY: readonly PolicyItem[] = [
     pending: 'contador',
   },
   {
-    tables: ['audit_log'],
+    tables: ['audit_log', 'revocation_journal'],
     action: 'retain',
-    what: 'A auditoria fica (append-only; só ids e códigos, sem e-mail nem texto).',
+    what: 'A auditoria e o diário das revogações ficam (só ids, ações e instantes, sem e-mail nem texto; o registro fora do banco também).',
     why: 'Trilha de segurança e prova de que a exclusão aconteceu.',
   },
   {
